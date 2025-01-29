@@ -1,17 +1,20 @@
-use super::types::{MeshPkt, Payload, Pkt, Telem};
+use crate::types::MyInfo;
+
+use super::types::{Mesh, NInfo, Payload, Pkt, Telem};
 use log::info;
 use meshtastic::protobufs::{
-    from_radio, mesh_packet, telemetry, FromRadio, NeighborInfo,
-    PortNum, Position, RouteDiscovery, Routing, User,
+    from_radio, mesh_packet, telemetry, FromRadio, NeighborInfo, PortNum, Position, RouteDiscovery,
+    Routing, User,
 };
 use meshtastic::Message;
 
-pub async fn process_packet(packet: FromRadio) -> Option<Pkt> {
+// Shout-out to https://github.com/PeterGrace/meshtui for some of the code structure here
+pub fn process_packet(packet: FromRadio) -> Option<Pkt> {
     if let Some(payload_v) = packet.clone().payload_variant {
         match payload_v {
             from_radio::PayloadVariant::Packet(pa) => {
                 // https://docs.rs/meshtastic/0.1.6/meshtastic/protobufs/struct.MeshPacket.html
-                let mut pkt: MeshPkt = MeshPkt::from_remote(pa.clone());
+                let mut pkt: Mesh = Mesh::from_remote(pa.clone());
                 if let Some(payload) = pa.payload_variant {
                     match payload.clone() {
                         mesh_packet::PayloadVariant::Decoded(de) => {
@@ -20,7 +23,7 @@ pub async fn process_packet(packet: FromRadio) -> Option<Pkt> {
                                     let data = Position::decode(de.payload.as_slice()).unwrap();
                                     pkt.payload_variant = None;
                                     pkt.payload = Some(Payload::PositionApp(data));
-                                    return Some(Pkt::MeshPkt(pkt));
+                                    return Some(Pkt::Mesh(pkt));
                                 }
                                 PortNum::TelemetryApp => {
                                     let data = meshtastic::protobufs::Telemetry::decode(
@@ -32,27 +35,25 @@ pub async fn process_packet(packet: FromRadio) -> Option<Pkt> {
                                         match v {
                                             telemetry::Variant::EnvironmentMetrics(env) => {
                                                 pkt.payload = Some(Payload::TelemetryApp(
-                                                    Telem::EnvironmentMetrics(env),
+                                                    Telem::Environment(env),
                                                 ));
-                                                return Some(Pkt::MeshPkt(pkt));
+                                                return Some(Pkt::Mesh(pkt));
                                             }
                                             telemetry::Variant::DeviceMetrics(dm) => {
-                                                pkt.payload = Some(Payload::TelemetryApp(
-                                                    Telem::DeviceMetrics(dm),
-                                                ));
-                                                return Some(Pkt::MeshPkt(pkt));
+                                                pkt.payload =
+                                                    Some(Payload::TelemetryApp(Telem::Device(dm)));
+                                                return Some(Pkt::Mesh(pkt));
                                             }
                                             telemetry::Variant::AirQualityMetrics(aqi) => {
                                                 pkt.payload = Some(Payload::TelemetryApp(
-                                                    Telem::AirQualityMetrics(aqi),
+                                                    Telem::AirQuality(aqi),
                                                 ));
-                                                return Some(Pkt::MeshPkt(pkt));
+                                                return Some(Pkt::Mesh(pkt));
                                             }
                                             telemetry::Variant::PowerMetrics(pwm) => {
-                                                pkt.payload = Some(Payload::TelemetryApp(
-                                                    Telem::PowerMetrics(pwm),
-                                                ));
-                                                return Some(Pkt::MeshPkt(pkt));
+                                                pkt.payload =
+                                                    Some(Payload::TelemetryApp(Telem::Power(pwm)));
+                                                return Some(Pkt::Mesh(pkt));
                                             }
                                         }
                                     }
@@ -61,26 +62,26 @@ pub async fn process_packet(packet: FromRadio) -> Option<Pkt> {
                                     let data = NeighborInfo::decode(de.payload.as_slice()).unwrap();
                                     pkt.payload_variant = None;
                                     pkt.payload = Some(Payload::NeighborinfoApp(data));
-                                    return Some(Pkt::MeshPkt(pkt));
+                                    return Some(Pkt::Mesh(pkt));
                                 }
                                 PortNum::NodeinfoApp => {
                                     let data = User::decode(de.payload.as_slice()).unwrap();
                                     pkt.payload_variant = None;
                                     pkt.payload = Some(Payload::NodeinfoApp(data));
-                                    return Some(Pkt::MeshPkt(pkt));
+                                    return Some(Pkt::Mesh(pkt));
                                 }
                                 PortNum::RoutingApp => {
                                     let data = Routing::decode(de.payload.as_slice()).unwrap();
                                     pkt.payload_variant = None;
                                     pkt.payload = Some(Payload::RoutingApp(data));
-                                    return Some(Pkt::MeshPkt(pkt));
+                                    return Some(Pkt::Mesh(pkt));
                                 }
                                 PortNum::TracerouteApp => {
                                     let val_resp =
                                         RouteDiscovery::decode(de.payload.as_slice()).unwrap();
                                     pkt.payload_variant = None;
                                     pkt.payload = Some(Payload::TracerouteApp(val_resp));
-                                    return Some(Pkt::MeshPkt(pkt));
+                                    return Some(Pkt::Mesh(pkt));
                                 }
                                 PortNum::ReplyApp => {
                                     info!("We were just pinged.");
@@ -106,13 +107,15 @@ pub async fn process_packet(packet: FromRadio) -> Option<Pkt> {
             }
             from_radio::PayloadVariant::MyInfo(mi) => {
                 // https://docs.rs/meshtastic/0.1.6/meshtastic/protobufs/struct.MyNodeInfo.html
-                return None;
+                let pkt = MyInfo::from_remote(mi);
+                return Some(Pkt::MyNodeInfo(pkt));
             }
             from_radio::PayloadVariant::NodeInfo(ni) => {
                 // https://docs.rs/meshtastic/0.1.6/meshtastic/protobufs/struct.NodeInfo.html
-                return None;
+                let pkt = NInfo::from_remote(ni);
+                return Some(Pkt::NInfo(pkt));
             }
-            from_radio::PayloadVariant::Config(c) => {
+            from_radio::PayloadVariant::Config(_c) => {
                 // https://docs.rs/meshtastic/0.1.6/meshtastic/protobufs/config/enum.PayloadVariant.html
                 return None;
             }

@@ -1,14 +1,39 @@
 use std::io::{self, BufRead};
 
+use db_poster::AddData;
 use meshtastic::api::StreamApi;
 use meshtastic::utils;
 use serde_json::to_string_pretty;
+use tokio_postgres::{Config, NoTls};
 
+mod db_poster;
 mod packet_handler;
 mod types;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    // Configure postgres connection
+    let mut db_config = Config::new();
+    // hardcoded, this is BAD but only PoC
+    db_config.user("postgres");
+    db_config.password("postgres");
+    db_config.port(5431);
+    db_config.ssl_mode(tokio_postgres::config::SslMode::Disable); // also BAD, need TLS in prod
+    db_config.host("localhost");
+    db_config.dbname("meshtastic");
+
+    // Connect to postgres db
+    let (client, connection) = db_config.connect(NoTls).await?;
+
+    // The connection object performs the actual communication with the database,
+    // so spawn it off to run on its own.
+    tokio::spawn(async move {
+        if let Err(e) = connection.await {
+            eprintln!("connection error: {}", e);
+        }
+    });
+
+    // Connect to serial meshtastic
     let stream_api = StreamApi::new();
 
     let available_ports = utils::stream::available_serial_ports()?;
@@ -32,10 +57,18 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // This loop can be broken with ctrl+c, or by disconnecting
     // the attached serial port.
     while let Some(decoded) = decoded_listener.recv().await {
-        if let Some(pkt) = packet_handler::process_packet(decoded.clone()).await {
+        if let Some(pkt) = packet_handler::process_packet(decoded.clone()) {
+            let res = client.update_metrics(pkt.clone()).await;
+            println!("{:?}", res);
             match pkt {
-                types::Pkt::MeshPkt(mp) => {
+                types::Pkt::Mesh(mp) => {
                     println!("{}", to_string_pretty(&mp).unwrap());
+                }
+                types::Pkt::NInfo(ni) => {
+                    println!("{}", to_string_pretty(&ni).unwrap());
+                }
+                types::Pkt::MyNodeInfo(mi) => {
+                    println!("{}", to_string_pretty(&mi).unwrap());
                 }
             }
         }
