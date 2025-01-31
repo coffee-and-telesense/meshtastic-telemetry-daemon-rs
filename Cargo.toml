@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-meshtastic = { git = "https://github.com/meshtastic/rust.git" }
+meshtastic = { git = "https://github.com/gatlinnewhouse/meshtastic-rust.git", branch = "dev" }
 tokio = { version = "1.32.0", features = ["full"] }
 tokio-serial = "5.4.4"
 tokio-util = "0.7.8"

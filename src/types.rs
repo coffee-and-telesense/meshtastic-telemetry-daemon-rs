@@ -1,5 +1,60 @@
+use std::{
+    collections::HashMap,
+    sync::{Arc, Mutex},
+};
+
 use meshtastic::protobufs::{mesh_packet::PayloadVariant, *};
 use serde::{Deserialize, Serialize};
+
+pub struct Node {
+    name: String,
+    node_id: u32,
+    fake_msg_id: u8,
+}
+
+// Declare a type alias for our hashmap of node_ids to numbers
+pub type NodeFakePkts = HashMap<u32, Node>;
+
+// We need some state information for the serial vs mesh packet resolution of conflicts
+// It is a necessary evil unfortunately.
+pub struct GatewayState {
+    nodes: NodeFakePkts,
+    biggest_fake: u8,
+}
+
+impl GatewayState {
+    pub fn new() -> GatewayState {
+        // Stub this function for now, but in the future:
+        // TODO - get the nodes and corresponding fake msg ids from local sqlite db
+        GatewayState {
+            nodes: HashMap::new(),
+            biggest_fake: 0,
+        }
+    }
+    // Lookup a Node's fake_msg_id
+    pub fn find_fake_id(&self, node_id: u32) -> Option<u8> {
+        if let Some(f) = self.nodes.get(&node_id) {
+            return Some(f.fake_msg_id);
+        }
+        None
+    }
+    // Insert a new node to the state
+    pub fn insert(&mut self, node_id: u32, data: User) -> bool {
+        // Insert a new node if it does not already exist in the state
+        if !(self.nodes.contains_key(&node_id)) {
+            let v = Node {
+                name: data.id,
+                node_id,
+                fake_msg_id: self.biggest_fake,
+            };
+            self.biggest_fake += 1;
+            self.nodes.insert(node_id, v);
+            return true;
+        }
+        return false;
+        // Otherwise:
+    }
+}
 
 // A lot of this file is derived off patterns established here: https://serde.rs/remote-derive.html
 // But, the meshtastic crate has serde and serde_json as a feature flag
@@ -78,7 +133,7 @@ pub struct NInfo {
     pub device_metrics: Option<DeviceMetrics>,
     pub channel: u32,
     pub via_mqtt: bool,
-    pub hops_away: u32,
+    pub hops_away: Option<u32>,
 }
 
 // Provide a conversion to construct the local type

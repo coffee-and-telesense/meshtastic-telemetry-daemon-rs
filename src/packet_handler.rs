@@ -1,4 +1,6 @@
-use crate::types::MyInfo;
+use std::sync::{Arc, Mutex};
+
+use crate::types::{GatewayState, MyInfo};
 
 use super::types::{Mesh, NInfo, Payload, Pkt, Telem};
 use log::info;
@@ -9,7 +11,7 @@ use meshtastic::protobufs::{
 use meshtastic::Message;
 
 // Shout-out to https://github.com/PeterGrace/meshtui for some of the code structure here
-pub fn process_packet(packet: FromRadio) -> Option<Pkt> {
+pub fn process_packet(packet: FromRadio, state: Arc<Mutex<GatewayState>>) -> Option<Pkt> {
     if let Some(payload_v) = packet.clone().payload_variant {
         match payload_v {
             from_radio::PayloadVariant::Packet(pa) => {
@@ -55,6 +57,14 @@ pub fn process_packet(packet: FromRadio) -> Option<Pkt> {
                                                     Some(Payload::TelemetryApp(Telem::Power(pwm)));
                                                 return Some(Pkt::Mesh(pkt));
                                             }
+                                            telemetry::Variant::LocalStats(stats) => {
+                                                //TODO this will be a possible better solution
+                                                return None;
+                                            }
+                                            _ => {
+                                                // Do not care about health metrics right now
+                                                return None;
+                                            }
                                         }
                                     }
                                 }
@@ -66,9 +76,17 @@ pub fn process_packet(packet: FromRadio) -> Option<Pkt> {
                                 }
                                 PortNum::NodeinfoApp => {
                                     let data = User::decode(de.payload.as_slice()).unwrap();
+                                    // Insert into our node state, will check if it already exists
+                                    // (if it does nothing happens, if it doesn't it inserts the
+                                    // user)
+                                    let rv = state.lock().unwrap().insert(pkt.from, data.clone());
                                     pkt.payload_variant = None;
                                     pkt.payload = Some(Payload::NodeinfoApp(data));
-                                    return Some(Pkt::Mesh(pkt));
+                                    if rv {
+                                        return Some(Pkt::Mesh(pkt));
+                                    } else {
+                                        return None;
+                                    }
                                 }
                                 PortNum::RoutingApp => {
                                     let data = Routing::decode(de.payload.as_slice()).unwrap();
@@ -112,8 +130,16 @@ pub fn process_packet(packet: FromRadio) -> Option<Pkt> {
             }
             from_radio::PayloadVariant::NodeInfo(ni) => {
                 // https://docs.rs/meshtastic/0.1.6/meshtastic/protobufs/struct.NodeInfo.html
-                let pkt = NInfo::from_remote(ni);
-                return Some(Pkt::NInfo(pkt));
+                let pkt = NInfo::from_remote(ni.clone());
+                let mut rv = false;
+                if let Some(user) = ni.user {
+                    rv = state.lock().unwrap().insert(ni.num, user);
+                }
+                if rv {
+                    return Some(Pkt::NInfo(pkt));
+                } else {
+                    return None;
+                }
             }
             from_radio::PayloadVariant::Config(_c) => {
                 // https://docs.rs/meshtastic/0.1.6/meshtastic/protobufs/config/enum.PayloadVariant.html
@@ -157,6 +183,9 @@ pub fn process_packet(packet: FromRadio) -> Option<Pkt> {
             }
             from_radio::PayloadVariant::MqttClientProxyMessage(_mqtt) => {
                 // We don't care and aren't using these
+                return None;
+            }
+            _ => {
                 return None;
             }
         }
