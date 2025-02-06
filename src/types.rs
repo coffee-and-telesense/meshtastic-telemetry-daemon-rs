@@ -108,7 +108,7 @@ impl Mesh {
             to: def.to,
             channel: def.channel,
             id: def.id,
-            rx_time: def.id,
+            rx_time: def.rx_time,
             rx_snr: def.rx_snr,
             hop_limit: def.hop_limit,
             want_ack: def.want_ack,
