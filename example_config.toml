@@ -1,0 +1,10 @@
+user = "postgres"
+password = "postgres"
+port = 5431
+use_ssl = false
+host = "localhost"
+dbname = "meshtastic"
+use_usb2spi = false
+serial_port = "/dev/ttyACM1"
+num_pkt_workers = -1
+num_db_workers = -1

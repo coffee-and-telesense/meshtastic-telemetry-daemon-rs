@@ -1,37 +1,88 @@
 use std::{
-    collections::HashMap,
     io::{self, BufRead},
     sync::{Arc, Mutex},
 };
 
+#[cfg(debug_assertions)]
+use std::collections::HashMap;
+
+use config::Config;
 use db_poster::AddData;
 use meshtastic::api::StreamApi;
 use meshtastic::utils;
 use serde_json::to_string_pretty;
-use tokio_postgres::{Config, NoTls};
+use tokio_postgres::NoTls;
 use types::GatewayState;
 
 mod db_poster;
 mod packet_handler;
 mod types;
 
+fn read_config(p: &str) -> config::Config {
+    let rv = config::Config::builder()
+        .add_source(config::File::with_name(p))
+        .build()
+        .unwrap();
+    #[cfg(debug_assertions)]
+    println!(
+        "{:?}",
+        rv.clone()
+            .try_deserialize::<HashMap<String, String>>()
+            .unwrap()
+    );
+    rv
+}
+
+fn setup_db(cfg: &Config) -> tokio_postgres::Config {
+    // Configure postgres connection
+    let mut db_config = tokio_postgres::Config::new();
+    // hardcoded, this is BAD but only PoC
+    db_config.user(cfg.get_string("user").unwrap().as_str());
+    db_config.password(cfg.get_string("password").unwrap().as_str());
+    db_config.port(cfg.get::<u16>("port").unwrap());
+    if cfg.get::<bool>("use_ssl").unwrap() {
+        //TODO: use ssl
+    } else {
+        db_config.ssl_mode(tokio_postgres::config::SslMode::Disable);
+    }
+    db_config.host(cfg.get_string("host").unwrap().as_str());
+    //db_config.host("10.57.247.124"); // on AREDN
+    db_config.dbname(cfg.get_string("dbname").unwrap().as_str());
+    db_config
+}
+
+fn get_serial_port(cfg: &Config) -> Result<String, Box<dyn std::error::Error>> {
+    if cfg.get_string("serial_port").is_err() {
+        let available_ports = utils::stream::available_serial_ports()?;
+        println!("Available ports: {:?}", available_ports);
+        println!("Enter the name of a port to connect to:");
+
+        let stdin = io::stdin();
+        let rv = stdin
+            .lock()
+            .lines()
+            .next()
+            .expect("Failed to find next line")?;
+        Ok(rv)
+    } else {
+        let rv = cfg.get_string("serial_port")?;
+        Ok(rv)
+    }
+}
+
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    // Get settings from configuration file
+    #[cfg(debug_assertions)]
+    let settings = read_config("example_config.toml");
+    #[cfg(not(debug_assertions))]
+    let settings = read_config("/etc/meshtastic_telem.toml");
+
     // Create the gateway's state object
     let state = Arc::new(Mutex::new(GatewayState::new()));
 
-    // Configure postgres connection
-    let mut db_config = Config::new();
-    // hardcoded, this is BAD but only PoC
-    db_config.user("postgres");
-    db_config.password("postgres");
-    db_config.port(5431);
-    db_config.ssl_mode(tokio_postgres::config::SslMode::Disable); // also BAD, need TLS in prod
-    db_config.host("localhost");
-    db_config.dbname("meshtastic");
-
     // Connect to postgres db
-    let (client, connection) = db_config.connect(NoTls).await?;
+    let (client, connection) = setup_db(&settings).connect(NoTls).await?;
 
     // The connection object performs the actual communication with the database,
     // so spawn it off to run on its own.
@@ -43,19 +94,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Connect to serial meshtastic
     let stream_api = StreamApi::new();
-
-    let available_ports = utils::stream::available_serial_ports()?;
-    println!("Available ports: {:?}", available_ports);
-    println!("Enter the name of a port to connect to:");
-
-    let stdin = io::stdin();
-    let entered_port = stdin
-        .lock()
-        .lines()
-        .next()
-        .expect("Failed to find next line")
-        .expect("Could not read next line");
-
+    let entered_port = get_serial_port(&settings).expect("Could not read next line");
     let serial_stream = utils::stream::build_serial_stream(entered_port, None, None, None)?;
     let (mut decoded_listener, stream_api) = stream_api.connect(serial_stream).await;
 
@@ -83,7 +122,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 }
             }
         }
-        //println!("Received: {:?}", decoded);
     }
 
     // Note that in this specific example, this will only be called when
