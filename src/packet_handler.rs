@@ -17,12 +17,18 @@ pub fn process_packet(packet: FromRadio, state: Arc<Mutex<GatewayState>>) -> Opt
             from_radio::PayloadVariant::Packet(pa) => {
                 // https://docs.rs/meshtastic/0.1.6/meshtastic/protobufs/struct.MeshPacket.html
                 let mut pkt: Mesh = Mesh::from_remote(pa.clone());
+                // Check if the mesh packet is on the telemetry channel, if not ignore it
+                if pkt.channel != 0 {
+                    return None;
+                }
                 if let Some(payload) = pa.payload_variant {
                     match payload.clone() {
                         mesh_packet::PayloadVariant::Decoded(de) => {
                             match de.portnum() {
                                 PortNum::PositionApp => {
                                     let data = Position::decode(de.payload.as_slice()).unwrap();
+                                    // Set the packet received time to position timestamp
+                                    pkt.rx_time = data.timestamp;
                                     pkt.payload_variant = None;
                                     pkt.payload = Some(Payload::PositionApp(data));
                                     return Some(Pkt::Mesh(pkt));
@@ -34,6 +40,10 @@ pub fn process_packet(packet: FromRadio, state: Arc<Mutex<GatewayState>>) -> Opt
                                     .unwrap();
                                     pkt.payload_variant = None;
                                     if let Some(v) = data.variant {
+                                        // Set received time from packet time
+                                        //TODO - currently broken, maybe the nodes need a time set
+                                        //in order for it to work?
+                                        //pkt.rx_time = data.time;
                                         match v {
                                             telemetry::Variant::EnvironmentMetrics(env) => {
                                                 pkt.payload = Some(Payload::TelemetryApp(
@@ -109,8 +119,6 @@ pub fn process_packet(packet: FromRadio, state: Arc<Mutex<GatewayState>>) -> Opt
                                     info!("{:#?}", de);
                                     return None;
                                 } // PortNum::AdminApp => {}
-                                  // PortNum::WaypointApp => {}
-
                                   // PortNum::PaxcounterApp => {}
                                   // PortNum::StoreForwardApp => {}
                                   // PortNum::RangeTestApp => {}
@@ -131,6 +139,11 @@ pub fn process_packet(packet: FromRadio, state: Arc<Mutex<GatewayState>>) -> Opt
             from_radio::PayloadVariant::NodeInfo(ni) => {
                 // https://docs.rs/meshtastic/0.1.6/meshtastic/protobufs/struct.NodeInfo.html
                 let pkt = NInfo::from_remote(ni.clone());
+                // Check if the mesh packet is on the telemetry channel, if not ignore it
+                if pkt.channel != 0 {
+                    println!("nodedb info from outside our channel");
+                    return None;
+                }
                 let mut rv = false;
                 if let Some(user) = ni.user {
                     rv = state.lock().unwrap().insert(ni.num, user);
@@ -140,18 +153,6 @@ pub fn process_packet(packet: FromRadio, state: Arc<Mutex<GatewayState>>) -> Opt
                 } else {
                     return None;
                 }
-            }
-            from_radio::PayloadVariant::Config(_c) => {
-                // https://docs.rs/meshtastic/0.1.6/meshtastic/protobufs/config/enum.PayloadVariant.html
-                return None;
-            }
-            from_radio::PayloadVariant::LogRecord(_lr) => {
-                // https://docs.rs/meshtastic/0.1.6/meshtastic/protobufs/struct.LogRecord.html
-                return None;
-            }
-            from_radio::PayloadVariant::ConfigCompleteId(_ci) => {
-                // https://docs.rs/meshtastic/0.1.6/meshtastic/protobufs/from_radio/enum.PayloadVariant.html#variant.ConfigCompleteId
-                return None;
             }
             from_radio::PayloadVariant::Rebooted(reboot) => {
                 if reboot {
@@ -165,10 +166,6 @@ pub fn process_packet(packet: FromRadio, state: Arc<Mutex<GatewayState>>) -> Opt
                 // https://docs.rs/meshtastic/0.1.6/meshtastic/protobufs/struct.ModuleConfig.html
                 return None;
             }
-            from_radio::PayloadVariant::Channel(_c) => {
-                // https://docs.rs/meshtastic/0.1.6/meshtastic/protobufs/struct.Channel.html
-                return None;
-            }
             from_radio::PayloadVariant::QueueStatus(_qs) => {
                 // https://docs.rs/meshtastic/0.1.6/meshtastic/protobufs/struct.QueueStatus.html
                 return None;
@@ -179,10 +176,6 @@ pub fn process_packet(packet: FromRadio, state: Arc<Mutex<GatewayState>>) -> Opt
             }
             from_radio::PayloadVariant::Metadata(_meta) => {
                 // https://docs.rs/meshtastic/0.1.6/meshtastic/protobufs/struct.DeviceMetadata.html
-                return None;
-            }
-            from_radio::PayloadVariant::MqttClientProxyMessage(_mqtt) => {
-                // We don't care and aren't using these
                 return None;
             }
             _ => {
