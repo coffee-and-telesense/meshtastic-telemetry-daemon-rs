@@ -3,6 +3,7 @@ use std::sync::{Arc, Mutex};
 use crate::types::{GatewayState, MyInfo};
 
 use super::types::{Mesh, NInfo, Payload, Pkt, Telem};
+use anyhow::Context;
 use meshtastic::protobufs::{
     from_radio, mesh_packet, telemetry, FromRadio, NeighborInfo, PortNum, Position, RouteDiscovery,
     Routing, User,
@@ -25,12 +26,20 @@ pub fn process_packet(packet: FromRadio, state: Arc<Mutex<GatewayState>>) -> Opt
                         mesh_packet::PayloadVariant::Decoded(de) => {
                             match de.portnum() {
                                 PortNum::PositionApp => {
-                                    let data = Position::decode(de.payload.as_slice()).unwrap();
-                                    // Set the packet received time to position timestamp
-                                    pkt.rx_time = data.timestamp;
-                                    pkt.payload_variant = None;
-                                    pkt.payload = Some(Payload::PositionApp(data));
-                                    return Some(Pkt::Mesh(pkt));
+                                    match Position::decode(de.payload.as_slice())
+                                        .with_context(|| "Failed to decode position data")
+                                    {
+                                        Ok(data) => {
+                                            // Set the packet received time to position timestamp
+                                            pkt.rx_time = data.timestamp;
+                                            pkt.payload_variant = None;
+                                            pkt.payload = Some(Payload::PositionApp(data));
+                                            return Some(Pkt::Mesh(pkt));
+                                        }
+                                        Err(e) => {
+                                            error!("{:#}", e);
+                                        }
+                                    }
                                 }
                                 PortNum::TelemetryApp => {
                                     let data = meshtastic::protobufs::Telemetry::decode(
