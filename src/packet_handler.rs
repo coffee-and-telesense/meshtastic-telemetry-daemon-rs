@@ -3,7 +3,6 @@ use std::sync::{Arc, Mutex};
 use crate::types::{GatewayState, MyInfo};
 
 use super::types::{Mesh, NInfo, Payload, Pkt, Telem};
-use log::info;
 use meshtastic::protobufs::{
     from_radio, mesh_packet, telemetry, FromRadio, NeighborInfo, PortNum, Position, RouteDiscovery,
     Routing, User,
@@ -111,17 +110,9 @@ pub fn process_packet(packet: FromRadio, state: Arc<Mutex<GatewayState>>) -> Opt
                                     pkt.payload = Some(Payload::TracerouteApp(val_resp));
                                     return Some(Pkt::Mesh(pkt));
                                 }
-                                PortNum::ReplyApp => {
-                                    info!("We were just pinged.");
-                                }
-                                PortNum::TextMessageApp => {}
                                 _ => {
-                                    info!("{:#?}", de);
                                     return None;
-                                } // PortNum::AdminApp => {}
-                                  // PortNum::PaxcounterApp => {}
-                                  // PortNum::StoreForwardApp => {}
-                                  // PortNum::RangeTestApp => {}
+                                }
                             }
                         }
                         mesh_packet::PayloadVariant::Encrypted(_) => {
@@ -141,7 +132,7 @@ pub fn process_packet(packet: FromRadio, state: Arc<Mutex<GatewayState>>) -> Opt
                 let pkt = NInfo::from_remote(ni.clone());
                 // Check if the mesh packet is on the telemetry channel, if not ignore it
                 if pkt.channel != 0 {
-                    debug!("nodedb info from outside our channel");
+                    info!("nodedb info from outside our channel");
                     return None;
                 }
                 let mut rv = false;

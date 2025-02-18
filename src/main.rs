@@ -93,8 +93,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         pid: 0,
     };
     let logger = syslog::unix(formatter).expect("could not connect to syslog");
+    #[cfg(debug_assertions)]
     let _ = log::set_boxed_logger(Box::new(BasicLogger::new(logger)))
         .map(|()| log::set_max_level(LevelFilter::Debug));
+    #[cfg(not(debug_assertions))]
+    let _ = log::set_boxed_logger(Box::new(BasicLogger::new(logger)))
+        .map(|()| log::set_max_level(LevelFilter::Info)); //TODO: should be warn on actual release
 
     // Create the gateway's state object
     let state = Arc::new(Mutex::new(GatewayState::new()));
