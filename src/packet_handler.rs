@@ -141,7 +141,7 @@ pub fn process_packet(packet: FromRadio, state: Arc<Mutex<GatewayState>>) -> Opt
                 let pkt = NInfo::from_remote(ni.clone());
                 // Check if the mesh packet is on the telemetry channel, if not ignore it
                 if pkt.channel != 0 {
-                    println!("nodedb info from outside our channel");
+                    debug!("nodedb info from outside our channel");
                     return None;
                 }
                 let mut rv = false;

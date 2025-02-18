@@ -6,6 +6,13 @@ use std::{
 #[cfg(debug_assertions)]
 use std::collections::HashMap;
 
+extern crate syslog;
+#[macro_use]
+extern crate log;
+
+use log::LevelFilter;
+use syslog::{BasicLogger, Facility, Formatter3164};
+
 use config::Config;
 use db_poster::AddData;
 use meshtastic::api::StreamApi;
@@ -78,6 +85,17 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     #[cfg(not(debug_assertions))]
     let settings = read_config("/etc/meshtastic_telem.toml");
 
+    // setup logging to systemd or logd
+    let formatter = Formatter3164 {
+        facility: Facility::LOG_USER, //TODO: this could probably be something else, check libc
+        hostname: None,
+        process: "mesh_telem".into(),
+        pid: 0,
+    };
+    let logger = syslog::unix(formatter).expect("could not connect to syslog");
+    let _ = log::set_boxed_logger(Box::new(BasicLogger::new(logger)))
+        .map(|()| log::set_max_level(LevelFilter::Debug));
+
     // Create the gateway's state object
     let state = Arc::new(Mutex::new(GatewayState::new()));
 
@@ -109,13 +127,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 types::Pkt::Mesh(mp) => {
                     println!("{}", to_string_pretty(&mp).unwrap());
                     let res = client.update_metrics(pkt, None).await;
-                    println!("inserted {:?} rows", res);
+                    info!("inserted {:?} rows", res);
                 }
                 types::Pkt::NInfo(ni) => {
                     println!("{}", to_string_pretty(&ni).unwrap());
                     let fake: u32 = state.lock().unwrap().find_fake_id(ni.num).unwrap().into();
                     let res = client.update_metrics(pkt, Some(fake)).await;
-                    println!("inserted {:?} rows", res);
+                    info!("inserted {:?} rows", res);
                 }
                 types::Pkt::MyNodeInfo(mi) => {
                     println!("{}", to_string_pretty(&mi).unwrap());
