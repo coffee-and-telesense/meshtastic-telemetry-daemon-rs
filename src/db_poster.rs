@@ -176,8 +176,38 @@ impl AddData for tokio_postgres::Client {
         pkt: Mesh,
         data: AirQualityMetrics,
     ) -> Result<u64, Error> {
-        //TODO
-        Ok(0)
+        let datetime = Utc::now().naive_utc();
+        let insert = "
+        INSERT INTO airqualitymetrics (
+            msg_id, node_id, time, pm10Standard,
+            pm25Standard, pm100Standard, pm10Environmental, pm25Environmental, pm100Environmental,
+            particles03um, particles05um, particles10um, particles25um, particles50um, particles100um,
+            co2
+        )
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
+        ";
+        self.execute(
+            insert,
+            &[
+                &pkt.id,
+                &pkt.from,
+                &datetime,
+                &data.pm10_standard,
+                &data.pm25_standard,
+                &data.pm100_standard,
+                &data.pm10_environmental,
+                &data.pm25_environmental,
+                &data.pm100_environmental,
+                &data.particles_03um,
+                &data.particles_05um,
+                &data.particles_10um,
+                &data.particles_25um,
+                &data.particles_50um,
+                &data.particles_100um,
+                &data.co2,
+            ],
+        )
+        .await
     }
     async fn add_device_metrics(&self, pkt: Mesh, data: DeviceMetrics) -> Result<u64, Error> {
         let datetime = Utc::now().naive_utc();
