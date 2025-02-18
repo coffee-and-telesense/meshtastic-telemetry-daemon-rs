@@ -1,7 +1,4 @@
-use std::{
-    collections::HashMap,
-    sync::{Arc, Mutex},
-};
+use std::collections::HashMap;
 
 use meshtastic::protobufs::{mesh_packet::PayloadVariant, *};
 use serde::{Deserialize, Serialize};
