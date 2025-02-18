@@ -21,6 +21,15 @@ tokio-postgres = { version = "0.7.12", features = ["with-chrono-0_4"] }
 chrono = { version = "0.4.39", features = ["clock", "oldtime", "std"] }
 # handle config reading
 config = { version = "0.15.7", features = ["async", "toml"] }
+# handle errors gracefully
+anyhow = "1.0.95"
+#iex = { version = "0.2.0", features = ["anyhow"] }
+#sqlx = { version = "0.8.3", default-features = false, features = [
+#  "chrono",
+#  "postgres",
+#  "runtime-tokio",
+#  "tls-native-tls",
+#] }
 
 # This release profile was found in discussions when compiling for mips platforms
 # But it probably works on x86 and ARM devices as well, we will see
