@@ -1,27 +1,19 @@
 use super::types::{Mesh, Payload, Pkt};
 use crate::types::{NInfo, Telem};
+use anyhow::Result;
 use chrono::Utc;
 use meshtastic::protobufs::{AirQualityMetrics, DeviceMetrics, EnvironmentMetrics, Position, User};
-use tokio_postgres::Error;
 
 pub trait AddData {
     // Generic update metrics handler
-    async fn update_metrics(&self, packet: Pkt, fake_msg_id: Option<u32>) -> Result<u64, Error>;
+    async fn update_metrics(&self, packet: Pkt, fake_msg_id: Option<u32>) -> Result<u64>;
 
     // Update metrics from received Meshtastic Packets
-    async fn add_environmental_metrics(
-        &self,
-        pkt: Mesh,
-        data: EnvironmentMetrics,
-    ) -> Result<u64, Error>;
-    async fn add_air_quality_metrics(
-        &self,
-        pkt: Mesh,
-        data: AirQualityMetrics,
-    ) -> Result<u64, Error>;
-    async fn add_device_metrics(&self, pkt: Mesh, data: DeviceMetrics) -> Result<u64, Error>;
-    async fn update_user_info(&self, pkt: Mesh, data: User) -> Result<u64, Error>;
-    async fn add_node_position(&self, pkt: Mesh, data: Position) -> Result<u64, Error>;
+    async fn add_environmental_metrics(&self, pkt: Mesh, data: EnvironmentMetrics) -> Result<u64>;
+    async fn add_air_quality_metrics(&self, pkt: Mesh, data: AirQualityMetrics) -> Result<u64>;
+    async fn add_device_metrics(&self, pkt: Mesh, data: DeviceMetrics) -> Result<u64>;
+    async fn update_user_info(&self, pkt: Mesh, data: User) -> Result<u64>;
+    async fn add_node_position(&self, pkt: Mesh, data: Position) -> Result<u64>;
 
     // Update metrics from serial connection
     async fn update_device_met(
@@ -29,37 +21,37 @@ pub trait AddData {
         pkt: NInfo,
         data: DeviceMetrics,
         fake_msg_id: Option<u32>,
-    ) -> Result<u64, Error>;
+    ) -> Result<u64>;
     async fn update_user_pkt(
         &self,
         pkt: NInfo,
         data: User,
         fake_msg_id: Option<u32>,
-    ) -> Result<u64, Error>;
-    async fn update_user(&self, node_id: u32, data: User) -> Result<u64, Error>;
+    ) -> Result<u64>;
+    async fn update_user(&self, node_id: u32, data: User) -> Result<u64>;
     async fn update_node_pos(
         &self,
         pkt: NInfo,
         data: Position,
         fake_msg_id: Option<u32>,
-    ) -> Result<u64, Error>;
+    ) -> Result<u64>;
 }
 
 impl AddData for tokio_postgres::Client {
-    async fn update_metrics(&self, packet: Pkt, fake_msg_id: Option<u32>) -> Result<u64, Error> {
+    async fn update_metrics(&self, packet: Pkt, fake_msg_id: Option<u32>) -> Result<u64> {
         match packet {
             Pkt::Mesh(mp) => {
                 if let Some(p) = mp.payload.clone() {
                     match p {
                         Payload::TelemetryApp(t) => match t {
                             Telem::Environment(data) => {
-                                return self.add_environmental_metrics(mp, data).await;
+                                return Ok(self.add_environmental_metrics(mp, data).await?);
                             }
                             Telem::AirQuality(data) => {
-                                return self.add_air_quality_metrics(mp, data).await;
+                                return Ok(self.add_air_quality_metrics(mp, data).await?);
                             }
                             Telem::Device(data) => {
-                                return self.add_device_metrics(mp, data).await;
+                                return Ok(self.add_device_metrics(mp, data).await?);
                             }
                             Telem::Power(_data) => {
                                 // Not sure what we want to do with these metrics
@@ -68,12 +60,12 @@ impl AddData for tokio_postgres::Client {
                         },
                         Payload::NodeinfoApp(data) => {
                             // Only updates user information
-                            return self.update_user_info(mp, data).await;
+                            return Ok(self.update_user_info(mp, data).await?);
                         }
                         Payload::PositionApp(data) => {
                             // Updates the position for a given node id that is included in the
                             // packet sent from the mesh
-                            return self.add_node_position(mp, data).await;
+                            return Ok(self.add_node_position(mp, data).await?);
                         }
                         _ => {
                             // Other payloads are unhandled, but there are some that may be of
@@ -114,23 +106,16 @@ impl AddData for tokio_postgres::Client {
                     // need to change to handle errors
                     rv += self
                         .update_device_met(ni.clone(), data, fake_msg_id)
-                        .await
-                        .unwrap_or(0);
+                        .await?
                 }
                 if let Some(data) = ni.clone().user {
                     // need to change to handle errors
                     rv += self.update_user(ni.num, data.clone()).await.unwrap_or(0);
-                    rv += self
-                        .update_user_pkt(ni.clone(), data, fake_msg_id)
-                        .await
-                        .unwrap_or(0);
+                    rv += self.update_user_pkt(ni.clone(), data, fake_msg_id).await?
                 }
                 if let Some(data) = ni.clone().position {
                     // need to change to handle errors
-                    rv += self
-                        .update_node_pos(ni, data, fake_msg_id)
-                        .await
-                        .unwrap_or(0);
+                    rv += self.update_node_pos(ni, data, fake_msg_id).await?
                 }
                 Ok(rv)
             }
@@ -142,12 +127,9 @@ impl AddData for tokio_postgres::Client {
             }
         }
     }
+
     // The following update from Meshtastic packets:
-    async fn add_environmental_metrics(
-        &self,
-        pkt: Mesh,
-        data: EnvironmentMetrics,
-    ) -> Result<u64, Error> {
+    async fn add_environmental_metrics(&self, pkt: Mesh, data: EnvironmentMetrics) -> Result<u64> {
         let insert_query = "
         INSERT INTO environmentmetrics (
             msg_id, node_id, time, tempurature, relative_humidity, barometric_pressure, 
@@ -156,26 +138,24 @@ impl AddData for tokio_postgres::Client {
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8 )";
         let datetime = Utc::now().naive_utc();
         // send to db
-        self.execute(
-            insert_query,
-            &[
-                &pkt.id,
-                &pkt.from,
-                &datetime,
-                &data.temperature,
-                &data.relative_humidity,
-                &data.barometric_pressure,
-                &data.gas_resistance,
-                &data.iaq,
-            ],
-        )
-        .await
+        Ok(self
+            .execute(
+                insert_query,
+                &[
+                    &pkt.id,
+                    &pkt.from,
+                    &datetime,
+                    &data.temperature,
+                    &data.relative_humidity,
+                    &data.barometric_pressure,
+                    &data.gas_resistance,
+                    &data.iaq,
+                ],
+            )
+            .await?)
     }
-    async fn add_air_quality_metrics(
-        &self,
-        pkt: Mesh,
-        data: AirQualityMetrics,
-    ) -> Result<u64, Error> {
+
+    async fn add_air_quality_metrics(&self, pkt: Mesh, data: AirQualityMetrics) -> Result<u64> {
         let datetime = Utc::now().naive_utc();
         let insert = "
         INSERT INTO airqualitymetrics (
@@ -186,30 +166,32 @@ impl AddData for tokio_postgres::Client {
         )
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
         ";
-        self.execute(
-            insert,
-            &[
-                &pkt.id,
-                &pkt.from,
-                &datetime,
-                &data.pm10_standard,
-                &data.pm25_standard,
-                &data.pm100_standard,
-                &data.pm10_environmental,
-                &data.pm25_environmental,
-                &data.pm100_environmental,
-                &data.particles_03um,
-                &data.particles_05um,
-                &data.particles_10um,
-                &data.particles_25um,
-                &data.particles_50um,
-                &data.particles_100um,
-                &data.co2,
-            ],
-        )
-        .await
+        Ok(self
+            .execute(
+                insert,
+                &[
+                    &pkt.id,
+                    &pkt.from,
+                    &datetime,
+                    &data.pm10_standard,
+                    &data.pm25_standard,
+                    &data.pm100_standard,
+                    &data.pm10_environmental,
+                    &data.pm25_environmental,
+                    &data.pm100_environmental,
+                    &data.particles_03um,
+                    &data.particles_05um,
+                    &data.particles_10um,
+                    &data.particles_25um,
+                    &data.particles_50um,
+                    &data.particles_100um,
+                    &data.co2,
+                ],
+            )
+            .await?)
     }
-    async fn add_device_metrics(&self, pkt: Mesh, data: DeviceMetrics) -> Result<u64, Error> {
+
+    async fn add_device_metrics(&self, pkt: Mesh, data: DeviceMetrics) -> Result<u64> {
         let datetime = Utc::now().naive_utc();
         let insert = "
         INSERT INTO devicemetrics (
@@ -217,24 +199,27 @@ impl AddData for tokio_postgres::Client {
         )
         VALUES ($1, $2, $3, $4, $5, $6, $7)
         ";
-        self.execute(
-            insert,
-            &[
-                &pkt.id,
-                &pkt.from,
-                &datetime,
-                &data.battery_level,
-                &data.voltage,
-                &data.channel_utilization,
-                &data.air_util_tx,
-            ],
-        )
-        .await
+        Ok(self
+            .execute(
+                insert,
+                &[
+                    &pkt.id,
+                    &pkt.from,
+                    &datetime,
+                    &data.battery_level,
+                    &data.voltage,
+                    &data.channel_utilization,
+                    &data.air_util_tx,
+                ],
+            )
+            .await?)
     }
-    async fn update_user_info(&self, pkt: Mesh, data: User) -> Result<u64, Error> {
+
+    async fn update_user_info(&self, pkt: Mesh, data: User) -> Result<u64> {
         Ok(0)
     }
-    async fn add_node_position(&self, pkt: Mesh, data: Position) -> Result<u64, Error> {
+
+    async fn add_node_position(&self, pkt: Mesh, data: Position) -> Result<u64> {
         let datetime = Utc::now().naive_utc();
         let insert = "
         INSERT INTO devicemetrics (
@@ -242,33 +227,36 @@ impl AddData for tokio_postgres::Client {
         )
         VALUES ($1, $2, $3, $4, $5)
         ";
-        self.execute(
-            insert,
-            &[
-                &pkt.id,
-                &pkt.from,
-                &datetime,
-                &data.latitude_i,
-                &data.longitude_i,
-            ],
-        )
-        .await
+        Ok(self
+            .execute(
+                insert,
+                &[
+                    &pkt.id,
+                    &pkt.from,
+                    &datetime,
+                    &data.latitude_i,
+                    &data.longitude_i,
+                ],
+            )
+            .await?)
     }
+
     // The following update from the serial connection
     async fn update_device_met(
         &self,
         pkt: NInfo,
         data: DeviceMetrics,
         fake_msg_id: Option<u32>,
-    ) -> Result<u64, Error> {
+    ) -> Result<u64> {
         Ok(0)
     }
+
     async fn update_user_pkt(
         &self,
         pkt: NInfo,
         data: User,
         fake_msg_id: Option<u32>,
-    ) -> Result<u64, Error> {
+    ) -> Result<u64> {
         let datetime = Utc::now().naive_utc();
         let insert_dev = "
         INSERT INTO devicemetrics (
@@ -276,20 +264,22 @@ impl AddData for tokio_postgres::Client {
         )
         VALUES ($1, $2, $3, $4, $5, $6)
         ";
-        self.execute(
-            insert_dev,
-            &[
-                &fake_msg_id,
-                &pkt.num,
-                &datetime,
-                &data.long_name,
-                &data.short_name,
-                &data.hw_model,
-            ],
-        )
-        .await
+        Ok(self
+            .execute(
+                insert_dev,
+                &[
+                    &fake_msg_id,
+                    &pkt.num,
+                    &datetime,
+                    &data.long_name,
+                    &data.short_name,
+                    &data.hw_model,
+                ],
+            )
+            .await?)
     }
-    async fn update_user(&self, node_id: u32, data: User) -> Result<u64, Error> {
+
+    async fn update_user(&self, node_id: u32, data: User) -> Result<u64> {
         let insert_node = "
             INSERT INTO nodeinfo (
                 node_id, longName, shortName, hwModel, deployment_location
@@ -297,24 +287,26 @@ impl AddData for tokio_postgres::Client {
             VALUES ($1, $2, $3, $4, $5)
         ";
         let tmp: String = "testing".to_string();
-        self.execute(
-            insert_node,
-            &[
-                &node_id,
-                &data.long_name,
-                &data.short_name,
-                &data.hw_model,
-                &tmp,
-            ],
-        )
-        .await
+        Ok(self
+            .execute(
+                insert_node,
+                &[
+                    &node_id,
+                    &data.long_name,
+                    &data.short_name,
+                    &data.hw_model,
+                    &tmp,
+                ],
+            )
+            .await?)
     }
+
     async fn update_node_pos(
         &self,
         pkt: NInfo,
         data: Position,
         fake_msg_id: Option<u32>,
-    ) -> Result<u64, Error> {
+    ) -> Result<u64> {
         Ok(0)
     }
 }
