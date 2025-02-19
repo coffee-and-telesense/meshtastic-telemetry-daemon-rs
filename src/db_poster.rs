@@ -45,13 +45,13 @@ impl AddData for tokio_postgres::Client {
                     match p {
                         Payload::TelemetryApp(t) => match t {
                             Telem::Environment(data) => {
-                                return Ok(self.add_environmental_metrics(mp, data).await?);
+                                return self.add_environmental_metrics(mp, data).await;
                             }
                             Telem::AirQuality(data) => {
-                                return Ok(self.add_air_quality_metrics(mp, data).await?);
+                                return self.add_air_quality_metrics(mp, data).await;
                             }
                             Telem::Device(data) => {
-                                return Ok(self.add_device_metrics(mp, data).await?);
+                                return self.add_device_metrics(mp, data).await;
                             }
                             Telem::Power(_data) => {
                                 // Not sure what we want to do with these metrics
@@ -60,12 +60,12 @@ impl AddData for tokio_postgres::Client {
                         },
                         Payload::NodeinfoApp(data) => {
                             // Only updates user information
-                            return Ok(self.update_user_info(mp, data).await?);
+                            return self.update_user_info(mp, data).await;
                         }
                         Payload::PositionApp(data) => {
                             // Updates the position for a given node id that is included in the
                             // packet sent from the mesh
-                            return Ok(self.add_node_position(mp, data).await?);
+                            return self.add_node_position(mp, data).await;
                         }
                         _ => {
                             // Other payloads are unhandled, but there are some that may be of
