@@ -1,7 +1,6 @@
 use super::types::{Payload, Pkt};
 use crate::entities::*;
 use crate::types::Telem;
-use airqualitymetrics::ActiveModel;
 use anyhow::{Context, Result};
 use chrono::Utc;
 use sea_orm::{ActiveModelTrait, ActiveValue, DatabaseConnection};

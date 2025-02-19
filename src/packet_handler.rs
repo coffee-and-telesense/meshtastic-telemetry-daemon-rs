@@ -80,7 +80,7 @@ pub fn process_packet(packet: FromRadio, state: Arc<Mutex<GatewayState>>) -> Opt
                                                         ));
                                                         return Some(Pkt::Mesh(pkt));
                                                     }
-                                                    telemetry::Variant::LocalStats(stats) => {
+                                                    telemetry::Variant::LocalStats(_stats) => {
                                                         //TODO this will be a possible better solution
                                                         return None;
                                                     }

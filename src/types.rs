@@ -38,17 +38,17 @@ impl GatewayState {
     // Insert a new node to the state
     pub fn insert(&mut self, node_id: u32, data: User) -> bool {
         // Insert a new node if it does not already exist in the state
-        if !(self.nodes.contains_key(&node_id)) {
+        if let std::collections::hash_map::Entry::Vacant(e) = self.nodes.entry(node_id) {
             let v = Node {
                 name: data.id,
                 node_id,
                 fake_msg_id: self.biggest_fake,
             };
             self.biggest_fake += 1;
-            self.nodes.insert(node_id, v);
+            e.insert(v);
             return true;
         }
-        return false;
+        false
         // Otherwise:
     }
 }
