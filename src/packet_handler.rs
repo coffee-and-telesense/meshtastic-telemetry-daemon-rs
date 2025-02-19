@@ -26,9 +26,9 @@ pub fn process_packet(packet: FromRadio, state: Arc<Mutex<GatewayState>>) -> Opt
                         mesh_packet::PayloadVariant::Decoded(de) => {
                             match de.portnum() {
                                 PortNum::PositionApp => {
-                                    match Position::decode(de.payload.as_slice())
-                                        .with_context(|| "Failed to decode position data")
-                                    {
+                                    match Position::decode(de.payload.as_slice()).with_context(
+                                        || "Failed to decode Position payload from mesh",
+                                    ) {
                                         Ok(data) => {
                                             // Set the packet received time to position timestamp
                                             pkt.rx_time = data.timestamp;
@@ -37,87 +37,137 @@ pub fn process_packet(packet: FromRadio, state: Arc<Mutex<GatewayState>>) -> Opt
                                             return Some(Pkt::Mesh(pkt));
                                         }
                                         Err(e) => {
-                                            error!("{:#}", e);
+                                            info!("{:#}", e);
+                                            return None;
                                         }
                                     }
                                 }
                                 PortNum::TelemetryApp => {
-                                    let data = meshtastic::protobufs::Telemetry::decode(
+                                    match meshtastic::protobufs::Telemetry::decode(
                                         de.payload.as_slice(),
                                     )
-                                    .unwrap();
-                                    pkt.payload_variant = None;
-                                    if let Some(v) = data.variant {
-                                        // Set received time from packet time
-                                        //TODO - currently broken, maybe the nodes need a time set
-                                        //in order for it to work?
-                                        //pkt.rx_time = data.time;
-                                        match v {
-                                            telemetry::Variant::EnvironmentMetrics(env) => {
-                                                pkt.payload = Some(Payload::TelemetryApp(
-                                                    Telem::Environment(env),
-                                                ));
-                                                return Some(Pkt::Mesh(pkt));
+                                    .with_context(|| "Failed to decode Telemetry payload from mesh")
+                                    {
+                                        Ok(data) => {
+                                            pkt.payload_variant = None;
+                                            if let Some(v) = data.variant {
+                                                //TODO: Set received time from packet time
+                                                //currently broken, maybe the nodes need a time set
+                                                //in order for it to work?
+                                                //pkt.rx_time = data.time;
+                                                match v {
+                                                    telemetry::Variant::EnvironmentMetrics(env) => {
+                                                        pkt.payload = Some(Payload::TelemetryApp(
+                                                            Telem::Environment(env),
+                                                        ));
+                                                        return Some(Pkt::Mesh(pkt));
+                                                    }
+                                                    telemetry::Variant::DeviceMetrics(dm) => {
+                                                        pkt.payload = Some(Payload::TelemetryApp(
+                                                            Telem::Device(dm),
+                                                        ));
+                                                        return Some(Pkt::Mesh(pkt));
+                                                    }
+                                                    telemetry::Variant::AirQualityMetrics(aqi) => {
+                                                        pkt.payload = Some(Payload::TelemetryApp(
+                                                            Telem::AirQuality(aqi),
+                                                        ));
+                                                        return Some(Pkt::Mesh(pkt));
+                                                    }
+                                                    telemetry::Variant::PowerMetrics(pwm) => {
+                                                        pkt.payload = Some(Payload::TelemetryApp(
+                                                            Telem::Power(pwm),
+                                                        ));
+                                                        return Some(Pkt::Mesh(pkt));
+                                                    }
+                                                    telemetry::Variant::LocalStats(stats) => {
+                                                        //TODO this will be a possible better solution
+                                                        return None;
+                                                    }
+                                                    _ => {
+                                                        // Do not care about health metrics right now
+                                                        return None;
+                                                    }
+                                                }
                                             }
-                                            telemetry::Variant::DeviceMetrics(dm) => {
-                                                pkt.payload =
-                                                    Some(Payload::TelemetryApp(Telem::Device(dm)));
-                                                return Some(Pkt::Mesh(pkt));
-                                            }
-                                            telemetry::Variant::AirQualityMetrics(aqi) => {
-                                                pkt.payload = Some(Payload::TelemetryApp(
-                                                    Telem::AirQuality(aqi),
-                                                ));
-                                                return Some(Pkt::Mesh(pkt));
-                                            }
-                                            telemetry::Variant::PowerMetrics(pwm) => {
-                                                pkt.payload =
-                                                    Some(Payload::TelemetryApp(Telem::Power(pwm)));
-                                                return Some(Pkt::Mesh(pkt));
-                                            }
-                                            telemetry::Variant::LocalStats(stats) => {
-                                                //TODO this will be a possible better solution
-                                                return None;
-                                            }
-                                            _ => {
-                                                // Do not care about health metrics right now
-                                                return None;
-                                            }
+                                        }
+                                        Err(e) => {
+                                            info!("{:#}", e);
+                                            return None;
                                         }
                                     }
                                 }
                                 PortNum::NeighborinfoApp => {
-                                    let data = NeighborInfo::decode(de.payload.as_slice()).unwrap();
-                                    pkt.payload_variant = None;
-                                    pkt.payload = Some(Payload::NeighborinfoApp(data));
-                                    return Some(Pkt::Mesh(pkt));
+                                    match NeighborInfo::decode(de.payload.as_slice()).with_context(
+                                        || "Failed to decode NeighborInfo payload from mesh",
+                                    ) {
+                                        Ok(data) => {
+                                            pkt.payload_variant = None;
+                                            pkt.payload = Some(Payload::NeighborinfoApp(data));
+                                            return Some(Pkt::Mesh(pkt));
+                                        }
+                                        Err(e) => {
+                                            info!("{:#}", e);
+                                            return None;
+                                        }
+                                    }
                                 }
                                 PortNum::NodeinfoApp => {
-                                    let data = User::decode(de.payload.as_slice()).unwrap();
-                                    // Insert into our node state, will check if it already exists
-                                    // (if it does nothing happens, if it doesn't it inserts the
-                                    // user)
-                                    let rv = state.lock().unwrap().insert(pkt.from, data.clone());
-                                    pkt.payload_variant = None;
-                                    pkt.payload = Some(Payload::NodeinfoApp(data));
-                                    if rv {
-                                        return Some(Pkt::Mesh(pkt));
-                                    } else {
-                                        return None;
+                                    match User::decode(de.payload.as_slice()).with_context(|| {
+                                        "Failed to decode NodeInfo payload from mesh"
+                                    }) {
+                                        Ok(data) => {
+                                            // Insert into our node state, will check if it already exists
+                                            // (if it does nothing happens, if it doesn't it inserts the
+                                            // user)
+                                            let rv = state
+                                                .lock()
+                                                .unwrap()
+                                                .insert(pkt.from, data.clone());
+                                            pkt.payload_variant = None;
+                                            pkt.payload = Some(Payload::NodeinfoApp(data));
+                                            if rv {
+                                                return Some(Pkt::Mesh(pkt));
+                                            } else {
+                                                return None;
+                                            }
+                                        }
+                                        Err(e) => {
+                                            info!("{:#}", e);
+                                            return None;
+                                        }
                                     }
                                 }
                                 PortNum::RoutingApp => {
-                                    let data = Routing::decode(de.payload.as_slice()).unwrap();
-                                    pkt.payload_variant = None;
-                                    pkt.payload = Some(Payload::RoutingApp(data));
-                                    return Some(Pkt::Mesh(pkt));
+                                    match Routing::decode(de.payload.as_slice()).with_context(
+                                        || "Failed to decode Routing payload from mesh",
+                                    ) {
+                                        Ok(data) => {
+                                            pkt.payload_variant = None;
+                                            pkt.payload = Some(Payload::RoutingApp(data));
+                                            return Some(Pkt::Mesh(pkt));
+                                        }
+                                        Err(e) => {
+                                            info!("{:#}", e);
+                                            return None;
+                                        }
+                                    }
                                 }
                                 PortNum::TracerouteApp => {
-                                    let val_resp =
-                                        RouteDiscovery::decode(de.payload.as_slice()).unwrap();
-                                    pkt.payload_variant = None;
-                                    pkt.payload = Some(Payload::TracerouteApp(val_resp));
-                                    return Some(Pkt::Mesh(pkt));
+                                    match RouteDiscovery::decode(de.payload.as_slice())
+                                        .with_context(|| {
+                                            "Failed to decode Traceroute payload from mesh"
+                                        }) {
+                                        Ok(data) => {
+                                            pkt.payload_variant = None;
+                                            pkt.payload = Some(Payload::TracerouteApp(data));
+                                            return Some(Pkt::Mesh(pkt));
+                                        }
+                                        Err(e) => {
+                                            info!("{:#}", e);
+                                            return None;
+                                        }
+                                    }
                                 }
                                 _ => {
                                     return None;
