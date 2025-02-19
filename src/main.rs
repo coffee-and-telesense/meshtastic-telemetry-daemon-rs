@@ -10,20 +10,21 @@ extern crate syslog;
 #[macro_use]
 extern crate log;
 
+use db_poster::update_metrics;
 use log::LevelFilter;
+use sea_orm::{ConnectOptions, Database};
 use serde::Deserialize;
 use syslog::{BasicLogger, Facility, Formatter3164};
 
 use anyhow::{Context, Result};
 use config::Config;
-use db_poster::AddData;
 use meshtastic::api::StreamApi;
 use meshtastic::utils;
 use serde_json::to_string_pretty;
-use tokio_postgres::NoTls;
 use types::GatewayState;
 
 mod db_poster;
+mod entities;
 mod packet_handler;
 mod types;
 
@@ -73,21 +74,16 @@ fn get_cfg_string(cfg: &Config, key: &str) -> String {
     }
 }
 
-fn setup_db(cfg: &Config) -> tokio_postgres::Config {
-    // Configure postgres connection
-    let mut db_config = tokio_postgres::Config::new();
+fn db_connection(cfg: &Config) -> String {
     // Parse config with error handling
-    db_config.user(get_cfg_string(cfg, "user").as_str());
-    db_config.password(get_cfg_string(cfg, "password").as_str());
-    db_config.port(get_cfg::<u16>(cfg, "port"));
-    if get_cfg::<bool>(cfg, "use_ssl") {
-        //TODO: use ssl
-    } else {
-        db_config.ssl_mode(tokio_postgres::config::SslMode::Disable);
-    }
-    db_config.host(get_cfg_string(cfg, "host").as_str());
-    db_config.dbname(get_cfg_string(cfg, "dbname").as_str());
-    db_config
+    format!(
+        "postgres://{}:{}@{}:{}/{}",
+        get_cfg_string(cfg, "user"),
+        get_cfg_string(cfg, "password"),
+        get_cfg_string(cfg, "host"),
+        get_cfg::<u16>(cfg, "port"),
+        get_cfg_string(cfg, "dbname")
+    )
 }
 
 fn get_serial_port(cfg: &Config) -> String {
@@ -181,21 +177,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let state = Arc::new(Mutex::new(GatewayState::new()));
 
     // Connect to postgres db
-    let (client, connection) = setup_db(&settings)
-        .connect(NoTls)
+    let mut opt = ConnectOptions::new(db_connection(&settings));
+    opt.sqlx_logging(true)
+        .sqlx_logging_level(log::LevelFilter::Debug);
+    let db = Database::connect(opt)
         .await
-        .with_context(|| "Could not initialize database connection from settings")?;
-
-    // The connection object performs the actual communication with the database,
-    // so spawn it off to run on its own.
-    tokio::spawn(async move {
-        if let Err(e) = connection
-            .await
-            .with_context(|| "Database connection error")
-        {
-            panic!("{:#?}", e);
-        }
-    });
+        .with_context(|| "Failed to connect to the database")?;
 
     // Connect to serial meshtastic
     let stream_api = StreamApi::new();
@@ -210,6 +197,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .await
         .with_context(|| "Failed to configure serial stream")?;
 
+    let deployment_loc = get_cfg_string(&settings, "deployment_location");
     // This loop can be broken with ctrl+c, or by disconnecting
     // the attached serial port.
     while let Some(decoded) = decoded_listener.recv().await {
@@ -217,8 +205,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             match pkt.clone() {
                 types::Pkt::Mesh(mp) => {
                     println!("{}", to_string_pretty(&mp).unwrap());
-                    let res = client
-                        .update_metrics(pkt, None)
+                    let res = update_metrics(&db, pkt, None, &deployment_loc)
                         .await
                         .with_context(|| "Failed to update datatbase with packet from mesh");
                     match res {
@@ -229,8 +216,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 types::Pkt::NInfo(ni) => {
                     println!("{}", to_string_pretty(&ni).unwrap());
                     let fake: u32 = state.lock().unwrap().find_fake_id(ni.num).unwrap().into();
-                    let res = client
-                        .update_metrics(pkt, Some(fake))
+                    let res = update_metrics(&db, pkt, Some(fake), &deployment_loc)
                         .await
                         .with_context(|| {
                             "Failed to update database with node info packet from serial"
