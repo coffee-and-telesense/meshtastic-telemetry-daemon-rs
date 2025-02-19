@@ -16,7 +16,12 @@ serde_json = { version = "1.0" }
 # Serialize/deserialize, add deriving trait
 serde = { version = "1.0", features = ["derive"] }
 # Handle posting to db, compatible with chrono we use
-tokio-postgres = { version = "0.7.12", features = ["with-chrono-0_4"] }
+sea-orm = { version = "1.1.5", features = [
+  "sqlx-postgres",
+  "runtime-tokio-native-tls",
+  "macros",
+  "with-chrono",
+] }
 # Handle clocks, no wasm
 chrono = { version = "0.4.39", features = ["clock", "oldtime", "std"] }
 # Handle config reading
