@@ -213,7 +213,7 @@ pub async fn update_metrics(
                 shortname: ActiveValue::Set(ni.user.as_ref().map(|u| u.short_name.clone())),
                 hwmodel: ActiveValue::Set(ni.user.as_ref().map(|u| u.hw_model)),
             }
-            .insert(db)
+            .insert(db) //TODO: fix conflict resolution here
             .await
             .with_context(|| "Failed to insert device metrics row");
             if dm.is_ok() {
@@ -228,7 +228,7 @@ pub async fn update_metrics(
                     hwmodel: ActiveValue::Set(user.hw_model),
                     deployment_location: ActiveValue::Set(dep_loc.to_string()),
                 }
-                .insert(db)
+                .insert(db) //TODO: fix conflict resolution here
                 .await
                 .with_context(|| "Failed to insert device metrics row");
                 if nm.is_ok() {
