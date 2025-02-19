@@ -4,32 +4,30 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-# my fork of the meshtastic protocol library with updated protobufs---default flags have serde and serde_json
+# My fork of the meshtastic protocol library with updated protobufs---default flags have serde and serde_json
 meshtastic = { git = "https://github.com/gatlinnewhouse/meshtastic-rust.git", branch = "dev" }
-# async runtime with tokio::main macro
+# Async runtime with tokio::main macro
 tokio = { version = "1.32.0", features = ["macros"] }
-# logger
-log = "0.4.25"
-syslog = "7.0.0"
-# serialize/deserialze json, mainly print debugging
-serde_json = "1.0"
-# serialize/deserialize, add deriving trait
+# Logger
+log = { version = "0.4.25" }
+syslog = { version = "7.0.0" }
+# Serialize/deserialze json, mainly print debugging
+serde_json = { version = "1.0" }
+# Serialize/deserialize, add deriving trait
 serde = { version = "1.0", features = ["derive"] }
-# handle posting to db, compatible with chrono we use
+# Handle posting to db, compatible with chrono we use
 tokio-postgres = { version = "0.7.12", features = ["with-chrono-0_4"] }
-# handle clocks, no wasm
+# Handle clocks, no wasm
 chrono = { version = "0.4.39", features = ["clock", "oldtime", "std"] }
-# handle config reading
+# Handle config reading
 config = { version = "0.15.7", features = ["async", "toml"] }
-# handle errors gracefully
-anyhow = "1.0.95"
+# Handle errors gracefully
+anyhow = { version = "1.0.95" }
 #iex = { version = "0.2.0", features = ["anyhow"] }
-#sqlx = { version = "0.8.3", default-features = false, features = [
-#  "chrono",
-#  "postgres",
-#  "runtime-tokio",
-#  "tls-native-tls",
-#] }
+
+[dev-dependencies]
+# Support backtrace errors in development mode
+anyhow = { version = "1.0.95", features = ["backtrace"] }
 
 # This release profile was found in discussions when compiling for mips platforms
 # But it probably works on x86 and ARM devices as well, we will see
