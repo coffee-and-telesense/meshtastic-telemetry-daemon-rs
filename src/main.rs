@@ -193,10 +193,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             .await
             .with_context(|| "Database connection error")
         {
-            #[cfg(debug_assertions)]
-            eprintln!("{:#?}", e);
-            #[cfg(not(debug_assertions))]
-            error!("{:#}", e);
+            panic!("{:#?}", e);
         }
     });
 
