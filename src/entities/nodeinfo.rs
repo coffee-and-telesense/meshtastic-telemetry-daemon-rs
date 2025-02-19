@@ -6,7 +6,7 @@ use sea_orm::entity::prelude::*;
 #[sea_orm(table_name = "nodeinfo")]
 pub struct Model {
     #[sea_orm(primary_key, auto_increment = false, column_type = "custom(\"oid\")")]
-    pub node_id: String,
+    pub node_id: u32,
     #[sea_orm(column_type = "Text")]
     pub longname: String,
     #[sea_orm(column_type = "Text")]
