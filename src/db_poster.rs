@@ -1,9 +1,13 @@
 use super::types::{Payload, Pkt};
-use crate::entities::*;
-use crate::types::Telem;
+use crate::types::{Mesh, Telem};
+use crate::{entities::*, types::NInfo};
 use anyhow::{Context, Result};
 use chrono::Utc;
-use sea_orm::{ActiveModelTrait, ActiveValue, DatabaseConnection};
+use sea_orm::prelude::Expr;
+use sea_orm::{
+    sea_query::OnConflict, ActiveModelTrait, ActiveValue, DatabaseConnection, EntityTrait,
+};
+use sea_orm::{ColumnTrait, QueryFilter, QuerySelect};
 
 pub async fn update_metrics(
     db: &DatabaseConnection,
@@ -35,8 +39,9 @@ pub async fn update_metrics(
                             }
                             .insert(db)
                             .await
-                            .with_context(|| "Failed to insert environment metrics row"))
-                            {
+                            .with_context(|| {
+                                "Failed to insert environment metrics row from mesh payload"
+                            })) {
                                 Ok(_) => Ok(1),
                                 Err(e) => {
                                     error!("{:#}", e);
@@ -66,8 +71,9 @@ pub async fn update_metrics(
                             }
                             .insert(db)
                             .await
-                            .with_context(|| "Failed to insert air quality metrics row"))
-                            {
+                            .with_context(|| {
+                                "Failed to insert air quality metrics row from mesh payload"
+                            })) {
                                 Ok(_) => Ok(1),
                                 Err(e) => {
                                     error!("{:#}", e);
@@ -93,8 +99,9 @@ pub async fn update_metrics(
                             }
                             .insert(db)
                             .await
-                            .with_context(|| "Failed to insert device metrics row"))
-                            {
+                            .with_context(|| {
+                                "Failed to insert device metrics row from mesh payload"
+                            })) {
                                 Ok(_) => Ok(1),
                                 Err(e) => {
                                     error!("{:#}", e);
@@ -110,24 +117,27 @@ pub async fn update_metrics(
                     },
 
                     Payload::NodeinfoApp(data) => {
-                        // Only updates user information
-                        match (nodeinfo::ActiveModel {
-                            node_id: ActiveValue::Set(mp.from),
-                            longname: ActiveValue::Set(data.long_name),
-                            shortname: ActiveValue::Set(data.short_name),
-                            hwmodel: ActiveValue::Set(data.hw_model),
-                            deployment_location: ActiveValue::Set(dep_loc.to_string()),
-                        }
-                        .insert(db)
-                        .await
-                        .with_context(|| "Failed to insert node info row"))
-                        {
-                            Ok(_) => Ok(1),
-                            Err(e) => {
-                                error!("{:#}", e);
-                                Ok(0)
-                            }
-                        }
+                        // NodeinfoApp payloads over the mesh indicate an advertisement for a node
+                        // that has joined the channel, since packet_handler() guarantees to only
+                        // pass this function Pkts from nodes on our configured channel. We cannot
+                        // tell if this is a new node, an update to a node we know, or a routine
+                        // advertisement from an already known node. In response, we pass the
+                        // relevant variables to another function to determine which case this is
+                        // and return how many rows were inserted here to return back to main.
+                        // First we need to create a NInfo packet type from the user data payload
+                        // in order to pass it along.
+                        let ni = NInfo {
+                            num: mp.from,
+                            user: Some(data),
+                            position: None,
+                            snr: mp.rx_snr,
+                            last_heard: mp.rx_time, // Dummy value for now
+                            device_metrics: None,
+                            channel: mp.channel,
+                            via_mqtt: mp.via_mqtt,
+                            hops_away: None,
+                        };
+                        return node_info_conflict(ni, Some(mp), db, fake_msg_id, dep_loc).await;
                     }
 
                     Payload::PositionApp(data) => {
@@ -149,7 +159,7 @@ pub async fn update_metrics(
                         }
                         .insert(db)
                         .await
-                        .with_context(|| "Failed to insert device metrics row"))
+                        .with_context(|| "Failed to insert device metrics row from mesh payload"))
                         {
                             Ok(_) => Ok(1),
                             Err(e) => {
@@ -189,52 +199,12 @@ pub async fn update_metrics(
         }
 
         Pkt::NInfo(ni) => {
-            let mut rv = 0;
-            // This is the NodeInfo that is communicated directly over serial to our process
-            // It does not have a MeshPkt (Meshtastic Packet from LoRa)
-            let dm = devicemetrics::ActiveModel {
-                msg_id: ActiveValue::Set(fake_msg_id.expect("Fake_msg_id not provided")),
-                node_id: ActiveValue::Set(ni.num),
-                time: ActiveValue::Set(Utc::now().naive_utc()),
-                latitude: ActiveValue::Set(ni.position.as_ref().and_then(|pos| pos.latitude_i)),
-                longitude: ActiveValue::Set(ni.position.as_ref().and_then(|pos| pos.longitude_i)),
-                battery_levels: ActiveValue::Set(
-                    ni.device_metrics.as_ref().and_then(|dm| dm.battery_level),
-                ),
-                voltage: ActiveValue::Set(ni.device_metrics.as_ref().and_then(|dm| dm.voltage)),
-                channelutil: ActiveValue::Set(
-                    ni.device_metrics
-                        .as_ref()
-                        .and_then(|dm| dm.channel_utilization),
-                ),
-                airutil: ActiveValue::Set(ni.device_metrics.as_ref().and_then(|dm| dm.air_util_tx)),
-                longname: ActiveValue::Set(ni.user.as_ref().map(|u| u.long_name.clone())),
-                shortname: ActiveValue::Set(ni.user.as_ref().map(|u| u.short_name.clone())),
-                hwmodel: ActiveValue::Set(ni.user.as_ref().map(|u| u.hw_model)),
-            }
-            .insert(db) //TODO: fix conflict resolution here
-            .await
-            .with_context(|| "Failed to insert device metrics row");
-            if dm.is_ok() {
-                rv += 1;
-            }
-            // Now update the nodeinfo table if needed
-            if let Some(user) = ni.user {
-                let nm = nodeinfo::ActiveModel {
-                    node_id: ActiveValue::Set(ni.num),
-                    longname: ActiveValue::Set(user.long_name),
-                    shortname: ActiveValue::Set(user.short_name),
-                    hwmodel: ActiveValue::Set(user.hw_model),
-                    deployment_location: ActiveValue::Set(dep_loc.to_string()),
-                }
-                .insert(db) //TODO: fix conflict resolution here
-                .await
-                .with_context(|| "Failed to insert device metrics row");
-                if nm.is_ok() {
-                    rv += 1;
-                }
-            }
-            Ok(rv)
+            // This is a NodeInfo payload from serial but not received over the mesh, meaning it is
+            // the output from our initial serial connection when we receive a dump of all the
+            // nodes in the nodedb of the connected Meshtastic node that is our network bridge.
+            // These packets possibly have user info, in which case we treat it the same as those
+            // from the mesh and pass it to the conflict resoltuion function.
+            return node_info_conflict(ni, None, db, fake_msg_id, dep_loc).await;
         }
 
         _ => {
@@ -244,4 +214,231 @@ pub async fn update_metrics(
             Ok(0)
         }
     }
+}
+
+async fn node_info_conflict(
+    ni: NInfo,
+    pkt: Option<Mesh>,
+    db: &DatabaseConnection,
+    fake_msg_id: Option<u32>,
+    dep_loc: &String,
+) -> Result<u32> {
+    let mut row_insert_count = 0;
+
+    if let Some(mp) = pkt {
+        // We have a mesh payload, so we need to determine if there are conflicts in the user data
+        // to determine if we:
+        // 1. Insert: a new fake devicemetrics to indicate nodeinfo column change and update the
+        //    nodeinfo columns with new values
+        // 2. Only update devicemetrics with values from the packet for the conflict free
+        //    information like snr and other values
+        if let Some(user) = ni.user.as_ref() {
+            // Our local state already has the updated node entry from the bridge (either serial or
+            // mesh), so we just need to determine if we should insert or update an entry in the
+            // database.
+            let curr = nodeinfo::Entity::find_by_id(ni.num)
+                .one(db)
+                .await
+                .with_context(|| "Could not get entry in db, connection error?");
+            match curr {
+                Ok(c) => {
+                    if let Some(u) = c {
+                        // Found an entry in the db, check if any nodeinfo columns need to be
+                        // updated, and if so update them.
+
+                        if u.shortname != user.short_name
+                            || u.longname != user.long_name
+                            || u.hwmodel != user.hw_model
+                            || &u.deployment_location != dep_loc
+                        {
+                            // Update the nodeinfo row values, node_id remains the same
+                            let mut upd_ni: nodeinfo::ActiveModel = u.into();
+                            upd_ni.longname = ActiveValue::Set(user.long_name.clone());
+                            upd_ni.shortname = ActiveValue::Set(user.short_name.clone());
+                            upd_ni.hwmodel = ActiveValue::Set(user.hw_model);
+                            upd_ni.deployment_location = ActiveValue::Set(dep_loc.to_string());
+
+                            // Get the largest fake_msg_id from the table, then add one
+                            let new_fake_msg_id = devicemetrics::Entity::find()
+                                .filter(devicemetrics::Column::MsgId.lt(u8::MAX))
+                                .having(Expr::col(devicemetrics::Column::MsgId).max())
+                                .select_only()
+                                .column(devicemetrics::Column::MsgId)
+                                .one(db)
+                                .await
+                                .expect("Failed to connect to the database")
+                                .expect("Failed to find max fake_msg_id < 255")
+                                .msg_id
+                                + 1;
+
+                            // Create updated devicemetrics row
+                            let upd_dm = devicemetrics::ActiveModel {
+                                msg_id: ActiveValue::Set(new_fake_msg_id),
+                                node_id: ActiveValue::Set(mp.from),
+                                time: ActiveValue::Set(Utc::now().naive_utc()),
+                                longname: ActiveValue::Set(Some(user.long_name.clone())),
+                                shortname: ActiveValue::Set(Some(user.short_name.clone())),
+                                hwmodel: ActiveValue::Set(Some(user.hw_model)),
+                                battery_levels: ActiveValue::NotSet,
+                                voltage: ActiveValue::NotSet,
+                                channelutil: ActiveValue::NotSet,
+                                airutil: ActiveValue::NotSet,
+                                latitude: ActiveValue::NotSet,
+                                longitude: ActiveValue::NotSet,
+                            };
+
+                            // Try updating the nodeinfo row
+                            match upd_ni.update(db).await.with_context(|| {
+                                format!("Failed to update nodeinfo row entry for {}", mp.from)
+                            }) {
+                                Ok(_) => {
+                                    row_insert_count += 1;
+                                }
+                                Err(e) => {
+                                    error!("{:#}", e);
+                                }
+                            }
+                            // Try inserting the new devicemetrics row
+                            match devicemetrics::Entity::insert(upd_dm)
+                                .on_conflict(OnConflict::column(devicemetrics::Column::MsgId))
+                                .do_nothing()
+                                .exec(db)
+                                .await
+                                .with_context(|| {
+                                    "Failed to insert devicemetrics row for updated nodeinfo from mesh payload"
+                                }) {
+                                Ok(_) => {
+                                    row_insert_count += 1;
+                                }
+                                Err(e) => {
+                                    error!("{:#}", e);
+                                }
+                            }
+                        }
+                    } else {
+                        // No entry in db, so we insert a new unheard node into both devicemetrics
+                        // and the nodeinfo table.
+                        return new_node(ni, db, fake_msg_id, dep_loc).await;
+                    }
+                }
+                Err(e) => {
+                    error!("{:#}", e);
+                }
+            }
+        } else {
+            // Here we only update rows with relevant updated data
+            // Since the NInfo passed from the Mesh has no position or devicemetrics and we do not
+            // track some of the other values in the Pkt::Mesh type, we do nothing here
+            info!("No db transaction on payload without relevant data");
+        }
+    } else {
+        // We have a serial payload, so we need to insert a fake devicemetrics with the data in the
+        // payload, and we need to potentially insert a node to the nodeinfo table but if either
+        // already exists then we do not do anything on conflicts.
+        return new_node(ni, db, fake_msg_id, dep_loc).await;
+    }
+
+    Ok(row_insert_count)
+}
+
+async fn new_node(
+    ni: NInfo,
+    db: &DatabaseConnection,
+    fake_msg_id: Option<u32>,
+    dep_loc: &String,
+) -> Result<u32> {
+    let mut row_insert_count = 0;
+    let dm = devicemetrics::ActiveModel {
+        msg_id: ActiveValue::Set(fake_msg_id.expect("No fake_msg_id provided to db action")),
+        node_id: ActiveValue::Set(ni.num),
+        time: ActiveValue::Set(Utc::now().naive_utc()),
+        battery_levels: ActiveValue::Set(ni.device_metrics.as_ref().and_then(|m| m.battery_level)),
+        voltage: ActiveValue::Set(ni.device_metrics.as_ref().and_then(|m| m.voltage)),
+        channelutil: ActiveValue::Set(
+            ni.device_metrics
+                .as_ref()
+                .and_then(|m| m.channel_utilization),
+        ),
+        airutil: ActiveValue::Set(ni.device_metrics.as_ref().and_then(|m| m.air_util_tx)),
+        latitude: ActiveValue::Set(ni.position.as_ref().and_then(|p| p.latitude_i)),
+        longitude: ActiveValue::Set(ni.position.as_ref().and_then(|p| p.longitude_i)),
+        longname: ActiveValue::Set(ni.user.as_ref().map(|u| u.long_name.clone())),
+        shortname: ActiveValue::Set(ni.user.as_ref().map(|u| u.short_name.clone())),
+        hwmodel: ActiveValue::Set(ni.user.as_ref().map(|u| u.hw_model)),
+    };
+
+    let ninfo = nodeinfo::ActiveModel {
+        node_id: ActiveValue::Set(ni.num),
+        longname: ActiveValue::Set(
+            ni.user
+                .as_ref()
+                .map(|u| u.long_name.clone())
+                .expect("Longname not provided by serial packet"),
+        ),
+        shortname: ActiveValue::Set(
+            ni.user
+                .as_ref()
+                .map(|u| u.short_name.clone())
+                .expect("Shortname not provided by serial packet"),
+        ),
+        hwmodel: ActiveValue::Set(
+            ni.user
+                .as_ref()
+                .map(|u| u.hw_model)
+                .expect("Hwmodel not provided by serial packet"),
+        ),
+        deployment_location: ActiveValue::Set(dep_loc.to_string()),
+    };
+
+    // Try inserting devicemetrics row
+    match devicemetrics::Entity::insert(dm)
+        .on_conflict(OnConflict::columns([
+            devicemetrics::Column::MsgId,
+            devicemetrics::Column::NodeId,
+            devicemetrics::Column::Time,
+            devicemetrics::Column::BatteryLevels,
+            devicemetrics::Column::Voltage,
+            devicemetrics::Column::Channelutil,
+            devicemetrics::Column::Airutil,
+            devicemetrics::Column::Latitude,
+            devicemetrics::Column::Longitude,
+            devicemetrics::Column::Shortname,
+            devicemetrics::Column::Longname,
+            devicemetrics::Column::Hwmodel,
+        ]))
+        .do_nothing()
+        .exec(db)
+        .await
+        .with_context(|| "Failed to insert device metrics row from serial payload")
+    {
+        Ok(_) => {
+            row_insert_count += 1;
+        }
+        Err(e) => {
+            error!("{:#}", e);
+        }
+    }
+
+    // Try inserting nodeinfo row
+    match nodeinfo::Entity::insert(ninfo)
+        .on_conflict(OnConflict::columns([
+            nodeinfo::Column::NodeId,
+            nodeinfo::Column::Longname,
+            nodeinfo::Column::Shortname,
+            nodeinfo::Column::Hwmodel,
+            nodeinfo::Column::DeploymentLocation,
+        ]))
+        .do_nothing()
+        .exec(db)
+        .await
+        .with_context(|| "Failed to insert node info row from serial payload")
+    {
+        Ok(_) => {
+            row_insert_count += 1;
+        }
+        Err(e) => {
+            error!("{:#}", e);
+        }
+    }
+    Ok(row_insert_count)
 }
