@@ -215,8 +215,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 }
                 types::Pkt::NInfo(ni) => {
                     println!("{}", to_string_pretty(&ni).unwrap());
-                    let fake: u32 = state.lock().unwrap().find_fake_id(ni.num).unwrap().into();
-                    let res = update_metrics(&db, pkt, Some(fake), &deployment_loc)
+                    let fake = state
+                        .lock()
+                        .unwrap()
+                        .find_fake_id(ni.num)
+                        .map(|n| Some(n.into()))
+                        .expect("No fake_id returned");
+                    let res = update_metrics(&db, pkt, fake, &deployment_loc)
                         .await
                         .with_context(|| {
                             "Failed to update database with node info packet from serial"
