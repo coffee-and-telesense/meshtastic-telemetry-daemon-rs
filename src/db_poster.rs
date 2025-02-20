@@ -3,11 +3,9 @@ use crate::types::{Mesh, Telem};
 use crate::{entities::*, types::NInfo};
 use anyhow::{Context, Result};
 use chrono::Utc;
-use sea_orm::prelude::Expr;
 use sea_orm::{
     sea_query::OnConflict, ActiveModelTrait, ActiveValue, DatabaseConnection, EntityTrait,
 };
-use sea_orm::{ColumnTrait, QueryFilter, QuerySelect};
 
 pub async fn update_metrics(
     db: &DatabaseConnection,
@@ -232,7 +230,9 @@ async fn node_info_conflict(
         //    nodeinfo columns with new values
         // 2. Only update devicemetrics with values from the packet for the conflict free
         //    information like snr and other values
+
         if let Some(user) = ni.user.as_ref() {
+            // Case 1
             // Our local state already has the updated node entry from the bridge (either serial or
             // mesh), so we just need to determine if we should insert or update an entry in the
             // database.
@@ -240,6 +240,7 @@ async fn node_info_conflict(
                 .one(db)
                 .await
                 .with_context(|| "Could not get entry in db, connection error?");
+
             match curr {
                 Ok(c) => {
                     if let Some(u) = c {
@@ -258,22 +259,11 @@ async fn node_info_conflict(
                             upd_ni.hwmodel = ActiveValue::Set(user.hw_model);
                             upd_ni.deployment_location = ActiveValue::Set(dep_loc.to_string());
 
-                            // Get the largest fake_msg_id from the table, then add one
-                            let new_fake_msg_id = devicemetrics::Entity::find()
-                                .filter(devicemetrics::Column::MsgId.lt(u8::MAX))
-                                .having(Expr::col(devicemetrics::Column::MsgId).max())
-                                .select_only()
-                                .column(devicemetrics::Column::MsgId)
-                                .one(db)
-                                .await
-                                .expect("Failed to connect to the database")
-                                .expect("Failed to find max fake_msg_id < 255")
-                                .msg_id
-                                + 1;
-
                             // Create updated devicemetrics row
                             let upd_dm = devicemetrics::ActiveModel {
-                                msg_id: ActiveValue::Set(new_fake_msg_id),
+                                msg_id: ActiveValue::Set(
+                                    fake_msg_id.expect("No fake_msg_id provided"),
+                                ),
                                 node_id: ActiveValue::Set(mp.from),
                                 time: ActiveValue::Set(Utc::now().naive_utc()),
                                 longname: ActiveValue::Set(Some(user.long_name.clone())),
@@ -298,6 +288,7 @@ async fn node_info_conflict(
                                     error!("{:#}", e);
                                 }
                             }
+
                             // Try inserting the new devicemetrics row
                             match devicemetrics::Entity::insert(upd_dm)
                                 .on_conflict(OnConflict::column(devicemetrics::Column::MsgId))
@@ -326,6 +317,7 @@ async fn node_info_conflict(
                 }
             }
         } else {
+            // Case 2
             // Here we only update rows with relevant updated data
             // Since the NInfo passed from the Mesh has no position or devicemetrics and we do not
             // track some of the other values in the Pkt::Mesh type, we do nothing here

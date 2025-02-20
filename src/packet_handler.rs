@@ -121,9 +121,10 @@ pub fn process_packet(packet: FromRadio, state: Arc<Mutex<GatewayState>>) -> Opt
                                         "Failed to decode NodeInfo payload from mesh"
                                     }) {
                                         Ok(data) => {
-                                            // Insert into our node state, will check if it already exists
-                                            // (if it does nothing happens, if it doesn't it inserts the
-                                            // user)
+                                            // Insert into our local node state, if it already
+                                            // exists and the values are different then it will
+                                            // update our local node state, otherwise it ignores
+                                            // the value to insert.
                                             let rv = state
                                                 .lock()
                                                 .unwrap()

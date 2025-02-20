@@ -4,7 +4,10 @@ use meshtastic::protobufs::{mesh_packet::PayloadVariant, *};
 use serde::{Deserialize, Serialize};
 
 pub struct Node {
-    user: User,
+    long_name: String,
+    short_name: String,
+    hw_model: i32,
+    id: String,
     fake_msg_id: u8,
 }
 
@@ -39,15 +42,34 @@ impl GatewayState {
         // Insert a new node if it does not already exist in the state
         if let std::collections::hash_map::Entry::Vacant(e) = self.nodes.entry(node_id) {
             let v = Node {
-                user,
+                long_name: user.long_name,
+                short_name: user.short_name,
+                hw_model: user.hw_model,
+                id: user.id,
                 fake_msg_id: self.biggest_fake,
             };
             self.biggest_fake += 1;
             e.insert(v);
             return true;
+        } else if let Some(n) = self.nodes.get_mut(&node_id) {
+            if (n.long_name != user.long_name
+                || n.short_name != user.short_name
+                || n.hw_model != user.hw_model)
+                && n.id == user.id
+            {
+                // Update our local db
+                n.long_name = user.long_name;
+                n.short_name = user.short_name;
+                n.hw_model = user.hw_model;
+                // Increase the biggest_fake to reflect eventual change in db
+                self.biggest_fake += 1;
+                // Set the updated entry to use this new biggest_fake
+                n.fake_msg_id = self.biggest_fake;
+                self.biggest_fake += 1;
+                return true;
+            }
         }
         false
-        // Otherwise:
     }
 }
 
