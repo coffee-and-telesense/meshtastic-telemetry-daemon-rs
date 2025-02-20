@@ -4,8 +4,7 @@ use meshtastic::protobufs::{mesh_packet::PayloadVariant, *};
 use serde::{Deserialize, Serialize};
 
 pub struct Node {
-    name: String,
-    node_id: u32,
+    user: User,
     fake_msg_id: u8,
 }
 
@@ -36,12 +35,11 @@ impl GatewayState {
         None
     }
     // Insert a new node to the state
-    pub fn insert(&mut self, node_id: u32, data: User) -> bool {
+    pub fn insert(&mut self, node_id: u32, user: User) -> bool {
         // Insert a new node if it does not already exist in the state
         if let std::collections::hash_map::Entry::Vacant(e) = self.nodes.entry(node_id) {
             let v = Node {
-                name: data.id,
-                node_id,
+                user,
                 fake_msg_id: self.biggest_fake,
             };
             self.biggest_fake += 1;
