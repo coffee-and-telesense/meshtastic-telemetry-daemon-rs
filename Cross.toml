@@ -2,5 +2,5 @@
 default-target = "mips-unknown-linux-musl"
 
 [target.mips-unknown-linux-musl]
-build-std = ["std"]
+build-std = ["std", "panic_abort"]
 image = "ghcr.io/cross-rs/mips-unknown-linux-musl:main"
