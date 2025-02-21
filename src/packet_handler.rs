@@ -1,14 +1,14 @@
-use std::sync::{Arc, Mutex};
-
-use crate::types::{GatewayState, MyInfo};
-
 use super::types::{Mesh, NInfo, Payload, Pkt, Telem};
+use crate::types::{GatewayState, MyInfo};
 use anyhow::Context;
+#[cfg(feature = "debug")]
+use log::info;
 use meshtastic::protobufs::{
     from_radio, mesh_packet, telemetry, FromRadio, NeighborInfo, PortNum, Position, RouteDiscovery,
     Routing, User,
 };
 use meshtastic::Message;
+use std::sync::{Arc, Mutex};
 
 // Shout-out to https://github.com/PeterGrace/meshtui for some of the code structure here
 pub fn process_packet(packet: FromRadio, state: Arc<Mutex<GatewayState>>) -> Option<Pkt> {
@@ -21,6 +21,7 @@ pub fn process_packet(packet: FromRadio, state: Arc<Mutex<GatewayState>>) -> Opt
                 if pkt.channel != 0 {
                     return None;
                 }
+
                 if let Some(payload) = pa.payload_variant {
                     match payload.clone() {
                         mesh_packet::PayloadVariant::Decoded(de) => {
@@ -42,6 +43,7 @@ pub fn process_packet(packet: FromRadio, state: Arc<Mutex<GatewayState>>) -> Opt
                                         }
                                     }
                                 }
+
                                 PortNum::TelemetryApp => {
                                     match meshtastic::protobufs::Telemetry::decode(
                                         de.payload.as_slice(),
@@ -80,7 +82,7 @@ pub fn process_packet(packet: FromRadio, state: Arc<Mutex<GatewayState>>) -> Opt
                                                         ));
                                                         return Some(Pkt::Mesh(pkt));
                                                     }
-                                                    telemetry::Variant::LocalStats(stats) => {
+                                                    telemetry::Variant::LocalStats(_stats) => {
                                                         //TODO this will be a possible better solution
                                                         return None;
                                                     }
@@ -97,6 +99,7 @@ pub fn process_packet(packet: FromRadio, state: Arc<Mutex<GatewayState>>) -> Opt
                                         }
                                     }
                                 }
+
                                 PortNum::NeighborinfoApp => {
                                     match NeighborInfo::decode(de.payload.as_slice()).with_context(
                                         || "Failed to decode NeighborInfo payload from mesh",
@@ -112,17 +115,19 @@ pub fn process_packet(packet: FromRadio, state: Arc<Mutex<GatewayState>>) -> Opt
                                         }
                                     }
                                 }
+
                                 PortNum::NodeinfoApp => {
                                     match User::decode(de.payload.as_slice()).with_context(|| {
                                         "Failed to decode NodeInfo payload from mesh"
                                     }) {
                                         Ok(data) => {
-                                            // Insert into our node state, will check if it already exists
-                                            // (if it does nothing happens, if it doesn't it inserts the
-                                            // user)
+                                            // Insert into our local node state, if it already
+                                            // exists and the values are different then it will
+                                            // update our local node state, otherwise it ignores
+                                            // the value to insert.
                                             let rv = state
                                                 .lock()
-                                                .unwrap()
+                                                .expect("Failed to acquire lock for GatewayState in packet_handler()")
                                                 .insert(pkt.from, data.clone());
                                             pkt.payload_variant = None;
                                             pkt.payload = Some(Payload::NodeinfoApp(data));
@@ -138,6 +143,7 @@ pub fn process_packet(packet: FromRadio, state: Arc<Mutex<GatewayState>>) -> Opt
                                         }
                                     }
                                 }
+
                                 PortNum::RoutingApp => {
                                     match Routing::decode(de.payload.as_slice()).with_context(
                                         || "Failed to decode Routing payload from mesh",
@@ -153,6 +159,7 @@ pub fn process_packet(packet: FromRadio, state: Arc<Mutex<GatewayState>>) -> Opt
                                         }
                                     }
                                 }
+
                                 PortNum::TracerouteApp => {
                                     match RouteDiscovery::decode(de.payload.as_slice())
                                         .with_context(|| {
@@ -169,11 +176,13 @@ pub fn process_packet(packet: FromRadio, state: Arc<Mutex<GatewayState>>) -> Opt
                                         }
                                     }
                                 }
+
                                 _ => {
                                     return None;
                                 }
                             }
                         }
+
                         mesh_packet::PayloadVariant::Encrypted(_) => {
                             info!("Received an encrypted packet.");
                             return None;
@@ -181,11 +190,13 @@ pub fn process_packet(packet: FromRadio, state: Arc<Mutex<GatewayState>>) -> Opt
                     }
                 }
             }
+
             from_radio::PayloadVariant::MyInfo(mi) => {
                 // https://docs.rs/meshtastic/0.1.6/meshtastic/protobufs/struct.MyNodeInfo.html
                 let pkt = MyInfo::from_remote(mi);
                 return Some(Pkt::MyNodeInfo(pkt));
             }
+
             from_radio::PayloadVariant::NodeInfo(ni) => {
                 // https://docs.rs/meshtastic/0.1.6/meshtastic/protobufs/struct.NodeInfo.html
                 let pkt = NInfo::from_remote(ni.clone());
@@ -196,7 +207,11 @@ pub fn process_packet(packet: FromRadio, state: Arc<Mutex<GatewayState>>) -> Opt
                 }
                 let mut rv = false;
                 if let Some(user) = ni.user {
-                    rv = state.lock().unwrap().insert(ni.num, user);
+                    // Insert a new node into our local state
+                    rv = state
+                        .lock()
+                        .expect("Failed to acquire lock for GatewayState in packet_handler()")
+                        .insert(ni.num, user);
                 }
                 if rv {
                     return Some(Pkt::NInfo(pkt));
@@ -204,6 +219,7 @@ pub fn process_packet(packet: FromRadio, state: Arc<Mutex<GatewayState>>) -> Opt
                     return None;
                 }
             }
+
             from_radio::PayloadVariant::Rebooted(reboot) => {
                 if reboot {
                     info!("Device rebooted recently");
@@ -212,26 +228,32 @@ pub fn process_packet(packet: FromRadio, state: Arc<Mutex<GatewayState>>) -> Opt
                 }
                 return None;
             }
+
             from_radio::PayloadVariant::ModuleConfig(_mc) => {
                 // https://docs.rs/meshtastic/0.1.6/meshtastic/protobufs/struct.ModuleConfig.html
                 return None;
             }
+
             from_radio::PayloadVariant::QueueStatus(_qs) => {
                 // https://docs.rs/meshtastic/0.1.6/meshtastic/protobufs/struct.QueueStatus.html
                 return None;
             }
+
             from_radio::PayloadVariant::XmodemPacket(_xmp) => {
                 // https://docs.rs/meshtastic/0.1.6/meshtastic/protobufs/struct.XModem.html
                 return None;
             }
+
             from_radio::PayloadVariant::Metadata(_meta) => {
                 // https://docs.rs/meshtastic/0.1.6/meshtastic/protobufs/struct.DeviceMetadata.html
                 return None;
             }
+
             _ => {
                 return None;
             }
         }
     }
+
     None
 }
