@@ -3,6 +3,8 @@ use crate::types::{Mesh, Telem};
 use crate::{entities::*, types::NInfo};
 use anyhow::{Context, Result};
 use chrono::Utc;
+#[cfg(feature = "debug")]
+use log::{error, info};
 use sea_orm::{
     sea_query::OnConflict, ActiveModelTrait, ActiveValue, DatabaseConnection, EntityTrait,
 };
@@ -384,21 +386,11 @@ async fn new_node(
 
     // Try inserting devicemetrics row
     match devicemetrics::Entity::insert(dm)
-        .on_conflict(OnConflict::columns([
-            devicemetrics::Column::MsgId,
-            devicemetrics::Column::NodeId,
-            devicemetrics::Column::Time,
-            devicemetrics::Column::BatteryLevels,
-            devicemetrics::Column::Voltage,
-            devicemetrics::Column::Channelutil,
-            devicemetrics::Column::Airutil,
-            devicemetrics::Column::Latitude,
-            devicemetrics::Column::Longitude,
-            devicemetrics::Column::Shortname,
-            devicemetrics::Column::Longname,
-            devicemetrics::Column::Hwmodel,
-        ]))
-        .do_nothing()
+        .on_conflict(
+            OnConflict::column(devicemetrics::Column::MsgId)
+                .do_nothing()
+                .to_owned(),
+        )
         .exec(db)
         .await
         .with_context(|| "Failed to insert device metrics row from serial payload")
@@ -407,20 +399,18 @@ async fn new_node(
             row_insert_count += 1;
         }
         Err(e) => {
-            error!("{:#}", e);
+            // These are expected to error out, so lower the log level
+            info!("{:#}", e);
         }
     }
 
     // Try inserting nodeinfo row
     match nodeinfo::Entity::insert(ninfo)
-        .on_conflict(OnConflict::columns([
-            nodeinfo::Column::NodeId,
-            nodeinfo::Column::Longname,
-            nodeinfo::Column::Shortname,
-            nodeinfo::Column::Hwmodel,
-            nodeinfo::Column::DeploymentLocation,
-        ]))
-        .do_nothing()
+        .on_conflict(
+            OnConflict::column(nodeinfo::Column::NodeId)
+                .do_nothing()
+                .to_owned(),
+        )
         .exec(db)
         .await
         .with_context(|| "Failed to insert node info row from serial payload")
@@ -429,7 +419,8 @@ async fn new_node(
             row_insert_count += 1;
         }
         Err(e) => {
-            error!("{:#}", e);
+            // These are expected to error out, so lower the log level
+            info!("{:#}", e);
         }
     }
     Ok(row_insert_count)

@@ -1,14 +1,14 @@
-use std::sync::{Arc, Mutex};
-
-use crate::types::{GatewayState, MyInfo};
-
 use super::types::{Mesh, NInfo, Payload, Pkt, Telem};
+use crate::types::{GatewayState, MyInfo};
 use anyhow::Context;
+#[cfg(feature = "debug")]
+use log::info;
 use meshtastic::protobufs::{
     from_radio, mesh_packet, telemetry, FromRadio, NeighborInfo, PortNum, Position, RouteDiscovery,
     Routing, User,
 };
 use meshtastic::Message;
+use std::sync::{Arc, Mutex};
 
 // Shout-out to https://github.com/PeterGrace/meshtui for some of the code structure here
 pub fn process_packet(packet: FromRadio, state: Arc<Mutex<GatewayState>>) -> Option<Pkt> {

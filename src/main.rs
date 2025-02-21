@@ -3,24 +3,27 @@ use std::{
     sync::{Arc, Mutex},
 };
 
+#[cfg(feature = "debug")]
+use log::{error, info, warn};
 #[cfg(debug_assertions)]
 use std::collections::HashMap;
-
+#[cfg(not(debug_assertions))]
 extern crate syslog;
+#[cfg(not(debug_assertions))]
 #[macro_use]
 extern crate log;
-
-use db_poster::update_metrics;
-use log::LevelFilter;
-use sea_orm::{ConnectOptions, Database};
-use serde::Deserialize;
-use syslog::{BasicLogger, Facility, Formatter3164};
-
 use anyhow::{Context, Result};
 use config::Config;
+use db_poster::update_metrics;
+#[cfg(not(debug_assertions))]
+use log::LevelFilter;
 use meshtastic::api::StreamApi;
 use meshtastic::utils;
+use sea_orm::{ConnectOptions, Database};
+use serde::Deserialize;
 use serde_json::to_string_pretty;
+#[cfg(not(debug_assertions))]
+use syslog::{BasicLogger, Facility, Formatter3164};
 use types::GatewayState;
 
 mod db_poster;
@@ -132,46 +135,46 @@ fn get_serial_port(cfg: &Config) -> String {
     }
 }
 
+fn set_logger() {
+    #[cfg(feature = "debug")]
+    {
+        colog::init();
+    }
+    #[cfg(not(debug_assertions))]
+    {
+        let formatter = Formatter3164 {
+            facility: Facility::LOG_USER, //TODO: this could probably be something else, check libc
+            hostname: None,
+            process: "mesh_telem".into(),
+            pid: 0,
+        };
+        match syslog::unix(formatter).with_context(|| "Could not connect to syslog posix socket") {
+            Ok(logger) => {
+                //TODO: should be warn on actual release instead of Info
+                let _ = log::set_boxed_logger(Box::new(BasicLogger::new(logger)))
+                    .map(|()| log::set_max_level(LevelFilter::Info))
+                    .with_context(|| "Failed to set logger to syslog")
+                    .inspect_err(|e| {
+                        error!("{:#}", e);
+                        warn!("Continuing execution");
+                    });
+            }
+            Err(e) => {
+                error!("{:#}", e);
+                warn!("Continuing execution");
+            }
+        }
+    }
+}
+
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // Get settings from configuration file
     #[cfg(debug_assertions)]
     let settings = read_config("example_config.toml");
     #[cfg(not(debug_assertions))]
     let settings = read_config("/etc/meshtastic_telem.toml");
 
-    // setup logging to systemd or logd
-    let formatter = Formatter3164 {
-        facility: Facility::LOG_USER, //TODO: this could probably be something else, check libc
-        hostname: None,
-        process: "mesh_telem".into(),
-        pid: 0,
-    };
-    match syslog::unix(formatter).with_context(|| "Could not connect to syslog posix socket") {
-        Ok(logger) => {
-            #[cfg(debug_assertions)]
-            let _ = log::set_boxed_logger(Box::new(BasicLogger::new(logger)))
-                .map(|()| log::set_max_level(LevelFilter::Debug))
-                .with_context(|| "Failed to set logger to syslog")
-                .inspect_err(|e| {
-                    #[cfg(debug_assertions)]
-                    eprintln!("{:?}", e);
-                });
-            //TODO: should be warn on actual release instead of Info
-            #[cfg(not(debug_assertions))]
-            let _ = log::set_boxed_logger(Box::new(BasicLogger::new(logger)))
-                .map(|()| log::set_max_level(LevelFilter::Info))
-                .with_context(|| "Failed to set logger to syslog")
-                .inspect_err(|e| {
-                    error!("{:#}", e);
-                    warn!("Continuing execution");
-                });
-        }
-        Err(e) => {
-            error!("{:#}", e);
-            warn!("Continuing execution");
-        }
-    }
+    set_logger();
 
     // Create the gateway's state object
     let state = Arc::new(Mutex::new(GatewayState::new()));
