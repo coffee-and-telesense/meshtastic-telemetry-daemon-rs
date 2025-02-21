@@ -37,93 +37,34 @@ pub(crate) async fn update_metrics(
                 match p {
                     Payload::TelemetryApp(t) => match t {
                         Telem::Environment(data) => {
-                            match (environmentmetrics::ActiveModel {
-                                msg_id: ActiveValue::Set(mp.id),
-                                node_id: ActiveValue::Set(mp.from),
-                                time: ActiveValue::Set(Utc::now().naive_utc()),
-                                relative_humidity: ActiveValue::Set(data.relative_humidity),
-                                tempurature: ActiveValue::Set(data.temperature),
-                                barometric_pressure: ActiveValue::Set(data.barometric_pressure),
-                                gas_resistance: ActiveValue::Set(data.gas_resistance),
-                                iaq: ActiveValue::Set(data.iaq),
-                                wind_direction: ActiveValue::Set(data.wind_direction),
-                                wind_gust: ActiveValue::Set(data.wind_gust),
-                                wind_speed: ActiveValue::Set(data.wind_speed),
-                                wind_lull: ActiveValue::Set(data.wind_lull),
-                                rainfall_1h: ActiveValue::Set(data.rainfall_1h),
-                                rainfall_24h: ActiveValue::Set(data.rainfall_24h),
-                            }
-                            .insert(db)
-                            .await
-                            .with_context(|| {
-                                "Failed to insert environment metrics row from mesh payload"
-                            })) {
-                                Ok(_) => Ok(1),
-                                Err(e) => {
-                                    error!("{:#}", e);
-                                    Ok(0)
-                                }
-                            }
+                            environmentmetrics::Model::create_model(&mp, data)
+                                .insert_row(db)
+                                .await
                         }
 
                         Telem::AirQuality(data) => {
-                            match (airqualitymetrics::ActiveModel {
-                                msg_id: ActiveValue::Set(mp.id),
-                                node_id: ActiveValue::Set(mp.from),
-                                time: ActiveValue::Set(Utc::now().naive_utc()),
-                                pm10standard: ActiveValue::Set(data.pm10_standard),
-                                pm25standard: ActiveValue::Set(data.pm25_standard),
-                                pm100standard: ActiveValue::Set(data.pm100_standard),
-                                pm10environmental: ActiveValue::Set(data.pm10_environmental),
-                                pm25environmental: ActiveValue::Set(data.pm25_environmental),
-                                pm100environmental: ActiveValue::Set(data.pm100_environmental),
-                                particles03um: ActiveValue::Set(data.particles_03um),
-                                particles05um: ActiveValue::Set(data.particles_05um),
-                                particles10um: ActiveValue::Set(data.particles_10um),
-                                particles25um: ActiveValue::Set(data.particles_25um),
-                                particles50um: ActiveValue::Set(data.particles_50um),
-                                particles100um: ActiveValue::Set(data.particles_100um),
-                                co2: ActiveValue::Set(data.co2),
-                            }
-                            .insert(db)
-                            .await
-                            .with_context(|| {
-                                "Failed to insert air quality metrics row from mesh payload"
-                            })) {
-                                Ok(_) => Ok(1),
-                                Err(e) => {
-                                    error!("{:#}", e);
-                                    Ok(0)
-                                }
-                            }
+                            airqualitymetrics::Model::create_model(&mp, data)
+                                .insert_row(db)
+                                .await
                         }
 
                         Telem::Device(data) => {
-                            match (devicemetrics::ActiveModel {
-                                msg_id: ActiveValue::Set(mp.id),
-                                node_id: ActiveValue::Set(mp.from),
-                                time: ActiveValue::Set(Utc::now().naive_utc()),
-                                battery_levels: ActiveValue::Set(data.battery_level),
-                                voltage: ActiveValue::Set(data.voltage),
-                                channelutil: ActiveValue::Set(data.channel_utilization),
-                                airutil: ActiveValue::Set(data.air_util_tx),
-                                latitude: ActiveValue::NotSet, //TODO: investigate default values
-                                longitude: ActiveValue::NotSet,
-                                longname: ActiveValue::NotSet,
-                                shortname: ActiveValue::NotSet,
-                                hwmodel: ActiveValue::NotSet,
+                            devicemetrics::Model {
+                                msg_id: mp.id,
+                                node_id: mp.from,
+                                time: Utc::now().naive_utc(),
+                                battery_levels: data.battery_level,
+                                voltage: data.voltage,
+                                channelutil: data.channel_utilization,
+                                airutil: data.air_util_tx,
+                                latitude: None, //TODO: investigate default values
+                                longitude: None,
+                                longname: None,
+                                shortname: None,
+                                hwmodel: None,
                             }
-                            .insert(db)
+                            .insert_row(db)
                             .await
-                            .with_context(|| {
-                                "Failed to insert device metrics row from mesh payload"
-                            })) {
-                                Ok(_) => Ok(1),
-                                Err(e) => {
-                                    error!("{:#}", e);
-                                    Ok(0)
-                                }
-                            }
                         }
 
                         Telem::Power(_data) => {
@@ -159,30 +100,22 @@ pub(crate) async fn update_metrics(
                     Payload::PositionApp(data) => {
                         // Updates the position for a given node id that is included in the
                         // packet sent from the mesh
-                        match (devicemetrics::ActiveModel {
-                            msg_id: ActiveValue::Set(mp.id),
-                            node_id: ActiveValue::Set(mp.from),
-                            time: ActiveValue::Set(Utc::now().naive_utc()),
-                            latitude: ActiveValue::Set(data.latitude_i),
-                            longitude: ActiveValue::Set(data.longitude_i),
-                            battery_levels: ActiveValue::NotSet, //TODO: investigate default values
-                            voltage: ActiveValue::NotSet,
-                            channelutil: ActiveValue::NotSet,
-                            airutil: ActiveValue::NotSet,
-                            longname: ActiveValue::NotSet,
-                            shortname: ActiveValue::NotSet,
-                            hwmodel: ActiveValue::NotSet,
+                        devicemetrics::Model {
+                            msg_id: mp.id,
+                            node_id: mp.from,
+                            time: Utc::now().naive_utc(),
+                            latitude: data.latitude_i,
+                            longitude: data.longitude_i,
+                            battery_levels: None, //TODO: investigate default values
+                            voltage: None,
+                            channelutil: None,
+                            airutil: None,
+                            longname: None,
+                            shortname: None,
+                            hwmodel: None,
                         }
-                        .insert(db)
+                        .insert_row(db)
                         .await
-                        .with_context(|| "Failed to insert device metrics row from mesh payload"))
-                        {
-                            Ok(_) => Ok(1),
-                            Err(e) => {
-                                error!("{:#}", e);
-                                Ok(0)
-                            }
-                        }
                     }
 
                     _ => {

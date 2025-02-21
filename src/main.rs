@@ -39,6 +39,8 @@ pub mod entities;
 pub mod packet_handler;
 /// Types module
 pub mod types;
+/// Utilities module
+pub mod utilities;
 
 ///
 ///
