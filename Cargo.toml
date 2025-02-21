@@ -19,9 +19,9 @@ syslog = { version = "7.*.*", optional = true }
 # Debug logger
 colog = { version = "1.*.*", optional = true }
 # Serialize/deserialze json, mainly print debugging
-serde_json = { version = "1.*.*" }
+serde_json = { version = "1.*.*", optional = true }
 # Serialize/deserialize, add deriving trait
-serde = { version = "1.*.*", features = ["derive"] }
+serde = { version = "1.*.*" }
 # Handle posting to db, compatible with chrono we use
 sea-orm = { version = "1.*.*", default-features = false, features = [
   "sqlx-postgres",
@@ -47,6 +47,7 @@ anyhow = { version = "1.*.*" }
 default = []
 debug = ["dep:colog", "anyhow/backtrace"]
 release = ["dep:syslog"]
+print-packets = ["dep:serde_json", "serde/derive"]
 
 # This release profile was found in discussions when compiling for mips platforms
 # But it probably works on x86 and ARM devices as well, we will see

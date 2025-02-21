@@ -11,7 +11,7 @@ use meshtastic::Message;
 use std::sync::{Arc, Mutex};
 
 // Shout-out to https://github.com/PeterGrace/meshtui for some of the code structure here
-pub fn process_packet(packet: FromRadio, state: Arc<Mutex<GatewayState>>) -> Option<Pkt> {
+pub async fn process_packet(packet: FromRadio, state: Arc<Mutex<GatewayState>>) -> Option<Pkt> {
     if let Some(payload_v) = packet.clone().payload_variant {
         match payload_v {
             from_radio::PayloadVariant::Packet(pa) => {

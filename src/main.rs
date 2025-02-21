@@ -21,9 +21,11 @@ use meshtastic::api::StreamApi;
 use meshtastic::utils;
 use sea_orm::{ConnectOptions, Database};
 use serde::Deserialize;
+#[cfg(feature = "print-packets")]
 use serde_json::to_string_pretty;
 #[cfg(not(debug_assertions))]
 use syslog::{BasicLogger, Facility, Formatter3164};
+use tokio::sync::mpsc;
 use types::GatewayState;
 
 mod db_poster;
@@ -201,12 +203,24 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .with_context(|| "Failed to configure serial stream")?;
 
     let deployment_loc = get_cfg_string(&settings, "deployment_location");
+
+    let (tx, mut rx) = mpsc::channel(32);
+
     // This loop can be broken with ctrl+c, or by disconnecting
     // the attached serial port.
     while let Some(decoded) = decoded_listener.recv().await {
-        if let Some(pkt) = packet_handler::process_packet(decoded.clone(), Arc::clone(&state)) {
+        let st = Arc::clone(&state);
+        let dc = decoded.clone();
+        let tx2 = tx.clone();
+        tokio::spawn(async move {
+            tx2.send(packet_handler::process_packet(dc, st))
+                .await
+                .unwrap();
+        });
+        if let Some(pkt) = rx.recv().await.unwrap().await {
             match pkt.clone() {
                 types::Pkt::Mesh(mp) => {
+                    #[cfg(feature = "print-packets")]
                     println!("{}", to_string_pretty(&mp).unwrap());
                     let res = update_metrics(&db, pkt, None, &deployment_loc)
                         .await
@@ -217,6 +231,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     }
                 }
                 types::Pkt::NInfo(ni) => {
+                    #[cfg(feature = "print-packets")]
                     println!("{}", to_string_pretty(&ni).unwrap());
                     let fake = state
                         .lock()
@@ -240,6 +255,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     }
                 }
                 types::Pkt::MyNodeInfo(mi) => {
+                    #[cfg(feature = "print-packets")]
                     println!("{}", to_string_pretty(&mi).unwrap());
                 }
             }

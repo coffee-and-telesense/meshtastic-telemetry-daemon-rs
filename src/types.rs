@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 use meshtastic::protobufs::{mesh_packet::PayloadVariant, *};
+#[cfg(feature = "print-packets")]
 use serde::{Deserialize, Serialize};
 
 pub struct Node {
@@ -77,7 +78,9 @@ impl GatewayState {
 // But, the meshtastic crate has serde and serde_json as a feature flag
 // So there has to be a better way to handle types. I will refactor heavily once I get MVP working
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[cfg_attr(feature = "print-packets", derive(Serialize, Deserialize))]
+#[cfg_attr(debug_assertions, derive(Debug))]
+#[derive(Clone)]
 pub enum Payload {
     // incomplete see: https://docs.rs/meshtastic/0.1.6/meshtastic/protobufs/index.html
     TextMessageApp(String),
@@ -90,7 +93,9 @@ pub enum Payload {
     Max,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[cfg_attr(feature = "print-packets", derive(Serialize, Deserialize))]
+#[cfg_attr(debug_assertions, derive(Debug))]
+#[derive(Clone)]
 pub enum Telem {
     Device(DeviceMetrics),
     Environment(EnvironmentMetrics),
@@ -98,7 +103,9 @@ pub enum Telem {
     Power(PowerMetrics),
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[cfg_attr(feature = "print-packets", derive(Serialize, Deserialize))]
+#[cfg_attr(debug_assertions, derive(Debug))]
+#[derive(Clone)]
 pub struct Mesh {
     pub from: u32,
     pub to: u32,
@@ -140,7 +147,9 @@ impl Mesh {
     }
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[cfg_attr(feature = "print-packets", derive(Serialize, Deserialize))]
+#[cfg_attr(debug_assertions, derive(Debug))]
+#[derive(Clone)]
 pub struct NInfo {
     pub num: u32,
     pub user: Option<User>,
@@ -171,7 +180,9 @@ impl NInfo {
     }
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[cfg_attr(feature = "print-packets", derive(Serialize, Deserialize))]
+#[cfg_attr(debug_assertions, derive(Debug))]
+#[derive(Clone)]
 pub struct MyInfo {
     pub my_node_num: u32,
 }
@@ -184,7 +195,9 @@ impl MyInfo {
     }
 }
 
-#[derive(Clone, Serialize, Deserialize)]
+#[cfg_attr(feature = "print-packets", derive(Serialize, Deserialize))]
+#[cfg_attr(debug_assertions, derive(Debug))]
+#[derive(Clone)]
 pub enum Pkt {
     Mesh(Mesh),
     NInfo(NInfo),
