@@ -17,7 +17,7 @@ Make sure you have Rust installed:
 
 You must have [cross](https://github.com/cross-rs/cross?tab=readme-ov-file#dependencies) installed with all its dependencies. Unless you are building natively on `mips`.
 
-`CARGO_TARGET_MIPS_UNKNOWN_LINUX_MUSL_RUSTFLAGS="-Zlocation-detail=none -Zfmt-debug=none" cross build --features release --release --target mips-unknown-linux-musl -Zbuild-std-features=optimize_for_size,panic_immediate_abort`
+`CARGO_TARGET_MIPS_UNKNOWN_LINUX_MUSL_RUSTFLAGS="-Zlocation-detail=none -Zfmt-debug=none" cross +nightly build --features release --release --target mips-unknown-linux-musl -Zbuild-std-features=optimize_for_size,panic_immediate_abort`
 
 ### Build debug for mips
 
