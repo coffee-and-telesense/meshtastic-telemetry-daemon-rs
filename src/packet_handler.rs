@@ -18,7 +18,10 @@ use std::sync::{Arc, Mutex};
 ///
 /// # Returns
 /// *
-pub async fn process_packet(packet: FromRadio, state: Arc<Mutex<GatewayState>>) -> Option<Pkt> {
+///
+/// # Panics
+///
+pub fn process_packet(packet: &FromRadio, state: &Arc<Mutex<GatewayState>>) -> Option<Pkt> {
     if let Some(payload_v) = packet.clone().payload_variant {
         match payload_v {
             from_radio::PayloadVariant::Packet(pa) => {
@@ -45,7 +48,7 @@ pub async fn process_packet(packet: FromRadio, state: Arc<Mutex<GatewayState>>) 
                                             return Some(Pkt::Mesh(pkt));
                                         }
                                         Err(e) => {
-                                            info!("{:#}", e);
+                                            info!("{e:#}");
                                             return None;
                                         }
                                     }
@@ -93,7 +96,7 @@ pub async fn process_packet(packet: FromRadio, state: Arc<Mutex<GatewayState>>) 
                                                         //TODO this will be a possible better solution
                                                         return None;
                                                     }
-                                                    _ => {
+                                                    telemetry::Variant::HealthMetrics(_) => {
                                                         // Do not care about health metrics right now
                                                         return None;
                                                     }
@@ -101,7 +104,7 @@ pub async fn process_packet(packet: FromRadio, state: Arc<Mutex<GatewayState>>) 
                                             }
                                         }
                                         Err(e) => {
-                                            info!("{:#}", e);
+                                            info!("{e:#}");
                                             return None;
                                         }
                                     }
@@ -117,7 +120,7 @@ pub async fn process_packet(packet: FromRadio, state: Arc<Mutex<GatewayState>>) 
                                             return Some(Pkt::Mesh(pkt));
                                         }
                                         Err(e) => {
-                                            info!("{:#}", e);
+                                            info!("{e:#}");
                                             return None;
                                         }
                                     }
@@ -140,12 +143,11 @@ pub async fn process_packet(packet: FromRadio, state: Arc<Mutex<GatewayState>>) 
                                             pkt.payload = Some(Payload::NodeinfoApp(data));
                                             if rv {
                                                 return Some(Pkt::Mesh(pkt));
-                                            } else {
-                                                return None;
                                             }
+                                            return None;
                                         }
                                         Err(e) => {
-                                            info!("{:#}", e);
+                                            info!("{e:#}");
                                             return None;
                                         }
                                     }
@@ -161,7 +163,7 @@ pub async fn process_packet(packet: FromRadio, state: Arc<Mutex<GatewayState>>) 
                                             return Some(Pkt::Mesh(pkt));
                                         }
                                         Err(e) => {
-                                            info!("{:#}", e);
+                                            info!("{e:#}");
                                             return None;
                                         }
                                     }
@@ -178,7 +180,7 @@ pub async fn process_packet(packet: FromRadio, state: Arc<Mutex<GatewayState>>) 
                                             return Some(Pkt::Mesh(pkt));
                                         }
                                         Err(e) => {
-                                            info!("{:#}", e);
+                                            info!("{e:#}");
                                             return None;
                                         }
                                     }
@@ -200,7 +202,7 @@ pub async fn process_packet(packet: FromRadio, state: Arc<Mutex<GatewayState>>) 
 
             from_radio::PayloadVariant::MyInfo(mi) => {
                 // https://docs.rs/meshtastic/0.1.6/meshtastic/protobufs/struct.MyNodeInfo.html
-                let pkt = MyInfo::from_remote(mi);
+                let pkt = MyInfo::from_remote(&mi);
                 return Some(Pkt::MyNodeInfo(pkt));
             }
 
@@ -222,9 +224,8 @@ pub async fn process_packet(packet: FromRadio, state: Arc<Mutex<GatewayState>>) 
                 }
                 if rv {
                     return Some(Pkt::NInfo(pkt));
-                } else {
-                    return None;
                 }
+                return None;
             }
 
             from_radio::PayloadVariant::Rebooted(reboot) => {
