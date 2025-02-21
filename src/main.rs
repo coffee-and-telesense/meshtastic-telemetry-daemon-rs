@@ -1,4 +1,6 @@
 #![warn(missing_docs)]
+#![warn(clippy::cargo)]
+#![warn(clippy::pedantic)]
 
 #[cfg(feature = "debug")]
 use log::{error, info, warn};
@@ -49,7 +51,7 @@ fn read_config(p: &str) -> config::Config {
     match config::Config::builder()
         .add_source(config::File::with_name(p))
         .build()
-        .with_context(|| format!("Failed to read config file from {}", p))
+        .with_context(|| format!("Failed to read config file from {p}"))
     {
         Ok(rv) => {
             #[cfg(debug_assertions)]
@@ -62,7 +64,7 @@ fn read_config(p: &str) -> config::Config {
             rv
         }
         Err(e) => {
-            panic!("{:#}", e);
+            panic!("{e:#}");
         }
     }
 }
@@ -77,11 +79,11 @@ fn read_config(p: &str) -> config::Config {
 fn get_cfg<'d, T: Deserialize<'d>>(cfg: &Config, key: &str) -> T {
     match cfg
         .get::<T>(key)
-        .with_context(|| format!("Failed to read {} from config", key))
+        .with_context(|| format!("Failed to read {key} from config"))
     {
         Ok(rv) => rv,
         Err(e) => {
-            panic!("{:?}", e);
+            panic!("{e:#}");
         }
     }
 }
@@ -96,11 +98,11 @@ fn get_cfg<'d, T: Deserialize<'d>>(cfg: &Config, key: &str) -> T {
 fn get_cfg_string(cfg: &Config, key: &str) -> String {
     match cfg
         .get_string(key)
-        .with_context(|| format!("Failed to read {} from config", key))
+        .with_context(|| format!("Failed to read {key} from config"))
     {
         Ok(rv) => rv,
         Err(e) => {
-            panic!("{:?}", e);
+            panic!("{e:#}");
         }
     }
 }
@@ -139,20 +141,20 @@ fn get_serial_port(cfg: &Config) -> String {
         Err(e) => {
             #[cfg(debug_assertions)]
             {
-                eprintln!("{:#}", e);
+                eprintln!("{e:#}");
                 eprintln!("Prompting user for serial port instead");
             }
             #[cfg(not(debug_assertions))]
             {
-                error!("{:#}", e);
+                error!("{e:#}");
                 warn!("Prompting user for serial port instead");
             }
             match utils::stream::available_serial_ports()
                 .with_context(|| "Failed to enumerate list of serial ports")
             {
-                Ok(ap) => println!("Available ports: {:?}", ap),
+                Ok(ap) => println!("Available ports: {ap:?}"),
                 Err(e) => {
-                    error!("{:#}", e);
+                    error!("{e:#}");
                     warn!("User will input their own serial port");
                 }
             }
@@ -169,7 +171,7 @@ fn get_serial_port(cfg: &Config) -> String {
                 Ok(sp) => sp,
                 Err(e) => {
                     eprintln!("No serial port provided by user");
-                    panic!("{:#}", e);
+                    panic!("{e:#}");
                 }
             }
         }
@@ -204,12 +206,12 @@ fn set_logger() {
                     .map(|()| log::set_max_level(LevelFilter::Info))
                     .with_context(|| "Failed to set logger to syslog")
                     .inspect_err(|e| {
-                        error!("{:#}", e);
+                        error!("{e:#}");
                         warn!("Continuing execution");
                     });
             }
             Err(e) => {
-                error!("{:#}", e);
+                error!("{e:#}");
                 warn!("Continuing execution");
             }
         }
@@ -247,7 +249,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let stream_api = StreamApi::new();
     let entered_port = get_serial_port(&settings);
     let serial_stream = utils::stream::build_serial_stream(entered_port.clone(), None, None, None)
-        .with_context(|| format!("Failed to build serial stream for {}", entered_port))?;
+        .with_context(|| format!("Failed to build serial stream for {entered_port}"))?;
     let (mut decoded_listener, stream_api) = stream_api.connect(serial_stream).await;
 
     let config_id = utils::generate_rand_id();
@@ -267,11 +269,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         let dc = decoded.clone();
         let tx2 = tx.clone();
         tokio::spawn(async move {
-            tx2.send(packet_handler::process_packet(dc, st))
+            tx2.send(packet_handler::process_packet(&dc, &st))
                 .await
                 .unwrap();
         });
-        if let Some(pkt) = rx.recv().await.unwrap().await {
+        if let Some(pkt) = rx.recv().await.unwrap() {
             match pkt.clone() {
                 types::Pkt::Mesh(mp) => {
                     #[cfg(feature = "print-packets")]
@@ -280,8 +282,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                         .await
                         .with_context(|| "Failed to update datatbase with packet from mesh");
                     match res {
-                        Ok(v) => info!("inserted {} rows", v),
-                        Err(e) => error!("{}", e),
+                        Ok(v) => info!("inserted {v} rows"),
+                        Err(e) => error!("{e:#}"),
                     }
                 }
                 types::Pkt::NInfo(ni) => {
@@ -299,12 +301,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                             "Failed to update database with node info packet from serial"
                         });
                     match res {
-                        Ok(v) => info!("inserted {} rows", v),
+                        Ok(v) => info!("inserted {v} rows"),
                         Err(e) => {
                             // This is a lower priority error message since we favor node info data
                             // from the Mesh rather than from the serial connection. Often times it
                             // just means that we did not insert a row
-                            info!("{:#}", e);
+                            info!("{e:#}");
                         }
                     }
                 }
