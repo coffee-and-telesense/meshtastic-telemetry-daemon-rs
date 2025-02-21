@@ -1,6 +1,9 @@
 use std::collections::HashMap;
 
-use meshtastic::protobufs::{mesh_packet::PayloadVariant, *};
+use meshtastic::protobufs::{
+    mesh_packet::PayloadVariant, AirQualityMetrics, DeviceMetrics, EnvironmentMetrics, MeshPacket,
+    MyNodeInfo, NeighborInfo, NodeInfo, Position, PowerMetrics, RouteDiscovery, Routing, User,
+};
 #[cfg(feature = "print-packets")]
 use serde::{Deserialize, Serialize};
 
@@ -13,7 +16,7 @@ pub struct Node {
     fake_msg_id: u8,
 }
 
-/// Declare a type alias for our hashmap of node_ids to numbers
+/// Declare a type alias for our hashmap of `node_ids` to numbers
 pub type NodeFakePkts = HashMap<u32, Node>;
 
 /// We need some state information for the serial vs mesh packet resolution of conflicts
@@ -21,6 +24,20 @@ pub type NodeFakePkts = HashMap<u32, Node>;
 pub struct GatewayState {
     nodes: NodeFakePkts,
     biggest_fake: u8,
+}
+
+impl Default for GatewayState {
+    ///
+    ///
+    /// # Arguments
+    ///
+    /// # Returns
+    fn default() -> Self {
+        GatewayState {
+            nodes: NodeFakePkts::new(),
+            biggest_fake: 0,
+        }
+    }
 }
 
 impl GatewayState {
@@ -31,6 +48,7 @@ impl GatewayState {
     ///
     /// # Returns
     /// *
+    #[must_use]
     pub fn new() -> GatewayState {
         // Stub this function for now, but in the future:
         // TODO - get the nodes and corresponding fake msg ids from local sqlite db
@@ -48,6 +66,7 @@ impl GatewayState {
     ///
     /// # Returns
     /// *
+    #[must_use]
     pub fn find_fake_id(&self, node_id: u32) -> Option<u8> {
         if let Some(f) = self.nodes.get(&node_id) {
             return Some(f.fake_msg_id);
@@ -157,6 +176,7 @@ impl Mesh {
     ///
     /// # Returns
     /// *
+    #[must_use]
     pub fn from_remote(def: MeshPacket) -> Mesh {
         Mesh {
             from: def.from,
@@ -203,6 +223,7 @@ impl NInfo {
     ///
     /// # Returns
     /// *
+    #[must_use]
     pub fn from_remote(def: NodeInfo) -> NInfo {
         NInfo {
             num: def.num,
@@ -233,7 +254,8 @@ impl MyInfo {
     ///
     /// # Returns
     /// *
-    pub fn from_remote(def: MyNodeInfo) -> MyInfo {
+    #[must_use]
+    pub fn from_remote(def: &MyNodeInfo) -> MyInfo {
         MyInfo {
             my_node_num: def.my_node_num,
         }
