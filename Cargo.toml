@@ -23,16 +23,22 @@ serde_json = { version = "1.0" }
 # Serialize/deserialize, add deriving trait
 serde = { version = "1.0", features = ["derive"] }
 # Handle posting to db, compatible with chrono we use
-sea-orm = { version = "1.1.5", features = [
+sea-orm = { version = "1.1.5", default-features = false, features = [
   "sqlx-postgres",
   "runtime-tokio-rustls",
   "macros",
   "with-chrono",
+  "with-bigdecimal",
+  "with-time",
+  "with-json",
 ] }
 # Handle clocks, no wasm
-chrono = { version = "0.4.39", features = ["clock", "oldtime", "std"] }
+chrono = { version = "0.4.39", default-features = false, features = ["now"] }
 # Handle config reading
-config = { version = "0.15.7", features = ["async", "toml"] }
+config = { version = "0.15.7", default-features = false, features = [
+  "async",
+  "toml",
+] }
 # Handle errors gracefully
 anyhow = { version = "1.0.95" }
 #iex = { version = "0.2.0", features = ["anyhow"] }
