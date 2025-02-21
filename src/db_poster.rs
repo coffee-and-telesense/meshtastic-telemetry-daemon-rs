@@ -1,6 +1,9 @@
 use crate::types::{Mesh, Telem};
 use crate::types::{Payload, Pkt};
-use crate::{entities::*, types::NInfo};
+use crate::{
+    entities::airqualitymetrics, entities::devicemetrics, entities::environmentmetrics,
+    entities::nodeinfo, types::NInfo,
+};
 use anyhow::{Context, Result};
 use chrono::Utc;
 #[cfg(feature = "debug")]
@@ -13,13 +16,16 @@ use sea_orm::{
 ///
 /// # Arguments
 /// * `db` - The database connection pool from sea-orm
-/// * `packet` - A Pkt that has been processed by packet_handler()
+/// * `packet` - A Pkt that has been processed by `packet_handler()`
 /// * `fake_msg_id` - A fake message id number for serial packets
 /// * `dep_loc` - The deployment location string read from the config file
 ///
 /// # Returns
 /// * Result type with number of rows inserted or none
-pub async fn update_metrics(
+///
+/// # Errors
+///
+pub(crate) async fn update_metrics(
     db: &DatabaseConnection,
     packet: Pkt,
     fake_msg_id: Option<u32>,
@@ -217,7 +223,7 @@ pub async fn update_metrics(
             return node_info_conflict(ni, None, db, fake_msg_id, dep_loc).await;
         }
 
-        _ => {
+        Pkt::MyNodeInfo(_) => {
             // Only other type implemented at this time is MyNodeInfo, which just provides our
             // node's ID number which could be used for the managing of local state if needed,
             // but we do not need it when making database updates for now
