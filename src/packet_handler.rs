@@ -1,5 +1,4 @@
-use super::types::{Mesh, NInfo, Payload, Pkt, Telem};
-use crate::types::{GatewayState, MyInfo};
+use crate::types::{GatewayState, Mesh, MyInfo, NInfo, Payload, Pkt, Telem};
 use anyhow::Context;
 #[cfg(feature = "debug")]
 use log::info;
@@ -11,6 +10,14 @@ use meshtastic::Message;
 use std::sync::{Arc, Mutex};
 
 // Shout-out to https://github.com/PeterGrace/meshtui for some of the code structure here
+
+///
+///
+/// # Arguments
+/// *
+///
+/// # Returns
+/// *
 pub async fn process_packet(packet: FromRadio, state: Arc<Mutex<GatewayState>>) -> Option<Pkt> {
     if let Some(payload_v) = packet.clone().payload_variant {
         match payload_v {

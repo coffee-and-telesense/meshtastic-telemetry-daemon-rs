@@ -1,5 +1,5 @@
-use super::types::{Payload, Pkt};
 use crate::types::{Mesh, Telem};
+use crate::types::{Payload, Pkt};
 use crate::{entities::*, types::NInfo};
 use anyhow::{Context, Result};
 use chrono::Utc;
@@ -9,6 +9,16 @@ use sea_orm::{
     sea_query::OnConflict, ActiveModelTrait, ActiveValue, DatabaseConnection, EntityTrait,
 };
 
+/// Update metrics in database
+///
+/// # Arguments
+/// * `db` - The database connection pool from sea-orm
+/// * `packet` - A Pkt that has been processed by packet_handler()
+/// * `fake_msg_id` - A fake message id number for serial packets
+/// * `dep_loc` - The deployment location string read from the config file
+///
+/// # Returns
+/// * Result type with number of rows inserted or none
 pub async fn update_metrics(
     db: &DatabaseConnection,
     packet: Pkt,
@@ -216,6 +226,13 @@ pub async fn update_metrics(
     }
 }
 
+/// Node info conflict resolver
+///
+/// # Arguments
+/// *
+///
+/// # Returns
+/// *
 async fn node_info_conflict(
     ni: NInfo,
     pkt: Option<Mesh>,
@@ -335,6 +352,13 @@ async fn node_info_conflict(
     Ok(row_insert_count)
 }
 
+/// Node info new node database inserter
+///
+/// # Arguments
+/// *
+///
+/// # Returns
+/// *
 async fn new_node(
     ni: NInfo,
     db: &DatabaseConnection,

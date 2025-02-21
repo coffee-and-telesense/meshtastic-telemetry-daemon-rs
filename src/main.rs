@@ -1,12 +1,13 @@
-use std::{
-    io::{self, BufRead},
-    sync::{Arc, Mutex},
-};
+#![warn(missing_docs)]
 
 #[cfg(feature = "debug")]
 use log::{error, info, warn};
 #[cfg(debug_assertions)]
 use std::collections::HashMap;
+use std::{
+    io::{self, BufRead},
+    sync::{Arc, Mutex},
+};
 #[cfg(not(debug_assertions))]
 extern crate syslog;
 #[cfg(not(debug_assertions))]
@@ -28,11 +29,22 @@ use syslog::{BasicLogger, Facility, Formatter3164};
 use tokio::sync::mpsc;
 use types::GatewayState;
 
-mod db_poster;
-mod entities;
-mod packet_handler;
-mod types;
+/// Database interaction module
+pub mod db_poster;
+/// Entities Module for database schema
+pub mod entities;
+/// Handle packets module
+pub mod packet_handler;
+/// Types module
+pub mod types;
 
+///
+///
+/// # Arguments
+/// *
+///
+/// # Returns
+/// *
 fn read_config(p: &str) -> config::Config {
     match config::Config::builder()
         .add_source(config::File::with_name(p))
@@ -55,6 +67,13 @@ fn read_config(p: &str) -> config::Config {
     }
 }
 
+///
+///
+/// # Arguments
+/// *
+///
+/// # Returns
+/// *
 fn get_cfg<'d, T: Deserialize<'d>>(cfg: &Config, key: &str) -> T {
     match cfg
         .get::<T>(key)
@@ -67,6 +86,13 @@ fn get_cfg<'d, T: Deserialize<'d>>(cfg: &Config, key: &str) -> T {
     }
 }
 
+///
+///
+/// # Arguments
+/// *
+///
+/// # Returns
+/// *
 fn get_cfg_string(cfg: &Config, key: &str) -> String {
     match cfg
         .get_string(key)
@@ -79,6 +105,13 @@ fn get_cfg_string(cfg: &Config, key: &str) -> String {
     }
 }
 
+///
+///
+/// # Arguments
+/// *
+///
+/// # Returns
+/// *
 fn db_connection(cfg: &Config) -> String {
     // Parse config with error handling
     format!(
@@ -91,6 +124,13 @@ fn db_connection(cfg: &Config) -> String {
     )
 }
 
+///
+///
+/// # Arguments
+/// *
+///
+/// # Returns
+/// *
 fn get_serial_port(cfg: &Config) -> String {
     match cfg
         .get_string("serial_port")
@@ -137,6 +177,13 @@ fn get_serial_port(cfg: &Config) -> String {
     }
 }
 
+///
+///
+/// # Arguments
+/// *
+///
+/// # Returns
+/// *
 fn set_logger() {
     #[cfg(feature = "debug")]
     {
@@ -169,6 +216,13 @@ fn set_logger() {
     }
 }
 
+///
+///
+/// # Arguments
+/// *
+///
+/// # Returns
+/// *
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     #[cfg(debug_assertions)]

@@ -4,6 +4,7 @@ use meshtastic::protobufs::{mesh_packet::PayloadVariant, *};
 #[cfg(feature = "print-packets")]
 use serde::{Deserialize, Serialize};
 
+/// Local node type storing only the information we care about from nodeinfo table
 pub struct Node {
     long_name: String,
     short_name: String,
@@ -12,17 +13,24 @@ pub struct Node {
     fake_msg_id: u8,
 }
 
-// Declare a type alias for our hashmap of node_ids to numbers
+/// Declare a type alias for our hashmap of node_ids to numbers
 pub type NodeFakePkts = HashMap<u32, Node>;
 
-// We need some state information for the serial vs mesh packet resolution of conflicts
-// It is a necessary evil unfortunately.
+/// We need some state information for the serial vs mesh packet resolution of conflicts
+/// It is a necessary evil unfortunately.
 pub struct GatewayState {
     nodes: NodeFakePkts,
     biggest_fake: u8,
 }
 
 impl GatewayState {
+    ///
+    ///
+    /// # Arguments
+    /// *
+    ///
+    /// # Returns
+    /// *
     pub fn new() -> GatewayState {
         // Stub this function for now, but in the future:
         // TODO - get the nodes and corresponding fake msg ids from local sqlite db
@@ -32,6 +40,14 @@ impl GatewayState {
         }
     }
     // Lookup a Node's fake_msg_id
+
+    ///
+    ///
+    /// # Arguments
+    /// *
+    ///
+    /// # Returns
+    /// *
     pub fn find_fake_id(&self, node_id: u32) -> Option<u8> {
         if let Some(f) = self.nodes.get(&node_id) {
             return Some(f.fake_msg_id);
@@ -39,6 +55,14 @@ impl GatewayState {
         None
     }
     // Insert a new node to the state
+
+    ///
+    ///
+    /// # Arguments
+    /// *
+    ///
+    /// # Returns
+    /// *
     pub fn insert(&mut self, node_id: u32, user: User) -> bool {
         // Insert a new node if it does not already exist in the state
         if let std::collections::hash_map::Entry::Vacant(e) = self.nodes.entry(node_id) {
@@ -126,6 +150,13 @@ pub struct Mesh {
 
 // Provide a conversion to construct the local type.
 impl Mesh {
+    ///
+    ///
+    /// # Arguments
+    /// *
+    ///
+    /// # Returns
+    /// *
     pub fn from_remote(def: MeshPacket) -> Mesh {
         Mesh {
             from: def.from,
@@ -165,6 +196,13 @@ pub struct NInfo {
 // Provide a conversion to construct the local type
 // there's gotta be a better way, need to refactor
 impl NInfo {
+    ///
+    ///
+    /// # Arguments
+    /// *
+    ///
+    /// # Returns
+    /// *
     pub fn from_remote(def: NodeInfo) -> NInfo {
         NInfo {
             num: def.num,
@@ -188,6 +226,13 @@ pub struct MyInfo {
 }
 
 impl MyInfo {
+    ///
+    ///
+    /// # Arguments
+    /// *
+    ///
+    /// # Returns
+    /// *
     pub fn from_remote(def: MyNodeInfo) -> MyInfo {
         MyInfo {
             my_node_num: def.my_node_num,
