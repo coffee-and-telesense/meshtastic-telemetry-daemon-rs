@@ -1,6 +1,6 @@
 [build]
-#build-std = ["core", "std", "alloc", "proc_macro"]
 default-target = "mips-unknown-linux-musl"
 
 [target.mips-unknown-linux-musl]
+build-std = ["std"]
 image = "ghcr.io/cross-rs/mips-unknown-linux-musl:main"
