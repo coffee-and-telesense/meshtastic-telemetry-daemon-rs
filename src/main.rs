@@ -43,7 +43,7 @@ fn read_config(p: &str) -> config::Config {
                 "{:?}",
                 rv.clone()
                     .try_deserialize::<HashMap<String, String>>()
-                    .unwrap()
+                    .expect("Failed to deserialize config values in println of read_config()")
             );
             rv
         }
@@ -220,7 +220,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     println!("{}", to_string_pretty(&ni).unwrap());
                     let fake = state
                         .lock()
-                        .unwrap()
+                        .expect("Failed to acquire lock for GatewayState in main()")
                         .find_fake_id(ni.num)
                         .map(|n| Some(n.into()))
                         .expect("No fake_id returned");

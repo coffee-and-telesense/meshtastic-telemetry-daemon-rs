@@ -127,7 +127,7 @@ pub fn process_packet(packet: FromRadio, state: Arc<Mutex<GatewayState>>) -> Opt
                                             // the value to insert.
                                             let rv = state
                                                 .lock()
-                                                .unwrap()
+                                                .expect("Failed to acquire lock for GatewayState in packet_handler()")
                                                 .insert(pkt.from, data.clone());
                                             pkt.payload_variant = None;
                                             pkt.payload = Some(Payload::NodeinfoApp(data));
@@ -208,7 +208,10 @@ pub fn process_packet(packet: FromRadio, state: Arc<Mutex<GatewayState>>) -> Opt
                 let mut rv = false;
                 if let Some(user) = ni.user {
                     // Insert a new node into our local state
-                    rv = state.lock().unwrap().insert(ni.num, user);
+                    rv = state
+                        .lock()
+                        .expect("Failed to acquire lock for GatewayState in packet_handler()")
+                        .insert(ni.num, user);
                 }
                 if rv {
                     return Some(Pkt::NInfo(pkt));
