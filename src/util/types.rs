@@ -1,18 +1,22 @@
-use std::collections::HashMap;
-
 use meshtastic::protobufs::{
     mesh_packet::PayloadVariant, AirQualityMetrics, DeviceMetrics, EnvironmentMetrics, MeshPacket,
     MyNodeInfo, NeighborInfo, NodeInfo, Position, PowerMetrics, RouteDiscovery, Routing, User,
 };
 #[cfg(feature = "print-packets")]
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 
 /// Local node type storing only the information we care about from nodeinfo table
 pub struct Node {
+    /// Long name of the node
     long_name: String,
+    /// Short name of the node
     short_name: String,
+    /// HW Model enum
     hw_model: i32,
+    /// Node id, the string hash `!dasf31`
     id: String,
+    /// Fake message id used in devicemetrics for this serial packet
     fake_msg_id: u8,
 }
 
@@ -22,16 +26,17 @@ pub type NodeFakePkts = HashMap<u32, Node>;
 /// We need some state information for the serial vs mesh packet resolution of conflicts
 /// It is a necessary evil unfortunately.
 pub struct GatewayState {
+    /// Our hashmap of known nodes
     nodes: NodeFakePkts,
+    /// The biggest fake message id up to a `u8::MAX` of 255
     biggest_fake: u8,
 }
 
 impl Default for GatewayState {
-    ///
-    ///
-    /// # Arguments
+    /// Default constructor
     ///
     /// # Returns
+    /// * An empty `GatewayState` struct
     fn default() -> Self {
         GatewayState {
             nodes: NodeFakePkts::new(),
@@ -41,31 +46,28 @@ impl Default for GatewayState {
 }
 
 impl GatewayState {
-    ///
-    ///
-    /// # Arguments
-    /// *
+    /// New `GatewayState` struct
     ///
     /// # Returns
-    /// *
+    /// * An empty `GatewayState` struct
     #[must_use]
     pub fn new() -> GatewayState {
         // Stub this function for now, but in the future:
         // TODO - get the nodes and corresponding fake msg ids from local sqlite db
         GatewayState {
-            nodes: HashMap::new(),
+            nodes: NodeFakePkts::new(),
             biggest_fake: 0,
         }
     }
-    // Lookup a Node's fake_msg_id
 
-    ///
+    /// Lookup a node's fake message id
     ///
     /// # Arguments
-    /// *
+    /// * `self` - Operates on the `GatewayState` struct
+    /// * `node_id` - The `u32` id in the `from` field of packets
     ///
     /// # Returns
-    /// *
+    /// * `Option<u8>` - The fake message id if it exists or None
     #[must_use]
     pub fn find_fake_id(&self, node_id: u32) -> Option<u8> {
         if let Some(f) = self.nodes.get(&node_id) {
@@ -73,15 +75,18 @@ impl GatewayState {
         }
         None
     }
-    // Insert a new node to the state
 
+    /// Insert a new node into the state
     ///
+    /// Possibly updating our local state if any of the `Node` struct items have changed
     ///
     /// # Arguments
-    /// *
+    /// * `self` - Operates on the `GatewayState` struct
+    /// * `node_id` - The `u32` id in the `from` field of packets
+    /// * `user` - The `User` type payload from packets
     ///
     /// # Returns
-    /// *
+    /// * `bool` - True if inserted/updated, false if not
     pub fn insert(&mut self, node_id: u32, user: User) -> bool {
         // Insert a new node if it does not already exist in the state
         if let std::collections::hash_map::Entry::Vacant(e) = self.nodes.entry(node_id) {
@@ -117,65 +122,96 @@ impl GatewayState {
     }
 }
 
-// A lot of this file is derived off patterns established here: https://serde.rs/remote-derive.html
-// But, the meshtastic crate has serde and serde_json as a feature flag
-// So there has to be a better way to handle types. I will refactor heavily once I get MVP working
+//TODO: A lot of this file is derived off patterns established here: https://serde.rs/remote-derive.html
+// But, the meshtastic crate has serde and serde_json as a feature flag. So there has to be a better way
+// to handle types. I will refactor heavily once I get MVP working
 
+/// Payload enum with various possible payloads a packet could have
+///
+/// Incomplete see: <https://docs.rs/meshtastic/0.1.6/meshtastic/protobufs/index.html>
 #[cfg_attr(feature = "print-packets", derive(Serialize, Deserialize))]
 #[cfg_attr(debug_assertions, derive(Debug))]
 #[derive(Clone)]
 pub enum Payload {
-    // incomplete see: https://docs.rs/meshtastic/0.1.6/meshtastic/protobufs/index.html
+    /// Text messages
     TextMessageApp(String),
+    /// GPS position locations
     PositionApp(Position),
+    /// Node info advertisement
     NodeinfoApp(User),
+    /// Routing information
     RoutingApp(Routing),
+    /// Telemetry for sensors
     TelemetryApp(Telem),
+    /// Traceroute packets
     TracerouteApp(RouteDiscovery),
+    /// Neighbor info packets
     NeighborinfoApp(NeighborInfo),
+    /// Maximum payload value, does nothing right now
     Max,
 }
 
+/// Telemetry enum of the various telemetry types
 #[cfg_attr(feature = "print-packets", derive(Serialize, Deserialize))]
 #[cfg_attr(debug_assertions, derive(Debug))]
 #[derive(Clone)]
 pub enum Telem {
+    /// Device metrics like battery level
     Device(DeviceMetrics),
+    /// Environment metrics like temperature
     Environment(EnvironmentMetrics),
+    /// Air quality metrics like CO2
     AirQuality(AirQualityMetrics),
+    /// Power metrics like voltage
     Power(PowerMetrics),
 }
 
+/// Mesh packet structure that aliases the Meshtastic library's `MeshPacket`
+///
+/// I need to figure out how to unify my types
 #[cfg_attr(feature = "print-packets", derive(Serialize, Deserialize))]
 #[cfg_attr(debug_assertions, derive(Debug))]
 #[derive(Clone)]
 pub struct Mesh {
+    /// What node id `u32` is this from?
     pub from: u32,
+    /// What node id is this for?
     pub to: u32,
+    /// What channel (index) did we receive this on?
     pub channel: u32,
+    /// What's the message id?
     pub id: u32,
+    /// When did we receive it as an epoch timestamp?
     pub rx_time: u32,
+    /// What was the signal to noise ratio when we received it?
     pub rx_snr: f32,
+    /// What is the hop limit of the packet?
     pub hop_limit: u32,
+    /// Did the packet want an ACK response?
     pub want_ack: bool,
+    /// What was the priority of the packet on the mesh?
     pub priority: i32,
+    /// What was the received signal strength indicator?
     pub rx_rssi: i32,
-    //pub delayed: i32, -- Deprecated field
+    /// Did this packet originate on MQTT?
     pub via_mqtt: bool,
+    /// Where did this packet start from?
     pub hop_start: u32,
+    /// What payload variant does the packet have?
     pub payload_variant: Option<PayloadVariant>,
+    /// What is the decoded payload of the packet after `process_packet()`
     pub payload: Option<Payload>,
 }
 
-// Provide a conversion to construct the local type.
+/// Provide a conversion to construct the local type from the remote type
 impl Mesh {
-    ///
+    /// Convert the remote Meshtastic `MeshPacket` to our `Mesh`
     ///
     /// # Arguments
-    /// *
+    /// * `def` - Meshtastic `MeshPacket` instance
     ///
     /// # Returns
-    /// *
+    /// * `Mesh` - `Mesh` variant of `Pkt` enum
     #[must_use]
     pub fn from_remote(def: MeshPacket) -> Mesh {
         Mesh {
@@ -189,7 +225,6 @@ impl Mesh {
             want_ack: def.want_ack,
             priority: def.priority,
             rx_rssi: def.rx_rssi,
-            //delayed: def.delayed, -- Deprecated field
             via_mqtt: def.via_mqtt,
             hop_start: def.hop_start,
             payload_variant: def.payload_variant,
@@ -198,31 +233,40 @@ impl Mesh {
     }
 }
 
+/// `NInfo` packet structure that aliases the Meshtastic library's `NodeInfo`
 #[cfg_attr(feature = "print-packets", derive(Serialize, Deserialize))]
 #[cfg_attr(debug_assertions, derive(Debug))]
 #[derive(Clone)]
 pub struct NInfo {
+    /// The nodedb entry's node id `u32`
     pub num: u32,
+    /// The user info like longname associated with this entry
     pub user: Option<User>,
+    /// The position payload associated with this entry
     pub position: Option<Position>,
+    /// The signal to noise ratio of this entry
     pub snr: f32,
+    /// The timestamp for when we last heard this node
     pub last_heard: u32,
+    /// The device metrics payload of this entry
     pub device_metrics: Option<DeviceMetrics>,
+    /// What channel we heard this node on
     pub channel: u32,
+    /// Whether this node came to our attention via MQTT or not
     pub via_mqtt: bool,
+    /// How many hops away is this node?
     pub hops_away: Option<u32>,
 }
 
-// Provide a conversion to construct the local type
-// there's gotta be a better way, need to refactor
+/// Provide a conversion to construct the local type from the remote type
 impl NInfo {
-    ///
+    /// Convert the remote Meshtastic `NodeInfo` to our `NInfo`
     ///
     /// # Arguments
-    /// *
+    /// * `def` - Meshtastic `NodeInfo` instance
     ///
     /// # Returns
-    /// *
+    /// * `NInfo` - `NInfo` variant of `Pkt` enum
     #[must_use]
     pub fn from_remote(def: NodeInfo) -> NInfo {
         NInfo {
@@ -239,21 +283,24 @@ impl NInfo {
     }
 }
 
+/// `MyInfo` packet structure that aliases the Meshtastic library's `MyNodeInfo`
 #[cfg_attr(feature = "print-packets", derive(Serialize, Deserialize))]
 #[cfg_attr(debug_assertions, derive(Debug))]
 #[derive(Clone)]
 pub struct MyInfo {
+    /// My node `u32` id
     pub my_node_num: u32,
 }
 
+/// Provide a conversion to construct the local type from the remote type
 impl MyInfo {
-    ///
+    /// Convert the remote Meshtastic `MyNodeInfo` to our `MyInfo`
     ///
     /// # Arguments
-    /// *
+    /// * `def` - Meshtastic `MyNodeInfo` instance
     ///
     /// # Returns
-    /// *
+    /// * `MyInfo` - `MyInfo` variant of `Pkt` enum
     #[must_use]
     pub fn from_remote(def: &MyNodeInfo) -> MyInfo {
         MyInfo {
@@ -262,11 +309,15 @@ impl MyInfo {
     }
 }
 
+/// `Pkt` enum of the various packet types
 #[cfg_attr(feature = "print-packets", derive(Serialize, Deserialize))]
 #[cfg_attr(debug_assertions, derive(Debug))]
 #[derive(Clone)]
 pub enum Pkt {
+    /// `Mesh` packets, or those arriving on `LoRa`
     Mesh(Mesh),
+    /// `NInfo` packets, or the serial packets of nodes in the nodedb
     NInfo(NInfo),
+    /// `MyNodeInfo` packets arriving on serial
     MyNodeInfo(MyInfo),
 }
