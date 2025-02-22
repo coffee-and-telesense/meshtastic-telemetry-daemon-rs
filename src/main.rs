@@ -4,6 +4,12 @@
 // Unfortunately we have duplicate dependencies with different versions
 #![allow(clippy::multiple_crate_versions)]
 
+#[cfg(not(debug_assertions))]
+extern crate syslog;
+#[cfg(not(debug_assertions))]
+#[macro_use]
+extern crate log;
+
 use crate::db::connection::update_metrics;
 use crate::dto::packet_handler;
 use crate::util::{

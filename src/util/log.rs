@@ -1,8 +1,5 @@
 #[cfg(not(debug_assertions))]
-extern crate syslog;
-#[cfg(not(debug_assertions))]
-#[macro_use]
-extern crate log;
+use anyhow::Context;
 #[cfg(not(debug_assertions))]
 use log::LevelFilter;
 #[cfg(not(debug_assertions))]
