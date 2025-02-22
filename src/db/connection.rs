@@ -1,8 +1,6 @@
-use crate::types::{Mesh, Telem};
-use crate::types::{Payload, Pkt};
 use crate::{
-    entities::airqualitymetrics, entities::devicemetrics, entities::environmentmetrics,
-    entities::nodeinfo, types::NInfo,
+    dto::entities::{airqualitymetrics, devicemetrics, environmentmetrics, nodeinfo},
+    util::types::{Mesh, NInfo, Payload, Pkt, Telem},
 };
 use anyhow::{Context, Result};
 use chrono::Utc;
@@ -167,11 +165,18 @@ pub(crate) async fn update_metrics(
 
 /// Node info conflict resolver
 ///
+/// This function resolves possible conflicts between `NodeInfo` received over Mesh or over serial
+/// connection from the nodedb of the connected device.
+///
 /// # Arguments
-/// *
+/// * `ni` - A `NInfo` packet
+/// * `pkt` - A possible `Mesh` packet
+/// * `db` - The `DatabaseConnection` ref
+/// * `fake_msg_id` - A possible fake message id for a devicemetric row insert
+/// * `dep_loc` - The deployment location from the config file
 ///
 /// # Returns
-/// *
+/// * Result with the number of rows inserted/updated
 async fn node_info_conflict(
     ni: NInfo,
     pkt: Option<Mesh>,
@@ -291,13 +296,22 @@ async fn node_info_conflict(
     Ok(row_insert_count)
 }
 
-/// Node info new node database inserter
+/// Insert a new node's info into nodeinfo and devicemetrics
+///
+/// Hadles the trivial cases when the device is brand-new to us and has no entries in the database
 ///
 /// # Arguments
-/// *
+/// * `ni` - `NInfo` packet
+/// * `db` - The database connection
+/// * `fake_msg_id` - The fake message id for the devicemetrics row
+/// * `dep_loc` - The deployment location string from the configuration
 ///
 /// # Returns
-/// *
+/// * Result with how many rows were inserted
+///
+/// # Panics
+/// This function will panic if no `fake_msg_id` was provided or if the user data like longname are
+/// None values.
 async fn new_node(
     ni: NInfo,
     db: &DatabaseConnection,
@@ -305,6 +319,8 @@ async fn new_node(
     dep_loc: &String,
 ) -> Result<u32> {
     let mut row_insert_count = 0;
+
+    // Create device metrics model
     let dm = devicemetrics::ActiveModel {
         msg_id: ActiveValue::Set(fake_msg_id.expect("No fake_msg_id provided to db action")),
         node_id: ActiveValue::Set(ni.num),
@@ -324,6 +340,7 @@ async fn new_node(
         hwmodel: ActiveValue::Set(ni.user.as_ref().map(|u| u.hw_model)),
     };
 
+    // Create node info model
     let ninfo = nodeinfo::ActiveModel {
         node_id: ActiveValue::Set(ni.num),
         longname: ActiveValue::Set(
