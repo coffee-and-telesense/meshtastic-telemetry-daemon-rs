@@ -3,6 +3,12 @@ name = "meshtastic-telemetry-daemon-rs"
 version = "0.1.0"
 edition = "2021"
 license = "MIT"
+authors = ["Gatlin Newhouse"]
+description = "Daemon to read Meshtastic packets and send telemetry to postgres"
+keywords = ["OpenWRT", "AREDN", "Meshtastic"]
+readme = "./README.md"
+repository = "https://github.com/coffee-and-telesense/meshtastic-telemetry-daemon-rs"
+categories = ["command-line-utils"]
 
 [dependencies]
 # Handle errors gracefully
