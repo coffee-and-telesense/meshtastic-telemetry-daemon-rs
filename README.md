@@ -1,37 +1,72 @@
 # Meshtastic Telemetry Daemon
 
 Make sure you have Rust installed:
-`curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh`
+
+```sh
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+```
 
 ## Building
 
-### Build debug for x86
+### Build debug for `X86` or your native architecture
 
-`cargo build --features debug`
+```sh
+cargo build --features debug
+```
 
-### Build release for x86
+### Build release for `X86` or your native architecture
 
-`cargo build --features release --release`
+```sh
+cargo build --features release --release
+```
 
-### Build release for mips
+### Build release for `MIPS`
 
-You must have [cross](https://github.com/cross-rs/cross?tab=readme-ov-file#dependencies) installed with all its dependencies. Unless you are building natively on `mips`.
+You must have [cross](https://github.com/cross-rs/cross?tab=readme-ov-file#dependencies) installed with all its dependencies. Unless you are building natively on `MIPS`.
 
-`CARGO_TARGET_MIPS_UNKNOWN_LINUX_MUSL_RUSTFLAGS="-Zlocation-detail=none -Zfmt-debug=none" cross +nightly build --features release --release --target mips-unknown-linux-musl -Zbuild-std-features=optimize_for_size,panic_immediate_abort`
+```sh
+CARGO_TARGET_MIPS_UNKNOWN_LINUX_MUSL_RUSTFLAGS="-Zlocation-detail=none -Zfmt-debug=none" cross +nightly build --features release --release --target mips-unknown-linux-musl -Zbuild-std-features=optimize_for_size,panic_immediate_abort
+```
 
-### Build debug for mips
+### Build debug for `MIPS`
 
-This is not recommended due to `mips` devices typically having little free disk space and the debug binary being large.
+This is not recommended due to `MIPS` devices typically having little free disk space and the debug binary being large.
 
 ## Running
 
-To run: `cargo run --features debug`
+### Debug
+
+To run the debug version:
+
+```sh
+cargo run --features debug
+```
 
 This will use the `example_config.toml` file provided in the root of this repository.
 
-Then specify the serial device connected via USB.
+Then specify the serial device connected via USB when prompted.
 
-You could run the release version like `cargo run --features release --release` but this is also not recommended due to logs going straight to `journalctl` or wherever your system logs things by default.
+If you want to see Meshtastic packets as `json` output add `--features debug,print-packets` to the above command.
+
+### Release
+
+Run the release version with:
+
+```sh
+cargo run --features release --release
+```
+
+But this is also not recommended due to logs going straight to `journalctl` or wherever your system logs things by default.
+
+## Documentation
+
+To view documentation on this, run the following after you install Rust and clone this repo:
+
+```sh
+cargo doc --features release --release --no-deps --document-private-items --open
+```
+
+Your browser should then open to this repo's documentation as generated from the Rust docstrings.
 
 ## Notes
 
