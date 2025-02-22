@@ -1,4 +1,4 @@
-use crate::types::{GatewayState, Mesh, MyInfo, NInfo, Payload, Pkt, Telem};
+use crate::util::types::{GatewayState, Mesh, MyInfo, NInfo, Payload, Pkt, Telem};
 use anyhow::Context;
 #[cfg(feature = "debug")]
 use log::info;
@@ -9,18 +9,23 @@ use meshtastic::protobufs::{
 use meshtastic::Message;
 use std::sync::{Arc, Mutex};
 
-// Shout-out to https://github.com/PeterGrace/meshtui for some of the code structure here
-
+/// Process Packets
 ///
+/// Match packet types based on payloads or origin on mesh or serial, then convert them to our
+/// local types to pass along to the database handler. This could probably be simplified and I
+/// should do that sometime. I should also make it much shorter because it is way too long
+///
+/// Shout-out to <https://github.com/PeterGrace/meshtui> for some of the code structure here
 ///
 /// # Arguments
-/// *
+/// * `packet` - A `FromRadio` reference that is read on the serial connection to a Meshtastic node
+/// * `state` - The `GatewayState` with the various concurrency locks
 ///
 /// # Returns
-/// *
+/// * An optional `Pkt`, our local types for packet handling
 ///
 /// # Panics
-///
+/// This function will panic if it fails to acquire a lock on the GatewayState
 pub fn process_packet(packet: &FromRadio, state: &Arc<Mutex<GatewayState>>) -> Option<Pkt> {
     if let Some(payload_v) = packet.clone().payload_variant {
         match payload_v {
@@ -234,26 +239,6 @@ pub fn process_packet(packet: &FromRadio, state: &Arc<Mutex<GatewayState>>) -> O
                 } else {
                     info!("Not rebooted recently");
                 }
-                return None;
-            }
-
-            from_radio::PayloadVariant::ModuleConfig(_mc) => {
-                // https://docs.rs/meshtastic/0.1.6/meshtastic/protobufs/struct.ModuleConfig.html
-                return None;
-            }
-
-            from_radio::PayloadVariant::QueueStatus(_qs) => {
-                // https://docs.rs/meshtastic/0.1.6/meshtastic/protobufs/struct.QueueStatus.html
-                return None;
-            }
-
-            from_radio::PayloadVariant::XmodemPacket(_xmp) => {
-                // https://docs.rs/meshtastic/0.1.6/meshtastic/protobufs/struct.XModem.html
-                return None;
-            }
-
-            from_radio::PayloadVariant::Metadata(_meta) => {
-                // https://docs.rs/meshtastic/0.1.6/meshtastic/protobufs/struct.DeviceMetadata.html
                 return None;
             }
 
