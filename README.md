@@ -28,6 +28,8 @@ You must have [cross](https://github.com/cross-rs/cross?tab=readme-ov-file#depen
 CARGO_TARGET_MIPS_UNKNOWN_LINUX_MUSL_RUSTFLAGS="-Zlocation-detail=none -Zfmt-debug=none" cross +nightly build --features release --release --target mips-unknown-linux-musl -Zbuild-std-features=optimize_for_size,panic_immediate_abort
 ```
 
+Sometimes, running a cross compile after a normal compile will fail spitting out some errors about `GLIBC` versions. This is most likely due to build caching of some sort (I am not entirely sure). If you just run `cargo clean` and then re-run the cross compilation command above it should work.
+
 ### Build debug for `MIPS`
 
 This is not recommended due to `MIPS` devices typically having little free disk space and the debug binary being large.
