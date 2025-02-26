@@ -25,7 +25,7 @@ use sea_orm::{
 ///
 pub(crate) async fn update_metrics(
     db: &DatabaseConnection,
-    packet: Pkt,
+    packet: &Pkt,
     fake_msg_id: Option<u32>,
     dep_loc: &String,
 ) -> Result<u32> {
@@ -92,7 +92,8 @@ pub(crate) async fn update_metrics(
                             via_mqtt: mp.via_mqtt,
                             hops_away: None,
                         };
-                        return node_info_conflict(ni, Some(mp), db, fake_msg_id, dep_loc).await;
+                        return node_info_conflict(ni, Some(mp.clone()), db, fake_msg_id, dep_loc)
+                            .await;
                     }
 
                     Payload::PositionApp(data) => {
@@ -151,7 +152,7 @@ pub(crate) async fn update_metrics(
             // nodes in the nodedb of the connected Meshtastic node that is our network bridge.
             // These packets possibly have user info, in which case we treat it the same as those
             // from the mesh and pass it to the conflict resoltuion function.
-            return node_info_conflict(ni, None, db, fake_msg_id, dep_loc).await;
+            return node_info_conflict(ni.clone(), None, db, fake_msg_id, dep_loc).await;
         }
 
         Pkt::MyNodeInfo(_) => {
