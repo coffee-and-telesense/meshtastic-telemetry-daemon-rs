@@ -6,6 +6,10 @@ Make sure you have Rust installed:
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 ```
 
+You might want [UPX](https://github.com/upx/upx) installed to compress the binary depending on your target. Your distribution's repos should provide it, e.g. `sudo apt install upx`.
+
+I've optimized for size a best as I can. Remaining wishes are: `gnutls` or `mbedtls` support through FFI instead of shipping `rustls`. This would save space in the binary.
+
 ## Building
 
 ### Build debug for `X86` or your native architecture
@@ -26,6 +30,9 @@ You must have [cross](https://github.com/cross-rs/cross?tab=readme-ov-file#depen
 
 ```sh
 CARGO_TARGET_MIPS_UNKNOWN_LINUX_MUSL_RUSTFLAGS="-Zlocation-detail=none -Zfmt-debug=none" cross +nightly build --features release --release --target mips-unknown-linux-musl -Zbuild-std-features=optimize_for_size,panic_immediate_abort
+
+# Then compress the executable further with upx
+upx --brute target/mips-unknown-linux-musl/release/meshtastic-telemetry-daemon-rs
 ```
 
 Sometimes, running a cross compile after a normal compile will fail spitting out some errors about `GLIBC` versions. This is most likely due to build caching of some sort (I am not entirely sure). If you just run `cargo clean` and then re-run the cross compilation command above it should work.

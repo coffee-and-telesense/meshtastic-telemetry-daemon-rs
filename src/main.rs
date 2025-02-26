@@ -18,6 +18,7 @@ use crate::util::{
     types::{GatewayState, Pkt},
 };
 use anyhow::{Context, Result};
+use db::lite;
 #[cfg(feature = "debug")]
 use log::{error, info, warn};
 use meshtastic::api::StreamApi;
@@ -55,9 +56,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut opt = ConnectOptions::new(build_db_connection_string(&settings));
     opt.sqlx_logging(true)
         .sqlx_logging_level(log::LevelFilter::Debug);
-    let db = Database::connect(opt)
+    let postgres_db = Database::connect(opt)
         .await
         .with_context(|| "Failed to connect to the database")?;
+
+    // Create sqlite db
+    let sqlite_db = lite::setup()
+        .await
+        .with_context(|| "Failed to setup sqlite database")?;
 
     // Connect to serial meshtastic
     let stream_api = StreamApi::new();
@@ -92,10 +98,19 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 Pkt::Mesh(mp) => {
                     #[cfg(feature = "print-packets")]
                     println!("{}", to_string_pretty(&mp).unwrap());
-                    let res = update_metrics(&db, pkt, None, &deployment_loc)
+                    match update_metrics(&postgres_db, &pkt, None, &deployment_loc)
                         .await
-                        .with_context(|| "Failed to update datatbase with packet from mesh");
-                    match res {
+                        .with_context(|| {
+                            "Failed to update postgres datatbase with packet from mesh"
+                        }) {
+                        Ok(v) => info!("inserted {v} rows"),
+                        Err(e) => error!("{e:#}"),
+                    }
+                    match update_metrics(&sqlite_db, &pkt, None, &deployment_loc)
+                        .await
+                        .with_context(|| {
+                            "Failed to update postgres datatbase with packet from mesh"
+                        }) {
                         Ok(v) => info!("inserted {v} rows"),
                         Err(e) => error!("{e:#}"),
                     }
@@ -109,12 +124,24 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                         .find_fake_id(ni.num)
                         .map(|n| Some(n.into()))
                         .expect("No fake_id returned");
-                    let res = update_metrics(&db, pkt, fake, &deployment_loc)
+                    match update_metrics(&postgres_db, &pkt, fake, &deployment_loc)
                         .await
                         .with_context(|| {
-                            "Failed to update database with node info packet from serial"
-                        });
-                    match res {
+                            "Failed to update postgres database with node info packet from serial"
+                        }) {
+                        Ok(v) => info!("inserted {v} rows"),
+                        Err(e) => {
+                            // This is a lower priority error message since we favor node info data
+                            // from the Mesh rather than from the serial connection. Often times it
+                            // just means that we did not insert a row
+                            info!("{e:#}");
+                        }
+                    }
+                    match update_metrics(&sqlite_db, &pkt, fake, &deployment_loc)
+                        .await
+                        .with_context(|| {
+                            "Failed to update postgres database with node info packet from serial"
+                        }) {
                         Ok(v) => info!("inserted {v} rows"),
                         Err(e) => {
                             // This is a lower priority error message since we favor node info data
