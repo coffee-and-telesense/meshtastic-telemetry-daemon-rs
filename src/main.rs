@@ -18,12 +18,11 @@ use crate::util::{
     types::{GatewayState, Pkt},
 };
 use anyhow::{Context, Result};
-use db::lite;
+use db::{lite, postgres};
 #[cfg(feature = "debug")]
 use log::{error, info, warn};
 use meshtastic::api::StreamApi;
 use meshtastic::utils;
-use sea_orm::{ConnectOptions, Database};
 #[cfg(feature = "print-packets")]
 use serde_json::to_string_pretty;
 use std::sync::{Arc, Mutex};
@@ -52,21 +51,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Create the gateway's state object
     let state = Arc::new(Mutex::new(GatewayState::new()));
 
-    // Connect to postgres db
-    let mut opt = ConnectOptions::new(build_db_connection_string(&settings));
-
-    #[cfg(debug_assertions)]
-    opt.sqlx_logging(true);
-    #[cfg(debug_assertions)]
-    opt.sqlx_logging_level(log::LevelFilter::Debug);
-    #[cfg(not(debug_assertions))]
-    opt.sqlx_logging(false);
-    #[cfg(not(debug_assertions))]
-    opt.sqlx_logging_level(log::LevelFilter::Off);
-
-    let postgres_db = Database::connect(opt)
-        .await
-        .with_context(|| "Failed to connect to the database")?;
+    // Create postgresql connection
+    let postgres_db = postgres::setup(&settings).await?;
 
     // Create sqlite db
     let sqlite_db = lite::setup()
