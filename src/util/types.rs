@@ -2,9 +2,33 @@ use meshtastic::protobufs::{
     mesh_packet::PayloadVariant, AirQualityMetrics, DeviceMetrics, EnvironmentMetrics, MeshPacket,
     MyNodeInfo, NeighborInfo, NodeInfo, Position, PowerMetrics, RouteDiscovery, Routing, User,
 };
+use sea_orm::{ConnectionTrait, DatabaseBackend, DatabaseConnection};
 #[cfg(feature = "print-packets")]
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+
+/// Trait to proxy enum matching to database names
+pub trait Names {
+    fn get_db_name<'a>(self) -> &'a str;
+}
+
+impl Names for &DatabaseConnection {
+    /// Get a database's name (postgres, sqlite, mysql) from the db connection
+    ///
+    /// # Arguments
+    /// * `self` - A `&DatabaseConnection` type for a given db
+    ///
+    /// # Returns
+    /// * `&str` - A constant borrowed string with a lifetime limited to the return of this
+    /// function
+    fn get_db_name<'a>(self) -> &'a str {
+        match self.get_database_backend() {
+            DatabaseBackend::MySql => "mysql",
+            DatabaseBackend::Postgres => "postgres",
+            DatabaseBackend::Sqlite => "sqlite",
+        }
+    }
+}
 
 /// Local node type storing only the information we care about from nodeinfo table
 pub struct Node {

@@ -1,6 +1,6 @@
 use crate::{
     dto::entities::{airqualitymetrics, devicemetrics, environmentmetrics, nodeinfo},
-    util::types::{Mesh, NInfo, Payload, Pkt, Telem},
+    util::types::{Mesh, NInfo, Names, Payload, Pkt, Telem},
 };
 use anyhow::{Context, Result};
 use chrono::Utc;
@@ -203,7 +203,12 @@ async fn node_info_conflict(
             let curr = nodeinfo::Entity::find_by_id(ni.num)
                 .one(db)
                 .await
-                .with_context(|| "Could not get entry in db, connection error?");
+                .with_context(|| {
+                    format!(
+                        "Could not get entry in {} db, connection error?",
+                        db.get_db_name()
+                    )
+                });
 
             match curr {
                 Ok(c) => {
@@ -243,13 +248,17 @@ async fn node_info_conflict(
 
                             // Try updating the nodeinfo row
                             match upd_ni.update(db).await.with_context(|| {
-                                format!("Failed to update nodeinfo row entry for {}", mp.from)
+                                format!(
+                                    "Failed to update nodeinfo row entry for {} into {} db",
+                                    mp.from,
+                                    db.get_db_name()
+                                )
                             }) {
                                 Ok(_) => {
                                     row_insert_count += 1;
                                 }
                                 Err(e) => {
-                                    error!("{:#}", e);
+                                    error!("{e}");
                                 }
                             }
 
@@ -260,13 +269,16 @@ async fn node_info_conflict(
                                 .exec(db)
                                 .await
                                 .with_context(|| {
-                                    "Failed to insert devicemetrics row for updated nodeinfo from mesh payload"
+                                    format!(
+                                        "Failed to insert devicemetrics row for updated nodeinfo from mesh payload into {} db",
+                                        db.get_db_name()
+                                    )
                                 }) {
                                 Ok(_) => {
                                     row_insert_count += 1;
                                 }
                                 Err(e) => {
-                                    error!("{:#}", e);
+                                    error!("{e}");
                                 }
                             }
                         }
@@ -277,7 +289,7 @@ async fn node_info_conflict(
                     }
                 }
                 Err(e) => {
-                    error!("{:#}", e);
+                    error!("{e}");
                 }
             }
         } else {
@@ -374,14 +386,18 @@ async fn new_node(
         )
         .exec(db)
         .await
-        .with_context(|| "Failed to insert device metrics row from serial payload")
-    {
+        .with_context(|| {
+            format!(
+                "Failed to insert device metrics row from serial payload into {} db",
+                db.get_db_name()
+            )
+        }) {
         Ok(_) => {
             row_insert_count += 1;
         }
         Err(e) => {
             // These are expected to error out, so lower the log level
-            info!("{:#}", e);
+            info!("{e}");
         }
     }
 
@@ -394,14 +410,18 @@ async fn new_node(
         )
         .exec(db)
         .await
-        .with_context(|| "Failed to insert node info row from serial payload")
-    {
+        .with_context(|| {
+            format!(
+                "Failed to insert node info row from serial payload into {} db",
+                db.get_db_name()
+            )
+        }) {
         Ok(_) => {
             row_insert_count += 1;
         }
         Err(e) => {
             // These are expected to error out, so lower the log level
-            info!("{:#}", e);
+            info!("{e}");
         }
     }
     Ok(row_insert_count)

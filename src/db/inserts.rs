@@ -4,7 +4,7 @@ use crate::{
         devicemetrics::Model as DeviceMetricsModel,
         environmentmetrics::Model as EnvironmentMetricsModel,
     },
-    util::types::Mesh,
+    util::types::{Mesh, Names},
 };
 use anyhow::{Context, Result};
 use chrono::Utc;
@@ -35,14 +35,16 @@ async fn insert_row_gen<T: Send + ActiveModelBehavior>(
 where
     <<T as ActiveModelTrait>::Entity as EntityTrait>::Model: IntoActiveModel<T>,
 {
-    match model
-        .insert(db)
-        .await
-        .with_context(|| format!("Failed to insert {metric_type} metrics row from mesh payload"))
-    {
+    match model.insert(db).await.with_context(|| {
+        format!(
+            "Failed to insert {} metrics row from mesh payload into {} db",
+            metric_type,
+            db.get_db_name()
+        )
+    }) {
         Ok(_) => Ok(1),
         Err(e) => {
-            error!("{e:#}");
+            error!("{e}");
             Ok(0)
         }
     }
