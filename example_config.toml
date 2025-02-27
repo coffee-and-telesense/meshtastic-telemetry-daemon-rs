@@ -1,9 +1,7 @@
 user = "postgres"
 password = "postgres"
 port = 5431
-use_ssl = false
 host = "localhost"
 dbname = "meshtastic"
-use_usb2spi = false
 #serial_port = "/dev/ttyACM1"
 deployment_location = "testing"
