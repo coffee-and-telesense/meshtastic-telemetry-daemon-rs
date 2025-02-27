@@ -29,17 +29,16 @@ pub(crate) fn set_logger() {
         };
         match syslog::unix(formatter).with_context(|| "Could not connect to syslog posix socket") {
             Ok(logger) => {
-                //TODO: should be warn on actual release instead of Info
                 let _ = log::set_boxed_logger(Box::new(BasicLogger::new(logger)))
-                    .map(|()| log::set_max_level(LevelFilter::Info))
+                    .map(|()| log::set_max_level(LevelFilter::Warn))
                     .with_context(|| "Failed to set logger to syslog")
                     .inspect_err(|e| {
-                        error!("{e:#}");
+                        error!("{e}");
                         warn!("Continuing execution");
                     });
             }
             Err(e) => {
-                error!("{e:#}");
+                error!("{e}");
                 warn!("Continuing execution");
             }
         }

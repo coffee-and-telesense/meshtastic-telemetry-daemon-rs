@@ -54,8 +54,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Connect to postgres db
     let mut opt = ConnectOptions::new(build_db_connection_string(&settings));
-    opt.sqlx_logging(true)
-        .sqlx_logging_level(log::LevelFilter::Debug);
+
+    #[cfg(debug_assertions)]
+    opt.sqlx_logging(true);
+    #[cfg(debug_assertions)]
+    opt.sqlx_logging_level(log::LevelFilter::Debug);
+    #[cfg(not(debug_assertions))]
+    opt.sqlx_logging(false);
+    #[cfg(not(debug_assertions))]
+    opt.sqlx_logging_level(log::LevelFilter::Off);
+
     let postgres_db = Database::connect(opt)
         .await
         .with_context(|| "Failed to connect to the database")?;
@@ -103,16 +111,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                         .with_context(|| {
                             "Failed to update postgres datatbase with packet from mesh"
                         }) {
-                        Ok(v) => info!("inserted {v} rows"),
-                        Err(e) => error!("{e:#}"),
+                        Ok(v) => info!("inserted {v} rows into postgres db"),
+                        Err(e) => error!("{e}"),
                     }
                     match update_metrics(&sqlite_db, &pkt, None, &deployment_loc)
                         .await
-                        .with_context(|| {
-                            "Failed to update postgres datatbase with packet from mesh"
-                        }) {
-                        Ok(v) => info!("inserted {v} rows"),
-                        Err(e) => error!("{e:#}"),
+                        .with_context(|| "Failed to update sqlite datatbase with packet from mesh")
+                    {
+                        Ok(v) => info!("inserted {v} rows into sqlite db"),
+                        Err(e) => error!("{e}"),
                     }
                 }
                 Pkt::NInfo(ni) => {
@@ -129,25 +136,25 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                         .with_context(|| {
                             "Failed to update postgres database with node info packet from serial"
                         }) {
-                        Ok(v) => info!("inserted {v} rows"),
+                        Ok(v) => info!("inserted {v} rows into postgres db"),
                         Err(e) => {
                             // This is a lower priority error message since we favor node info data
                             // from the Mesh rather than from the serial connection. Often times it
                             // just means that we did not insert a row
-                            info!("{e:#}");
+                            info!("{e}");
                         }
                     }
                     match update_metrics(&sqlite_db, &pkt, fake, &deployment_loc)
                         .await
                         .with_context(|| {
-                            "Failed to update postgres database with node info packet from serial"
+                            "Failed to update sqlite database with node info packet from serial"
                         }) {
-                        Ok(v) => info!("inserted {v} rows"),
+                        Ok(v) => info!("inserted {v} rows into sqlite db"),
                         Err(e) => {
                             // This is a lower priority error message since we favor node info data
                             // from the Mesh rather than from the serial connection. Often times it
                             // just means that we did not insert a row
-                            info!("{e:#}");
+                            info!("{e}");
                         }
                     }
                 }

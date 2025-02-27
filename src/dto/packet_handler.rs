@@ -53,7 +53,7 @@ pub fn process_packet(packet: &FromRadio, state: &Arc<Mutex<GatewayState>>) -> O
                                             return Some(Pkt::Mesh(pkt));
                                         }
                                         Err(e) => {
-                                            info!("{e:#}");
+                                            info!("{e}");
                                             return None;
                                         }
                                     }
@@ -109,7 +109,7 @@ pub fn process_packet(packet: &FromRadio, state: &Arc<Mutex<GatewayState>>) -> O
                                             }
                                         }
                                         Err(e) => {
-                                            info!("{e:#}");
+                                            info!("{e}");
                                             return None;
                                         }
                                     }
@@ -125,7 +125,7 @@ pub fn process_packet(packet: &FromRadio, state: &Arc<Mutex<GatewayState>>) -> O
                                             return Some(Pkt::Mesh(pkt));
                                         }
                                         Err(e) => {
-                                            info!("{e:#}");
+                                            info!("{e}");
                                             return None;
                                         }
                                     }
@@ -152,7 +152,7 @@ pub fn process_packet(packet: &FromRadio, state: &Arc<Mutex<GatewayState>>) -> O
                                             return None;
                                         }
                                         Err(e) => {
-                                            info!("{e:#}");
+                                            info!("{e}");
                                             return None;
                                         }
                                     }
@@ -168,7 +168,7 @@ pub fn process_packet(packet: &FromRadio, state: &Arc<Mutex<GatewayState>>) -> O
                                             return Some(Pkt::Mesh(pkt));
                                         }
                                         Err(e) => {
-                                            info!("{e:#}");
+                                            info!("{e}");
                                             return None;
                                         }
                                     }
@@ -185,7 +185,7 @@ pub fn process_packet(packet: &FromRadio, state: &Arc<Mutex<GatewayState>>) -> O
                                             return Some(Pkt::Mesh(pkt));
                                         }
                                         Err(e) => {
-                                            info!("{e:#}");
+                                            info!("{e}");
                                             return None;
                                         }
                                     }

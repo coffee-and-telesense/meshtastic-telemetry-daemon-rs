@@ -35,7 +35,7 @@ pub(crate) fn read_config(p: &str) -> config::Config {
             rv
         }
         Err(e) => {
-            panic!("{e:#}");
+            panic!("{e}");
         }
     }
 }
@@ -59,7 +59,7 @@ pub(crate) fn get_cfg<'d, T: Deserialize<'d>>(cfg: &Config, key: &str) -> T {
     {
         Ok(rv) => rv,
         Err(e) => {
-            panic!("{e:#}");
+            panic!("{e}");
         }
     }
 }
@@ -82,7 +82,7 @@ pub(crate) fn get_cfg_string(cfg: &Config, key: &str) -> String {
     {
         Ok(rv) => rv,
         Err(e) => {
-            panic!("{e:#}");
+            panic!("{e}");
         }
     }
 }
@@ -129,14 +129,14 @@ pub(crate) fn get_serial_port(cfg: &Config) -> String {
         .with_context(|| "Failed to read serial_port from config file")
     {
         Err(e) => {
-            error!("{e:#}");
+            error!("{e}");
             warn!("Prompting user for serial port instead");
             match available_serial_ports()
                 .with_context(|| "Failed to enumerate list of serial ports")
             {
                 Ok(ap) => println!("Available ports: {ap:?}"),
                 Err(e) => {
-                    error!("{e:#}");
+                    error!("{e}");
                     warn!("User will input their own serial port");
                 }
             }
@@ -153,7 +153,7 @@ pub(crate) fn get_serial_port(cfg: &Config) -> String {
                 Ok(sp) => sp,
                 Err(e) => {
                     eprintln!("No serial port provided by user");
-                    panic!("{e:#}");
+                    panic!("{e}");
                 }
             }
         }
