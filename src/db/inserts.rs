@@ -3,6 +3,7 @@ use crate::{
         airqualitymetrics::Model as AirQualityMetricsModel,
         devicemetrics::Model as DeviceMetricsModel,
         environmentmetrics::Model as EnvironmentMetricsModel,
+        neighborinfo::Model as NeighborInfoModel,
     },
     util::types::{Mesh, Names},
 };
@@ -10,9 +11,12 @@ use anyhow::{Context, Result};
 use chrono::Utc;
 #[cfg(feature = "debug")]
 use log::error;
-use meshtastic::protobufs::{AirQualityMetrics, EnvironmentMetrics};
+use meshtastic::protobufs::{
+    AirQualityMetrics, DeviceMetrics, EnvironmentMetrics, NeighborInfo, Position,
+};
 use sea_orm::{
-    ActiveModelBehavior, ActiveModelTrait, DatabaseConnection, EntityTrait, IntoActiveModel,
+    ActiveModelBehavior, ActiveModelTrait, ConnectionTrait, DatabaseBackend, DatabaseConnection,
+    EntityTrait, IntoActiveModel,
 };
 use std::marker::Send;
 
@@ -65,14 +69,14 @@ impl AirQualityMetricsModel {
         insert_row_gen(self.into_active_model(), db, "air quality".to_string()).await
     }
 
-    /// Create Air Quality Metrics Active Model
+    /// Create Air Quality Metrics Model
     ///
     /// # Arguments
     /// * `pkt` - a `Mesh` packet
     /// * `data` - `AirQualityMetrics` payload
     ///
     /// # Returns
-    /// * An Air Quality Metrics Active Model
+    /// * An Air Quality Metrics Model
     #[must_use]
     pub(crate) fn create_model(pkt: &Mesh, data: AirQualityMetrics) -> Self {
         Self {
@@ -110,6 +114,31 @@ impl DeviceMetricsModel {
     pub(crate) async fn insert_row(self, db: &DatabaseConnection) -> Result<u32> {
         insert_row_gen(self.into_active_model(), db, "device".to_string()).await
     }
+
+    /// Create Device Metrics Model for DeviceMetrics payloads
+    ///
+    /// # Arguments
+    /// * `pkt` - a `Mesh` packet
+    /// * `data` - `DeviceMetrics` payload
+    ///
+    /// # Returns
+    /// * A Device Metrics Model
+    pub(crate) fn create_dm_model(pkt: &Mesh, data: DeviceMetrics) -> Self {
+        Self {
+            msg_id: pkt.id,
+            node_id: pkt.from,
+            time: Utc::now().naive_utc(),
+            battery_levels: data.battery_level,
+            voltage: data.voltage,
+            channelutil: data.channel_utilization,
+            airutil: data.air_util_tx,
+            latitude: None, //TODO: investigate default values
+            longitude: None,
+            longname: None,
+            shortname: None,
+            hwmodel: None,
+        }
+    }
 }
 
 impl EnvironmentMetricsModel {
@@ -133,7 +162,7 @@ impl EnvironmentMetricsModel {
     /// * `data` - `EnvironmentalMetrics` payload
     ///
     /// # Returns
-    /// * An Environmental Metrics Active Model
+    /// * An Environmental Metrics Model
     #[must_use]
     pub(crate) fn create_model(pkt: &Mesh, data: EnvironmentMetrics) -> Self {
         Self {
@@ -151,6 +180,50 @@ impl EnvironmentMetricsModel {
             wind_lull: data.wind_lull,
             rainfall_1h: data.rainfall_1h,
             rainfall_24h: data.rainfall_24h,
+        }
+    }
+}
+
+impl NeighborInfoModel {
+    // Insert an Neighbor Info row
+    //
+    // This function proxies `insert_row_gen()` to leverage generics
+    //
+    // # Arguments
+    // * `self` - A `NeighborInfo::Model` type
+    // * `db` - A `DatabaseConnection` pool
+    //
+    // # Returns
+    // * Result with number of rows inserted
+    pub(crate) async fn insert_row(self, db: &DatabaseConnection) -> Result<u32> {
+        match db.get_database_backend() {
+            DatabaseBackend::Sqlite => Ok(0),
+            _ => insert_row_gen(self.into_active_model(), db, "neighborinfo".to_string()).await,
+        }
+    }
+
+    /// Create an Neighbor Info Model
+    ///
+    /// # Arguments
+    /// * `pkt` - a `Mesh` packet
+    /// * `data` - `NeighborInfo` payload
+    ///
+    /// # Returns
+    /// * A Neighbor Info Model
+    #[must_use]
+    pub(crate) fn create_model(pkt: &Mesh, data: NeighborInfo) -> Self {
+        Self {
+            msg_id: pkt.id,
+            node_id: pkt.from,
+            time: Utc::now().naive_utc(),
+            last_sent_by_id: Some(data.last_sent_by_id),
+            node_broadcast_interval_secs: Some(data.node_broadcast_interval_secs),
+            neighbors: Some(
+                data.neighbors
+                    .into_iter()
+                    .map(|n| n.node_id)
+                    .collect::<Vec<u32>>(),
+            ),
         }
     }
 }

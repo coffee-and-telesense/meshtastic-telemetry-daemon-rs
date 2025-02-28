@@ -1,5 +1,5 @@
 use crate::{
-    dto::entities::{airqualitymetrics, devicemetrics, environmentmetrics, nodeinfo},
+    dto::entities::{airqualitymetrics, devicemetrics, environmentmetrics, neighborinfo, nodeinfo},
     util::types::{Mesh, NInfo, Names, Payload, Pkt, Telem},
 };
 use anyhow::{Context, Result};
@@ -47,22 +47,9 @@ pub(crate) async fn update_metrics(
                         }
 
                         Telem::Device(data) => {
-                            devicemetrics::Model {
-                                msg_id: mp.id,
-                                node_id: mp.from,
-                                time: Utc::now().naive_utc(),
-                                battery_levels: data.battery_level,
-                                voltage: data.voltage,
-                                channelutil: data.channel_utilization,
-                                airutil: data.air_util_tx,
-                                latitude: None, //TODO: investigate default values
-                                longitude: None,
-                                longname: None,
-                                shortname: None,
-                                hwmodel: None,
-                            }
-                            .insert_row(db)
-                            .await
+                            devicemetrics::Model::create_dm_model(mp, data)
+                                .insert_row(db)
+                                .await
                         }
 
                         Telem::Power(_data) => {
@@ -99,6 +86,7 @@ pub(crate) async fn update_metrics(
                     Payload::PositionApp(data) => {
                         // Updates the position for a given node id that is included in the
                         // packet sent from the mesh
+
                         devicemetrics::Model {
                             msg_id: mp.id,
                             node_id: mp.from,
@@ -115,6 +103,12 @@ pub(crate) async fn update_metrics(
                         }
                         .insert_row(db)
                         .await
+                    }
+
+                    Payload::NeighborinfoApp(data) => {
+                        neighborinfo::Model::create_model(mp, data)
+                            .insert_row(db)
+                            .await
                     }
 
                     _ => {
