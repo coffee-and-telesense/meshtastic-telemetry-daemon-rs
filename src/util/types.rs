@@ -20,7 +20,7 @@ impl Names for &DatabaseConnection {
     ///
     /// # Returns
     /// * `&str` - A constant borrowed string with a lifetime limited to the return of this
-    /// function
+    ///   function
     fn get_db_name<'a>(self) -> &'a str {
         match self.get_database_backend() {
             DatabaseBackend::MySql => "mysql",
