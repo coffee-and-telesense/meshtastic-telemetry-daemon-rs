@@ -12,9 +12,9 @@ categories = ["command-line-utils"]
 
 [dependencies]
 # Handle errors gracefully
-anyhow = { version = "1.0.96", default-features = false }
+anyhow = { version = "1.0.97", default-features = false }
 # Handle clocks, no wasm
-chrono = { version = "0.4.39", default-features = false, features = ["now"] }
+chrono = { version = "0.4.40", default-features = false, features = ["now"] }
 # Debug logger
 colog = { version = "1.3.0", optional = true }
 # Handle config reading
@@ -23,12 +23,11 @@ config = { version = "0.15.9", default-features = false, features = [
   "toml",
 ] }
 # Logger
-log = { version = "0.4.26" }
-# My fork of the meshtastic protocol library with updated protobufs---default flags have serde and serde_json
-meshtastic = { git = "https://github.com/gatlinnewhouse/meshtastic-rust.git", branch = "dev" }
+log = { version = "0.4.26", default-features = false }
+# My fork of the meshtastic protocol library with updated protobufs---no serde
+meshtastic = { git = "https://github.com/gatlinnewhouse/meshtastic-rust.git", branch = "dev", default-features = false }
 # Handle posting to db, compatible with chrono we use
 sea-orm = { version = "1.1.7", default-features = false, features = [
-  "runtime-tokio-rustls",
   "macros",
   "with-chrono",
   "with-bigdecimal",
@@ -38,22 +37,23 @@ sea-orm = { version = "1.1.7", default-features = false, features = [
 # Serialize/deserialize, add deriving trait
 serde = { version = "1.0.218", default-features = false }
 # Serialize/deserialze json, mainly print debugging
-serde_json = { version = "1.0.140", optional = true }
+serde_json = { version = "1.0.140", default-features = false, features = [
+  "alloc",
+], optional = true }
 # Release logger
 syslog = { version = "7.0.0", optional = true }
 # Async runtime with tokio::main macro
 tokio = { version = "1.43.0", features = ["macros"] }
 
 [features]
-default = ["aredn"]
+default = []
 debug = ["dep:colog", "anyhow/std", "anyhow/backtrace"]
-release = ["dep:syslog"]
-print-packets = ["dep:serde_json", "serde/derive"]
+print-packets = ["dep:serde_json", "serde/derive", "meshtastic/serde"]
 sqlite = ["sea-orm/sqlx-sqlite"]
 postgres = ["sea-orm/sqlx-postgres"]
 # aredn/openwrt feature flags for aredn releases
-aredn = ["sqlite", "postgres", "release"]
-openwrt = ["sqlite", "postgres", "release"]
+aredn = ["dep:syslog", "sqlite", "postgres", "sea-orm/runtime-tokio-rustls"]
+openwrt = ["dep:syslog", "sqlite", "postgres"]
 
 # This release profile was found in discussions when compiling for mips platforms
 # But it probably works on x86 and ARM devices as well, we will see
