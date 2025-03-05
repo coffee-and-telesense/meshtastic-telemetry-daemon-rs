@@ -12,13 +12,13 @@ categories = ["command-line-utils"]
 
 [dependencies]
 # Handle errors gracefully
-anyhow = { version = "1.0.96" }
+anyhow = { version = "1.0.96", default-features = false }
 # Handle clocks, no wasm
 chrono = { version = "0.4.39", default-features = false, features = ["now"] }
 # Debug logger
 colog = { version = "1.3.0", optional = true }
 # Handle config reading
-config = { version = "0.15.*", default-features = false, features = [
+config = { version = "0.15.9", default-features = false, features = [
   "async",
   "toml",
 ] }
@@ -27,9 +27,7 @@ log = { version = "0.4.26" }
 # My fork of the meshtastic protocol library with updated protobufs---default flags have serde and serde_json
 meshtastic = { git = "https://github.com/gatlinnewhouse/meshtastic-rust.git", branch = "dev" }
 # Handle posting to db, compatible with chrono we use
-sea-orm = { version = "1.1.5", default-features = false, features = [
-  "sqlx-postgres",
-  "sqlx-sqlite",
+sea-orm = { version = "1.1.7", default-features = false, features = [
   "runtime-tokio-rustls",
   "macros",
   "with-chrono",
@@ -38,20 +36,24 @@ sea-orm = { version = "1.1.5", default-features = false, features = [
   "with-json",
 ] }
 # Serialize/deserialize, add deriving trait
-serde = { version = "1.0.218" }
+serde = { version = "1.0.218", default-features = false }
 # Serialize/deserialze json, mainly print debugging
-serde_json = { version = "1.0.139", optional = true }
+serde_json = { version = "1.0.140", optional = true }
 # Release logger
 syslog = { version = "7.0.0", optional = true }
 # Async runtime with tokio::main macro
 tokio = { version = "1.43.0", features = ["macros"] }
-#iex = { version = "0.2.0", features = ["anyhow"] }
 
 [features]
-default = []
-debug = ["dep:colog", "anyhow/backtrace"]
+default = ["aredn"]
+debug = ["dep:colog", "anyhow/std", "anyhow/backtrace"]
 release = ["dep:syslog"]
 print-packets = ["dep:serde_json", "serde/derive"]
+sqlite = ["sea-orm/sqlx-sqlite"]
+postgres = ["sea-orm/sqlx-postgres"]
+# aredn/openwrt feature flags for aredn releases
+aredn = ["sqlite", "postgres", "release"]
+openwrt = ["sqlite", "postgres", "release"]
 
 # This release profile was found in discussions when compiling for mips platforms
 # But it probably works on x86 and ARM devices as well, we will see

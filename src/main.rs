@@ -4,6 +4,8 @@
 // Unfortunately we have duplicate dependencies with different versions
 #![allow(clippy::multiple_crate_versions)]
 
+//! Meshtastic to Postgresql/Sqlite database daemon
+
 #[cfg(not(debug_assertions))]
 extern crate syslog;
 #[cfg(not(debug_assertions))]
