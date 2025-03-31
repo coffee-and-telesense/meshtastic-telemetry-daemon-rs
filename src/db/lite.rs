@@ -4,10 +4,11 @@ use anyhow::{Context, Result};
 use log::error;
 use log::LevelFilter;
 use sea_orm::{
-    sea_query::TableCreateStatement, sqlx::sqlite, sqlx::ConnectOptions, ConnectionTrait,
-    DatabaseConnection, DbBackend, Schema,
+    sea_query::TableCreateStatement,
+    sqlx::{sqlite, ConnectOptions},
+    ConnectionTrait, DatabaseConnection, DbBackend, Schema, Statement,
 };
-use std::str::FromStr;
+use std::{str::FromStr, time::Instant};
 
 /// Setup `SQLite3` database
 ///
@@ -65,6 +66,33 @@ pub async fn setup() -> Result<DatabaseConnection> {
             panic!("Could not connect to sqlite db");
         }
     }
+}
+
+const TABLES: [&str; 3] = ["airqualitymetrics", "devicemetrics", "environmentmetrics"];
+
+/// Drop old table rows periodically
+pub fn drop_old_rows(db: &DatabaseConnection, last: Instant) -> Instant {
+    if last.elapsed().as_secs() >= 7200 {
+        for t in TABLES {
+            db.execute(Statement::from_string(
+                sea_orm::DatabaseBackend::Sqlite,
+                format!("DELETE FROM {} WHERE time <= date('now','-30 day')", t),
+            ));
+        }
+    }
+    Instant::now()
+}
+
+/// Optimize the db regularly for memory usage and performance
+/// https://www.sqlite.org/pragma.html#pragma_optimize
+pub fn pragma_optimize(db: &DatabaseConnection, last: Instant) -> Instant {
+    if last.elapsed().as_secs() >= 86400 {
+        db.execute(Statement::from_string(
+            sea_orm::DatabaseBackend::Sqlite,
+            "pragma optimize",
+        ));
+    }
+    Instant::now()
 }
 
 async fn setup_schema(db: &DatabaseConnection) {
