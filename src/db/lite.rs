@@ -20,10 +20,28 @@ pub async fn setup() -> Result<DatabaseConnection> {
     match conn_opts {
         Ok(mut co) => {
             co = co
-                // Turn off journaling
-                .journal_mode(sqlite::SqliteJournalMode::Off)
+                // Try write-ahead logging to allow concurrent reads during writes
+                .journal_mode(sqlite::SqliteJournalMode::Wal)
+                // Turn on the shared cache
+                .shared_cache(true)
+                // Try exclusive locking? Useful for when each db has a single thread
+                //.locking_mode(sqlite::SqliteLockingMode::Exclusive)
+                // 50% default of 100 statement cache
+                .statement_cache_capacity(50)
+                // Reduce page size to 50% of default 4096
+                .page_size(2048)
+                // Set synchronous to normal as WAL provides guarantees
+                .synchronous(sqlite::SqliteSynchronous::Normal)
+                // Store temporary files in memory?
+                .pragma("temp_store", "memory")
+                // Use memory mapped I/O, since we are 32 bit 2^32 is upper limit. Set to 2^16
+                .pragma("mmap_size", "65536")
                 // Turn on auto vacuuming
                 .auto_vacuum(sqlite::SqliteAutoVacuum::Full)
+                // Run a vacuum
+                .pragma("vacuum", "")
+                // Optimize the DB
+                .pragma("optimize", "")
                 // Create the file if it is missing
                 .create_if_missing(true);
             // Logging settings
