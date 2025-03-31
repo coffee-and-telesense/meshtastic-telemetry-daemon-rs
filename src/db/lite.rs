@@ -32,10 +32,12 @@ pub async fn setup() -> Result<DatabaseConnection> {
             #[cfg(not(debug_assertions))]
             let c = co.log_statements(LevelFilter::Off);
             // Set connection timeout?
-            let pool_opts = sqlite::SqlitePoolOptions::new().max_connections(1);
+            let pool_opts = sqlite::SqlitePoolOptions::new()
+                .max_connections(1)
+                .min_connections(1);
             //    .idle_timeout(None)
             //    .max_lifetime(None);
-            let pool = pool_opts.connect_with(c).await?;
+            let pool = pool_opts.connect_lazy_with(c);
             let db = sea_orm::SqlxSqliteConnector::from_sqlx_sqlite_pool(pool);
             setup_schema(&db).await;
             Ok(db)

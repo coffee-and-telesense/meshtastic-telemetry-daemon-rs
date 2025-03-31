@@ -26,7 +26,7 @@ use std::sync::{Arc, Mutex};
 ///
 /// # Panics
 /// This function will panic if it fails to acquire a lock on the GatewayState
-pub fn process_packet(packet: &FromRadio, state: &Arc<Mutex<GatewayState>>) -> Option<Pkt> {
+pub fn process_packet(packet: FromRadio, state: Arc<Mutex<GatewayState>>) -> Option<Pkt> {
     if let Some(payload_v) = packet.clone().payload_variant {
         match payload_v {
             from_radio::PayloadVariant::Packet(pa) => {

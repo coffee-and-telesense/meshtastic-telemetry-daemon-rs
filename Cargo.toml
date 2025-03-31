@@ -22,10 +22,13 @@ config = { version = "0.15.9", default-features = false, features = [
   "async",
   "toml",
 ] }
+# reduce allocs on find()
+futures = { version = "0.3.31" }
 # Logger
 log = { version = "0.4.26", default-features = false }
 # My fork of the meshtastic protocol library with updated protobufs---no serde
 meshtastic = { git = "https://github.com/gatlinnewhouse/meshtastic-rust.git", branch = "dev", default-features = false }
+rustc-demangle = "0.1"
 # Handle posting to db, compatible with chrono we use
 sea-orm = { version = "1.1.7", default-features = false, features = [
   "macros",
@@ -55,11 +58,15 @@ postgres = ["sea-orm/sqlx-postgres"]
 aredn = ["dep:syslog", "sqlite", "postgres", "sea-orm/runtime-tokio-rustls"]
 openwrt = ["dep:syslog", "sqlite", "postgres"]
 
+[profile.dev]
+debug = 1
+
 # This release profile was found in discussions when compiling for mips platforms
 # But it probably works on x86 and ARM devices as well, we will see
 [profile.release]
 opt-level = 'z'
 lto = true
 codegen-units = 1
-strip = true
+#strip = true
+debug = true
 panic = "abort"

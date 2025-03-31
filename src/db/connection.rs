@@ -4,6 +4,7 @@ use crate::{
 };
 use anyhow::{Context, Result};
 use chrono::Utc;
+use futures::TryStreamExt;
 #[cfg(feature = "debug")]
 use log::{error, info};
 use sea_orm::{
@@ -194,70 +195,68 @@ async fn node_info_conflict(
             // Our local state already has the updated node entry from the bridge (either serial or
             // mesh), so we just need to determine if we should insert or update an entry in the
             // database.
-            let curr = nodeinfo::Entity::find_by_id(ni.num)
-                .one(db)
+            let mut curr = nodeinfo::Entity::find_by_id(ni.num)
+                .stream(db)
                 .await
                 .with_context(|| {
                     format!(
                         "Could not get entry in {} db, connection error?",
                         db.get_db_name()
                     )
-                });
+                })?;
 
-            match curr {
-                Ok(c) => {
-                    if let Some(u) = c {
-                        // Found an entry in the db, check if any nodeinfo columns need to be
-                        // updated, and if so update them.
+            let found = curr.try_next().await?;
+            match found {
+                Some(u) => {
+                    // Found an entry in the db, check if any nodeinfo columns need to be
+                    // updated, and if so update them.
 
-                        if u.shortname != user.short_name
-                            || u.longname != user.long_name
-                            || u.hwmodel != user.hw_model
-                            || &u.deployment_location != dep_loc
-                        {
-                            // Update the nodeinfo row values, node_id remains the same
-                            let mut upd_ni: nodeinfo::ActiveModel = u.into();
-                            upd_ni.longname = ActiveValue::Set(user.long_name.clone());
-                            upd_ni.shortname = ActiveValue::Set(user.short_name.clone());
-                            upd_ni.hwmodel = ActiveValue::Set(user.hw_model);
-                            upd_ni.deployment_location = ActiveValue::Set(dep_loc.to_string());
+                    if u.shortname != user.short_name
+                        || u.longname != user.long_name
+                        || u.hwmodel != user.hw_model
+                        || &u.deployment_location != dep_loc
+                    {
+                        // Update the nodeinfo row values, node_id remains the same
+                        let mut upd_ni: nodeinfo::ActiveModel = u.into();
+                        upd_ni.longname = ActiveValue::Set(user.long_name.clone());
+                        upd_ni.shortname = ActiveValue::Set(user.short_name.clone());
+                        upd_ni.hwmodel = ActiveValue::Set(user.hw_model);
+                        upd_ni.deployment_location = ActiveValue::Set(dep_loc.to_string());
 
-                            // Create updated devicemetrics row
-                            let upd_dm = devicemetrics::ActiveModel {
-                                msg_id: ActiveValue::Set(
-                                    fake_msg_id.expect("No fake_msg_id provided"),
-                                ),
-                                node_id: ActiveValue::Set(mp.from),
-                                time: ActiveValue::Set(Utc::now().naive_utc()),
-                                longname: ActiveValue::Set(Some(user.long_name.clone())),
-                                shortname: ActiveValue::Set(Some(user.short_name.clone())),
-                                hwmodel: ActiveValue::Set(Some(user.hw_model)),
-                                battery_levels: ActiveValue::NotSet,
-                                voltage: ActiveValue::NotSet,
-                                channelutil: ActiveValue::NotSet,
-                                airutil: ActiveValue::NotSet,
-                                latitude: ActiveValue::NotSet,
-                                longitude: ActiveValue::NotSet,
-                            };
+                        // Create updated devicemetrics row
+                        let upd_dm = devicemetrics::ActiveModel {
+                            msg_id: ActiveValue::Set(fake_msg_id.expect("No fake_msg_id provided")),
+                            node_id: ActiveValue::Set(mp.from),
+                            time: ActiveValue::Set(Utc::now().naive_utc()),
+                            longname: ActiveValue::Set(Some(user.long_name.clone())),
+                            shortname: ActiveValue::Set(Some(user.short_name.clone())),
+                            hwmodel: ActiveValue::Set(Some(user.hw_model)),
+                            battery_levels: ActiveValue::NotSet,
+                            voltage: ActiveValue::NotSet,
+                            channelutil: ActiveValue::NotSet,
+                            airutil: ActiveValue::NotSet,
+                            latitude: ActiveValue::NotSet,
+                            longitude: ActiveValue::NotSet,
+                        };
 
-                            // Try updating the nodeinfo row
-                            match upd_ni.update(db).await.with_context(|| {
-                                format!(
-                                    "Failed to update nodeinfo row entry for {} into {} db",
-                                    mp.from,
-                                    db.get_db_name()
-                                )
-                            }) {
-                                Ok(_) => {
-                                    row_insert_count += 1;
-                                }
-                                Err(e) => {
-                                    error!("{e}");
-                                }
+                        // Try updating the nodeinfo row
+                        match upd_ni.update(db).await.with_context(|| {
+                            format!(
+                                "Failed to update nodeinfo row entry for {} into {} db",
+                                mp.from,
+                                db.get_db_name()
+                            )
+                        }) {
+                            Ok(_) => {
+                                row_insert_count += 1;
                             }
+                            Err(e) => {
+                                error!("{e}");
+                            }
+                        }
 
-                            // Try inserting the new devicemetrics row
-                            match devicemetrics::Entity::insert(upd_dm)
+                        // Try inserting the new devicemetrics row
+                        match devicemetrics::Entity::insert(upd_dm)
                                 .on_conflict(OnConflict::column(devicemetrics::Column::MsgId))
                                 .do_nothing()
                                 .exec(db)
@@ -275,15 +274,12 @@ async fn node_info_conflict(
                                     error!("{e}");
                                 }
                             }
-                        }
-                    } else {
-                        // No entry in db, so we insert a new unheard node into both devicemetrics
-                        // and the nodeinfo table.
-                        return new_node(ni, db, fake_msg_id, dep_loc).await;
                     }
                 }
-                Err(e) => {
-                    error!("{e}");
+                None => {
+                    // No entry in db, so we insert a new unheard node into both devicemetrics
+                    // and the nodeinfo table.
+                    return new_node(ni, db, fake_msg_id, dep_loc).await;
                 }
             }
         } else {

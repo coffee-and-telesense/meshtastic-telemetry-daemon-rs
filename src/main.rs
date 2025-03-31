@@ -76,22 +76,30 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let deployment_loc = get_cfg_string(&settings, "deployment_location");
 
-    let (tx, mut rx) = mpsc::channel(32);
+    // Decrease the channel size to 4 from 32, in order to prevent OOMs
+    let (tx, mut rx) = mpsc::channel(4);
 
     // This loop can be broken with ctrl+c, or by disconnecting
     // the attached serial port.
     while let Some(decoded) = decoded_listener.recv().await {
-        let st = Arc::clone(&state);
-        let dc = decoded.clone();
-        let tx2 = tx.clone();
-        tokio::spawn(async move {
-            tx2.send(packet_handler::process_packet(&dc, &st))
+        let tx = tx.clone();
+        let s = state.clone();
+        let join = tokio::spawn(async move {
+            // Process packet will consume decoded on this iteration, but needs to be able to
+            // asynchronously pass back results, so in cases where multiple packets arrive
+            // simultaneously we can parallel process up to 4 and then send them back to here.
+            // Although the more elegant solution will be bridging the types with eval macros rules
+            // and eliminating vast swaths of the codebase. This will also let us elimnate this
+            // barrier between db inserts and packet receptions. But for now lets do a hacky
+            // solution just to test the borrow checker and my async skills as the problem may
+            // still exist within the more elegant solution.
+            tx.send(packet_handler::process_packet(decoded, s))
                 .await
                 .unwrap();
         });
         if let Some(pkt) = rx.recv().await.unwrap() {
-            match pkt.clone() {
-                Pkt::Mesh(mp) => {
+            match pkt {
+                Pkt::Mesh(ref mp) => {
                     #[cfg(feature = "print-packets")]
                     println!("{}", to_string_pretty(&mp).unwrap());
                     match update_metrics(&postgres_db, &pkt, None, &deployment_loc)
@@ -110,7 +118,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                         Err(e) => error!("{e}"),
                     }
                 }
-                Pkt::NInfo(ni) => {
+                Pkt::NInfo(ref ni) => {
                     #[cfg(feature = "print-packets")]
                     println!("{}", to_string_pretty(&ni).unwrap());
                     let fake = state
@@ -146,11 +154,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                         }
                     }
                 }
-                Pkt::MyNodeInfo(mi) => {
+                Pkt::MyNodeInfo(ref mi) => {
                     #[cfg(feature = "print-packets")]
                     println!("{}", to_string_pretty(&mi).unwrap());
                 }
             }
+            // Thread has been used to process and send to DB, kill it
+            let _res = join.await?;
         }
     }
 

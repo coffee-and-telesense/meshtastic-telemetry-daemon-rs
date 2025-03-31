@@ -13,6 +13,10 @@ use sea_orm::{ConnectOptions, Database, DatabaseConnection};
 pub async fn setup(cfg: &config::Config) -> Result<DatabaseConnection> {
     // Connect to postgres db
     let mut opt = ConnectOptions::new(build_db_connection_string(cfg));
+
+    // Set max connections to 2 and minimum to 1
+    opt.max_connections(1).min_connections(1);
+
     #[cfg(debug_assertions)]
     {
         opt.sqlx_logging(true);
