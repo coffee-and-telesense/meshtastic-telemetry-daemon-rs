@@ -20,6 +20,7 @@ use crate::util::{
     types::{GatewayState, Pkt},
 };
 use anyhow::{Context, Result};
+use db::lite::{drop_old_rows, pragma_optimize};
 use db::{lite, postgres};
 #[cfg(feature = "debug")]
 use log::{error, info, warn};
@@ -28,6 +29,7 @@ use meshtastic::utils;
 #[cfg(feature = "print-packets")]
 use serde_json::to_string_pretty;
 use std::sync::{Arc, Mutex};
+use std::time::Instant;
 use tokio::sync::mpsc;
 
 /// Database interaction module
@@ -41,7 +43,7 @@ pub(crate) mod util;
 ///
 /// # Returns
 /// * Result of () or an Error
-#[tokio::main]
+#[tokio::main(worker_threads = 2)]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     #[cfg(debug_assertions)]
     let settings = read_config("example_config.toml");
@@ -60,6 +62,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let sqlite_db = lite::setup()
         .await
         .with_context(|| "Failed to setup sqlite database")?;
+
+    // Timers for optimization of sqlite
+    let mut few_hours = Instant::now();
+    let mut daily = few_hours.clone();
 
     // Connect to serial meshtastic
     let stream_api = StreamApi::new();
@@ -161,6 +167,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
             // Thread has been used to process and send to DB, kill it
             let _res = join.await?;
+            // Dumb sqlite optimizations
+            few_hours = pragma_optimize(&sqlite_db, few_hours);
+            daily = drop_old_rows(&sqlite_db, daily);
         }
     }
 
