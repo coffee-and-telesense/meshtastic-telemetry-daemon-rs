@@ -16,7 +16,7 @@ use std::{str::FromStr, time::Instant};
 /// * `DatabaseConnection` - Connection to the sqlite3 db
 pub async fn setup() -> Result<DatabaseConnection> {
     // Create connections options
-    let conn_opts = sqlite::SqliteConnectOptions::from_str("sqlite:///tmp/mesh-tele.db?mode=rw")
+    let conn_opts = sqlite::SqliteConnectOptions::from_str("sqlite:///tmp/mesh-tele.db?mode=rwc")
         .with_context(|| "Error connecting to sqlite db at /tmp/mesh-tele.db");
     match conn_opts {
         Ok(mut co) => {
@@ -39,15 +39,11 @@ pub async fn setup() -> Result<DatabaseConnection> {
                 .pragma("mmap_size", "65536")
                 // Turn on auto vacuuming
                 .auto_vacuum(sqlite::SqliteAutoVacuum::Full)
-                // Run a vacuum
-                .pragma("vacuum", "")
-                // Optimize the DB
-                .pragma("optimize", "")
                 // Create the file if it is missing
                 .create_if_missing(true);
             // Logging settings
             #[cfg(debug_assertions)]
-            let c = co.log_statements(LevelFilter::Debug);
+            let c = co.log_statements(LevelFilter::Trace);
             #[cfg(not(debug_assertions))]
             let c = co.log_statements(LevelFilter::Off);
             // Set connection timeout?
@@ -71,13 +67,22 @@ pub async fn setup() -> Result<DatabaseConnection> {
 const TABLES: [&str; 3] = ["airqualitymetrics", "devicemetrics", "environmentmetrics"];
 
 /// Drop old table rows periodically
-pub fn drop_old_rows(db: &DatabaseConnection, last: Instant) -> Instant {
+pub async fn drop_old_rows(db: &DatabaseConnection, last: Instant) -> Instant {
     if last.elapsed().as_secs() >= 7200 {
         for t in TABLES {
-            db.execute(Statement::from_string(
-                sea_orm::DatabaseBackend::Sqlite,
-                format!("DELETE FROM {} WHERE time <= date('now','-30 day')", t),
-            ));
+            match db
+                .execute(Statement::from_string(
+                    sea_orm::DatabaseBackend::Sqlite,
+                    format!("DELETE FROM {} WHERE time <= date('now','-30 day')", t),
+                ))
+                .await
+            {
+                Ok(a) => log::trace!(
+                    "Successfully dropped {} old rows from sqlite",
+                    a.rows_affected()
+                ),
+                Err(e) => log::error!("Error dropping old rows from sqlite: {e}"),
+            }
         }
     }
     Instant::now()
@@ -85,17 +90,24 @@ pub fn drop_old_rows(db: &DatabaseConnection, last: Instant) -> Instant {
 
 /// Optimize the db regularly for memory usage and performance
 /// https://www.sqlite.org/pragma.html#pragma_optimize
-pub fn pragma_optimize(db: &DatabaseConnection, last: Instant) -> Instant {
+pub async fn pragma_optimize(db: &DatabaseConnection, last: Instant) -> Instant {
     if last.elapsed().as_secs() >= 86400 {
-        db.execute(Statement::from_string(
-            sea_orm::DatabaseBackend::Sqlite,
-            "pragma optimize",
-        ));
+        match db
+            .execute(Statement::from_string(
+                sea_orm::DatabaseBackend::Sqlite,
+                "pragma optimize",
+            ))
+            .await
+        {
+            Ok(a) => log::trace!("Optimized sqlite: {} rows affected", a.rows_affected()),
+            Err(e) => log::error!("Error optimizing sqlite: {e}"),
+        }
     }
     Instant::now()
 }
 
 async fn setup_schema(db: &DatabaseConnection) {
+    log::trace!("Setting up sqlite database");
     let schema = Schema::new(DbBackend::Sqlite);
     let em_stmt: TableCreateStatement = schema.create_table_from_entity(environmentmetrics::Entity);
     let dm_stmt: TableCreateStatement = schema.create_table_from_entity(devicemetrics::Entity);

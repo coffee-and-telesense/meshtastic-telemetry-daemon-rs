@@ -4,7 +4,6 @@ use crate::{
 };
 use anyhow::{Context, Result};
 use chrono::Utc;
-use futures::TryStreamExt;
 #[cfg(feature = "debug")]
 use log::{error, info};
 use sea_orm::{
@@ -195,8 +194,8 @@ async fn node_info_conflict(
             // Our local state already has the updated node entry from the bridge (either serial or
             // mesh), so we just need to determine if we should insert or update an entry in the
             // database.
-            let mut curr = nodeinfo::Entity::find_by_id(ni.num)
-                .stream(db)
+            let found = nodeinfo::Entity::find_by_id(ni.num)
+                .one(db)
                 .await
                 .with_context(|| {
                     format!(
@@ -205,7 +204,6 @@ async fn node_info_conflict(
                     )
                 })?;
 
-            let found = curr.try_next().await?;
             match found {
                 Some(u) => {
                     // Found an entry in the db, check if any nodeinfo columns need to be

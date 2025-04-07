@@ -1,6 +1,5 @@
 #[cfg(not(debug_assertions))]
 use anyhow::Context;
-#[cfg(not(debug_assertions))]
 use log::LevelFilter;
 #[cfg(not(debug_assertions))]
 use syslog::{BasicLogger, Facility, Formatter3164};
@@ -18,7 +17,10 @@ use syslog::{BasicLogger, Facility, Formatter3164};
 /// None
 pub(crate) fn set_logger() {
     #[cfg(feature = "debug")]
-    colog::init();
+    {
+        log::set_max_level(LevelFilter::Trace);
+        colog::init();
+    }
     #[cfg(not(debug_assertions))]
     {
         let formatter = Formatter3164 {

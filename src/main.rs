@@ -63,10 +63,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .await
         .with_context(|| "Failed to setup sqlite database")?;
 
-    // Timers for optimization of sqlite
-    let mut few_hours = Instant::now();
-    let mut daily = few_hours.clone();
-
     // Connect to serial meshtastic
     let stream_api = StreamApi::new();
     let entered_port = get_serial_port(&settings);
@@ -84,6 +80,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Decrease the channel size to 4 from 32, in order to prevent OOMs
     let (tx, mut rx) = mpsc::channel(4);
+
+    // Timers for optimization of sqlite
+    let mut few_hours = Instant::now();
+    let mut daily = few_hours.clone();
 
     // This loop can be broken with ctrl+c, or by disconnecting
     // the attached serial port.
@@ -168,8 +168,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             // Thread has been used to process and send to DB, kill it
             let _res = join.await?;
             // Dumb sqlite optimizations
-            few_hours = pragma_optimize(&sqlite_db, few_hours);
-            daily = drop_old_rows(&sqlite_db, daily);
+            few_hours = pragma_optimize(&sqlite_db, few_hours).await;
+            daily = drop_old_rows(&sqlite_db, daily).await;
         }
     }
 

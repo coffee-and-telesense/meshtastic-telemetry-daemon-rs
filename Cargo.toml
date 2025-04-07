@@ -22,8 +22,6 @@ config = { version = "0.15.9", default-features = false, features = [
   "async",
   "toml",
 ] }
-# reduce allocs on find()
-futures = { version = "0.3.31" }
 # Logger
 log = { version = "0.4.26", default-features = false }
 # My fork of the meshtastic protocol library with updated protobufs---no serde
