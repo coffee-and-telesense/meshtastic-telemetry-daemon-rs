@@ -97,13 +97,21 @@ pub fn process_packet(packet: FromRadio, state: Arc<Mutex<GatewayState>>) -> Opt
                                                         ));
                                                         return Some(Pkt::Mesh(pkt));
                                                     }
-                                                    telemetry::Variant::LocalStats(_stats) => {
-                                                        //TODO this will be a possible better solution
-                                                        return None;
+                                                    telemetry::Variant::LocalStats(lstats) => {
+                                                        pkt.payload = Some(Payload::TelemetryApp(
+                                                            Telem::Local(lstats),
+                                                        ));
+                                                        return Some(Pkt::Mesh(pkt));
                                                     }
                                                     telemetry::Variant::HealthMetrics(_) => {
                                                         // Do not care about health metrics right now
                                                         return None;
+                                                    }
+                                                    telemetry::Variant::ErrorMetrics(em) => {
+                                                        pkt.payload = Some(Payload::TelemetryApp(
+                                                            Telem::Error(em),
+                                                        ));
+                                                        return Some(Pkt::Mesh(pkt));
                                                     }
                                                 }
                                             }

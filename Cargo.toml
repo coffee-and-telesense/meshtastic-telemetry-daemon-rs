@@ -49,9 +49,14 @@ tokio = { version = "1.43.0", features = ["macros"] }
 [features]
 default = []
 debug = ["dep:colog", "anyhow/std", "anyhow/backtrace"]
-print-packets = ["dep:serde_json", "serde/derive", "meshtastic/serde"]
+print-packets = ["meshtastic/serde"]
 sqlite = ["sea-orm/sqlx-sqlite"]
-postgres = ["sea-orm/sqlx-postgres"]
+postgres = [
+  "dep:serde_json",
+  "serde/derive",
+  "sea-orm/sqlx-postgres",
+  "sea-orm/postgres-vector",
+]
 # aredn/openwrt feature flags for aredn releases
 aredn = ["dep:syslog", "sqlite", "postgres", "sea-orm/runtime-tokio-rustls"]
 pi = ["dep:syslog", "sqlite", "postgres", "sea-orm/runtime-tokio-rustls"]

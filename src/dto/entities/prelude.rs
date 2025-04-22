@@ -6,6 +6,8 @@ pub(super) use super::airqualitymetrics::Entity as Airqualitymetrics;
 pub(super) use super::devicemetrics::Entity as Devicemetrics;
 /// Environment metrics entity alias
 pub(super) use super::environmentmetrics::Entity as Environmentmetrics;
+/// Error metrics entity alias
+pub(super) use super::errormetrics::Entity as ErrorMetrics;
 /// Local stats entity alias
 pub(super) use super::localstats::Entity as Localstats;
 /// Neighbor info entity alias

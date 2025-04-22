@@ -3,21 +3,20 @@ use crate::{
         airqualitymetrics::Model as AirQualityMetricsModel,
         devicemetrics::Model as DeviceMetricsModel,
         environmentmetrics::Model as EnvironmentMetricsModel,
-        neighborinfo::Model as NeighborInfoModel,
+        errormetrics::Model as ErrorMetricsModel, neighborinfo::Model as NeighborInfoModel,
     },
-    util::types::{Mesh, Names},
+    util::types::{Mesh, Names, Neighbor},
 };
 use anyhow::{Context, Result};
 use chrono::Utc;
 #[cfg(feature = "debug")]
 use log::error;
-use meshtastic::protobufs::{
-    AirQualityMetrics, DeviceMetrics, EnvironmentMetrics, NeighborInfo, Position,
-};
+use meshtastic::protobufs::{AirQualityMetrics, DeviceMetrics, EnvironmentMetrics, NeighborInfo};
 use sea_orm::{
     ActiveModelBehavior, ActiveModelTrait, ConnectionTrait, DatabaseBackend, DatabaseConnection,
     EntityTrait, IntoActiveModel,
 };
+use serde_json::{json, Value};
 use std::marker::Send;
 
 /// Insert row to a table
@@ -184,6 +183,37 @@ impl EnvironmentMetricsModel {
     }
 }
 
+/*
+impl ErrorMetricsModel {
+    // Insert an Neighbor Info row
+    //
+    // This function proxies `insert_row_gen()` to leverage generics
+    //
+    // # Arguments
+    // * `self` - A `NeighborInfo::Model` type
+    // * `db` - A `DatabaseConnection` pool
+    //
+    // # Returns
+    // * Result with number of rows inserted
+    pub(crate) async fn insert_row(self, db: &DatabaseConnection) -> Result<u32> {
+        match db.get_database_backend() {
+            DatabaseBackend::Sqlite => Ok(0),
+            _ => insert_row_gen(self.into_active_model(), db, "neighborinfo".to_string()).await,
+        }
+    }
+    /// Create an Neighbor Info Model
+    ///
+    /// # Arguments
+    /// * `pkt` - a `Mesh` packet
+    /// * `data` - `NeighborInfo` payload
+    ///
+    /// # Returns
+    /// * A Neighbor Info Model
+    #[must_use]
+    pub(crate) fn create_model(pkt: &Mesh, data: NeighborInfo) -> Self {
+    }
+}*/
+
 impl NeighborInfoModel {
     // Insert an Neighbor Info row
     //
@@ -221,8 +251,13 @@ impl NeighborInfoModel {
             neighbors: Some(
                 data.neighbors
                     .into_iter()
-                    .map(|n| n.node_id)
-                    .collect::<Vec<u32>>(),
+                    .map(|n| {
+                        json!(&Neighbor {
+                            node_id: n.node_id,
+                            snr: n.snr,
+                        })
+                    })
+                    .collect::<Vec<Value>>(),
             ),
         }
     }

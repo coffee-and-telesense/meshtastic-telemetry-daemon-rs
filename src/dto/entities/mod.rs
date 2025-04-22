@@ -9,6 +9,8 @@ pub(crate) mod airqualitymetrics;
 pub(crate) mod devicemetrics;
 /// Environment metrics table
 pub(crate) mod environmentmetrics;
+/// Error metrics table
+pub(crate) mod errormetrics;
 /// Local stats table
 pub(crate) mod localstats;
 /// Neighbor info table

@@ -16,7 +16,7 @@ pub struct Model {
     pub last_sent_by_id: Option<u32>,
     #[sea_orm(column_type = "custom(\"oid\")", nullable)]
     pub node_broadcast_interval_secs: Option<u32>,
-    pub neighbors: Option<Vec<u32>>,
+    pub neighbors: Option<Vec<Json>>,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]

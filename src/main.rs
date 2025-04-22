@@ -114,9 +114,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         });
         if let Some(pkt) = rx.recv().await.unwrap() {
             match pkt {
-                Pkt::Mesh(ref mp) => {
+                Pkt::Mesh(ref _mp) => {
                     #[cfg(feature = "print-packets")]
-                    println!("{}", to_string_pretty(&mp).unwrap());
+                    println!("{}", to_string_pretty(&_mp).unwrap());
                     #[cfg(feature = "postgres")]
                     match update_metrics(&postgres_db, &pkt, None, &deployment_loc)
                         .await
@@ -173,9 +173,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                         }
                     }
                 }
-                Pkt::MyNodeInfo(ref mi) => {
+                Pkt::MyNodeInfo(ref _mi) => {
                     #[cfg(feature = "print-packets")]
-                    println!("{}", to_string_pretty(&mi).unwrap());
+                    println!("{}", to_string_pretty(&_mi).unwrap());
                 }
             }
             // Thread has been used to process and send to DB, kill it

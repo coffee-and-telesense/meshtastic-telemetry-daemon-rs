@@ -1,10 +1,12 @@
 use meshtastic::protobufs::{
-    mesh_packet::PayloadVariant, AirQualityMetrics, DeviceMetrics, EnvironmentMetrics, MeshPacket,
-    MyNodeInfo, NeighborInfo, NodeInfo, Position, PowerMetrics, RouteDiscovery, Routing, User,
+    mesh_packet::PayloadVariant, AirQualityMetrics, DeviceMetrics, EnvironmentMetrics,
+    ErrorMetrics, LocalStats, MeshPacket, MyNodeInfo, NeighborInfo, NodeInfo, Position,
+    PowerMetrics, RouteDiscovery, Routing, User,
 };
 use sea_orm::{ConnectionTrait, DatabaseBackend, DatabaseConnection};
 #[cfg(feature = "print-packets")]
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
+use serde::Serialize;
 use std::collections::HashMap;
 
 /// Trait to proxy enum matching to database names
@@ -188,6 +190,10 @@ pub enum Telem {
     AirQuality(AirQualityMetrics),
     /// Power metrics like voltage
     Power(PowerMetrics),
+    /// Local stats
+    Local(LocalStats),
+    /// Error metrics
+    Error(ErrorMetrics),
 }
 
 /// Mesh packet structure that aliases the Meshtastic library's `MeshPacket`
@@ -344,4 +350,24 @@ pub enum Pkt {
     NInfo(NInfo),
     /// `MyNodeInfo` packets arriving on serial
     MyNodeInfo(MyInfo),
+}
+
+/// Neighbor struct to make JSON for NeighborInfo table
+#[cfg_attr(feature = "print-packets", derive(Deserialize))]
+#[derive(Serialize)]
+pub struct Neighbor {
+    pub node_id: u32,
+    pub snr: f32,
+}
+
+/// Error reason counts
+#[cfg_attr(feature = "print-packets", derive(Deserialize))]
+#[derive(Serialize)]
+pub struct ErrorCounts {
+    pub no_routes: u32,
+    pub naks: u32,
+    pub timeouts: u32,
+    pub max_retransmits: u32,
+    pub no_channels: u32,
+    pub too_large: u32,
 }
