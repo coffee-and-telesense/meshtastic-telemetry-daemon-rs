@@ -24,12 +24,18 @@ cargo build --features debug
 cargo build --features release --release
 ```
 
+### Build release for `ARMv8 64` (Raspberry Pi4 B)
+
+```sh
+CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_RUSTFLAGS="-Zlocation-detail=none -Zfmt-debug=none" cross +nightly build --features release --release --target aarch64-unknown-linux-gnu -Zbuild-std-features=optimize_for_size,panic_immediate_abort
+```
+
 ### Build release for `MIPS`
 
 You must have [cross](https://github.com/cross-rs/cross?tab=readme-ov-file#dependencies) installed with all its dependencies. Unless you are building natively on `MIPS`.
 
 ```sh
-CARGO_TARGET_MIPS_UNKNOWN_LINUX_MUSL_RUSTFLAGS="-Zlocation-detail=none -Zfmt-debug=none" cross +nightly build --features release --release --target mips-unknown-linux-musl -Zbuild-std-features=optimize_for_size,panic_immediate_abort
+CARGO_TARGET_MIPS_UNKNOWN_LINUX_MUSL_RUSTFLAGS="-Zlocation-detail=none -Zfmt-debug=none" cross +nightly build --features aredn --release --target mips-unknown-linux-musl -Zbuild-std-features=optimize_for_size,panic_immediate_abort
 
 # Then compress the executable further with upx
 upx --brute target/mips-unknown-linux-musl/release/meshtastic-telemetry-daemon-rs
@@ -86,4 +92,3 @@ Your browser should then open to this repo's documentation as generated from the
 [`serde`](https://crates.io/crates/serde) is the serialization/deserialization library, you can use it to parse the packets and grab what data we want and then do whatever with it.
 
 Cargo.toml has more crates being used.
-

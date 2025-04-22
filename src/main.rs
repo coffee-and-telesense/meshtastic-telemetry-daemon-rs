@@ -1,3 +1,4 @@
+#![feature(stmt_expr_attributes)]
 #![warn(missing_docs)]
 #![warn(clippy::cargo)]
 #![warn(clippy::pedantic)]
@@ -12,6 +13,7 @@ extern crate syslog;
 #[macro_use]
 extern crate log;
 
+#[cfg(any(feature = "sqlite", feature = "postgres"))]
 use crate::db::connection::update_metrics;
 use crate::dto::packet_handler;
 use crate::util::{
@@ -20,8 +22,10 @@ use crate::util::{
     types::{GatewayState, Pkt},
 };
 use anyhow::{Context, Result};
-use db::lite::{drop_old_rows, pragma_optimize};
-use db::{lite, postgres};
+#[cfg(feature = "sqlite")]
+use db::lite::{self, drop_old_rows, pragma_optimize};
+#[cfg(feature = "postgres")]
+use db::postgres;
 #[cfg(feature = "debug")]
 use log::{error, info, warn};
 use meshtastic::api::StreamApi;
@@ -33,6 +37,7 @@ use std::time::Instant;
 use tokio::sync::mpsc;
 
 /// Database interaction module
+#[cfg(any(feature = "sqlite", feature = "postgres"))]
 pub(crate) mod db;
 /// Handle data transfer objects
 pub(crate) mod dto;
@@ -56,9 +61,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let state = Arc::new(Mutex::new(GatewayState::new()));
 
     // Create postgresql connection
+    #[cfg(feature = "postgres")]
     let postgres_db = postgres::setup(&settings).await?;
 
     // Create sqlite db
+    #[cfg(feature = "sqlite")]
     let sqlite_db = lite::setup()
         .await
         .with_context(|| "Failed to setup sqlite database")?;
@@ -82,7 +89,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let (tx, mut rx) = mpsc::channel(4);
 
     // Timers for optimization of sqlite
+    #[cfg(feature = "sqlite")]
     let mut few_hours = Instant::now();
+    #[cfg(feature = "sqlite")]
     let mut daily = few_hours.clone();
 
     // This loop can be broken with ctrl+c, or by disconnecting
@@ -108,6 +117,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 Pkt::Mesh(ref mp) => {
                     #[cfg(feature = "print-packets")]
                     println!("{}", to_string_pretty(&mp).unwrap());
+                    #[cfg(feature = "postgres")]
                     match update_metrics(&postgres_db, &pkt, None, &deployment_loc)
                         .await
                         .with_context(|| {
@@ -116,6 +126,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                         Ok(v) => info!("inserted {v} rows into postgres db"),
                         Err(e) => error!("{e}"),
                     }
+                    #[cfg(feature = "sqlite")]
                     match update_metrics(&sqlite_db, &pkt, None, &deployment_loc)
                         .await
                         .with_context(|| "Failed to update sqlite datatbase with packet from mesh")
@@ -133,6 +144,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                         .find_fake_id(ni.num)
                         .map(|n| Some(n.into()))
                         .expect("No fake_id returned");
+                    #[cfg(feature = "postgres")]
                     match update_metrics(&postgres_db, &pkt, fake, &deployment_loc)
                         .await
                         .with_context(|| {
@@ -146,6 +158,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                             info!("{e}");
                         }
                     }
+                    #[cfg(feature = "sqlite")]
                     match update_metrics(&sqlite_db, &pkt, fake, &deployment_loc)
                         .await
                         .with_context(|| {
@@ -168,8 +181,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             // Thread has been used to process and send to DB, kill it
             let _res = join.await?;
             // Dumb sqlite optimizations
-            few_hours = pragma_optimize(&sqlite_db, few_hours).await;
-            daily = drop_old_rows(&sqlite_db, daily).await;
+            #[cfg(feature = "sqlite")]
+            {
+                few_hours = pragma_optimize(&sqlite_db, few_hours).await;
+                daily = drop_old_rows(&sqlite_db, daily).await;
+            }
         }
     }
 
