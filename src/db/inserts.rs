@@ -5,13 +5,15 @@ use crate::{
         environmentmetrics::Model as EnvironmentMetricsModel,
         errormetrics::Model as ErrorMetricsModel, neighborinfo::Model as NeighborInfoModel,
     },
-    util::types::{Mesh, Names, Neighbor},
+    util::types::{ErrorCounts, Mesh, Names, Neighbor},
 };
 use anyhow::{Context, Result};
 use chrono::Utc;
 #[cfg(feature = "debug")]
 use log::error;
-use meshtastic::protobufs::{AirQualityMetrics, DeviceMetrics, EnvironmentMetrics, NeighborInfo};
+use meshtastic::protobufs::{
+    AirQualityMetrics, DeviceMetrics, EnvironmentMetrics, ErrorMetrics, NeighborInfo,
+};
 use sea_orm::{
     ActiveModelBehavior, ActiveModelTrait, ConnectionTrait, DatabaseBackend, DatabaseConnection,
     EntityTrait, IntoActiveModel,
@@ -183,14 +185,13 @@ impl EnvironmentMetricsModel {
     }
 }
 
-/*
 impl ErrorMetricsModel {
-    // Insert an Neighbor Info row
+    // Insert an Error Metrics row
     //
     // This function proxies `insert_row_gen()` to leverage generics
     //
     // # Arguments
-    // * `self` - A `NeighborInfo::Model` type
+    // * `self` - A `ErrorMetrics::Model` type
     // * `db` - A `DatabaseConnection` pool
     //
     // # Returns
@@ -198,7 +199,7 @@ impl ErrorMetricsModel {
     pub(crate) async fn insert_row(self, db: &DatabaseConnection) -> Result<u32> {
         match db.get_database_backend() {
             DatabaseBackend::Sqlite => Ok(0),
-            _ => insert_row_gen(self.into_active_model(), db, "neighborinfo".to_string()).await,
+            _ => insert_row_gen(self.into_active_model(), db, "errormetrics".to_string()).await,
         }
     }
     /// Create an Neighbor Info Model
@@ -210,9 +211,28 @@ impl ErrorMetricsModel {
     /// # Returns
     /// * A Neighbor Info Model
     #[must_use]
-    pub(crate) fn create_model(pkt: &Mesh, data: NeighborInfo) -> Self {
+    pub(crate) fn create_model(pkt: &Mesh, data: ErrorMetrics) -> Self {
+        Self {
+            msg_id: pkt.id,
+            node_id: pkt.from,
+            time: Utc::now().naive_utc(),
+            collision_rate: data.collision_rate,
+            node_reach: data.node_reach,
+            num_nodes: data.num_nodes,
+            usefulness: data.usefulness,
+            avg_delay: data.avg_delay,
+            period: data.period,
+            errors: Some(json!(&ErrorCounts {
+                no_routes: data.noroute,
+                naks: data.naks,
+                timeouts: data.timeouts,
+                max_retransmits: data.max_retransmit,
+                no_channels: data.no_channel,
+                too_large: data.too_large
+            })),
+        }
     }
-}*/
+}
 
 impl NeighborInfoModel {
     // Insert an Neighbor Info row

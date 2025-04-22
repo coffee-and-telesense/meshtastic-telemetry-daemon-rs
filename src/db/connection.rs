@@ -54,14 +54,15 @@ pub(crate) async fn update_metrics(
                                 .await
                         }
 
-                        Telem::Local(data) => {
+                        Telem::Local(_data) => {
                             // not being sent via mesh yet
                             Ok(0)
                         }
 
                         Telem::Error(data) => {
-                            //TODO: implement this
-                            Ok(0)
+                            errormetrics::Model::create_model(mp, data)
+                                .insert_row(db)
+                                .await
                         }
 
                         Telem::Power(_data) => {

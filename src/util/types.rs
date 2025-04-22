@@ -364,10 +364,10 @@ pub struct Neighbor {
 #[cfg_attr(feature = "print-packets", derive(Deserialize))]
 #[derive(Serialize)]
 pub struct ErrorCounts {
-    pub no_routes: u32,
-    pub naks: u32,
-    pub timeouts: u32,
-    pub max_retransmits: u32,
-    pub no_channels: u32,
-    pub too_large: u32,
+    pub no_routes: Option<u32>,
+    pub naks: Option<u32>,
+    pub timeouts: Option<u32>,
+    pub max_retransmits: Option<u32>,
+    pub no_channels: Option<u32>,
+    pub too_large: Option<u32>,
 }
