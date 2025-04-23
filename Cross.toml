@@ -1,13 +1,42 @@
 [build]
 default-target = "mips-unknown-linux-musl"
 
+# AREDN on miktrotik hap ac lite target
 [target.mips-unknown-linux-musl]
 build-std = ["std", "panic_abort"]
 image = "ghcr.io/cross-rs/mips-unknown-linux-musl:main"
 
+# Raspberry pi target
 [target.aarch64-unknown-linux-gnu]
 build-std = ["std", "panic_abort"]
 #pre-build = [
 #  "dpkg --add-architecture $CROSS_DEB_ARCH",
 #  "apt-get update && apt-get install --assume-yes libssl3:$CROSS_DEB_ARCH libssl-dev:$CROSS_DEB_ARCH",
 #]
+
+#TODO: Test this build
+# arm64, or x86 64 bit alpine linux
+[target.x86_64-unknown-linux-musl]
+image.name = "alpine:latest"
+image.toolchain = ["x86_64-unknown-linux-musl"]
+pre-build = [
+  "apk upgrade --update-cache --available && apk add --no-cache gcc musl-dev openssl-dev openssl-libs-static && rm -rf /var/cache/apk/*",
+]
+
+#TODO: Test this build
+# aarch64, or ARM 64 bit alpine linux
+[target.aarch64-unknown-linux-musl]
+image.name = "alpine:latest"
+image.toolchain = ["aarch64-unknown-linux-musl"]
+pre-build = [
+  "apk upgrade --update-cache --available && apk add --no-cache gcc musl-dev openssl-dev openssl-libs-static && rm -rf /var/cache/apk/*",
+]
+
+#TODO: Test this build
+# armv6, or ARM 32 bit alpine linux (v6 or v7 agnostic)
+[target.arm-unknown-linux-muslabi]
+image.name = "alpine:latest"
+image.toolchain = ["arm-unknown-linux-muslabi"]
+pre-build = [
+  "apk upgrade --update-cache --available && apk add --no-cache gcc musl-dev openssl-dev openssl-libs-static && rm -rf /var/cache/apk/*",
+]
