@@ -30,6 +30,18 @@ cargo build --features release --release
 CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_RUSTFLAGS="-Zlocation-detail=none -Zfmt-debug=none" cross +nightly build --features release --release --target aarch64-unknown-linux-gnu -Zbuild-std-features=optimize_for_size,panic_immediate_abort
 ```
 
+### Build release for `X86_64` Alpine Linux Container
+
+```sh
+CARGO_TARGET_x86_64_UNKNOWN_LINUX_MUSL_RUSTFLAGS="-Zlocation-detail=none -Zfmt-debug=none" cross +nightly build --features alpine --release --target x86_64-unknown-linux-musl -Zbuild-std-features=optimize_for_size,panic_immediate_abort
+```
+
+### Build release for `ARM 64 bit` Alpine Linux Container
+
+```sh
+CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_RUSTFLAGS="-Zlocation-detail=none -Zfmt-debug=none" cross +nightly build --features alpine --release --target aarch64-unknown-linux-musl -Zbuild-std-features=optimize_for_size,panic_immediate_abort
+```
+
 ### Build release for `MIPS`
 
 You must have [cross](https://github.com/cross-rs/cross?tab=readme-ov-file#dependencies) installed with all its dependencies. Unless you are building natively on `MIPS`.
