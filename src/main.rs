@@ -17,15 +17,13 @@ extern crate log;
 use crate::db::connection::update_metrics;
 use crate::dto::packet_handler;
 use crate::util::{
-    config::{build_db_connection_string, get_cfg_string, get_serial_port, read_config},
+    config::Settings,
     log::set_logger,
     types::{GatewayState, Pkt},
 };
 use anyhow::{Context, Result};
 #[cfg(feature = "sqlite")]
 use db::lite::{self, drop_old_rows, pragma_optimize};
-#[cfg(feature = "postgres")]
-use db::postgres;
 #[cfg(feature = "debug")]
 use log::{error, info, warn};
 use meshtastic::api::StreamApi;
@@ -51,9 +49,9 @@ pub(crate) mod util;
 #[tokio::main(worker_threads = 2)]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     #[cfg(debug_assertions)]
-    let settings = read_config("example_config.toml");
+    let settings = Settings::new("example_config.toml");
     #[cfg(not(debug_assertions))]
-    let settings = read_config("/etc/meshtastic_telem.toml");
+    let settings = Settings::new("/etc/meshtastic_telem.toml");
 
     set_logger();
 
@@ -62,17 +60,21 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Create postgresql connection
     #[cfg(feature = "postgres")]
-    let postgres_db = postgres::setup(&settings).await?;
+    let postgres_db = settings
+        .setup_postgres()
+        .await
+        .with_context(|| "Failed to connect to postgresql database")?;
 
     // Create sqlite db
     #[cfg(feature = "sqlite")]
-    let sqlite_db = lite::setup()
+    let sqlite_db = settings
+        .setup_sqlite()
         .await
         .with_context(|| "Failed to setup sqlite database")?;
 
     // Connect to serial meshtastic
     let stream_api = StreamApi::new();
-    let entered_port = get_serial_port(&settings);
+    let entered_port = settings.get_serial_port();
     let serial_stream = utils::stream::build_serial_stream(entered_port.clone(), None, None, None)
         .with_context(|| format!("Failed to build serial stream for {entered_port}"))?;
     let (mut decoded_listener, stream_api) = stream_api.connect(serial_stream).await;
@@ -83,7 +85,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .await
         .with_context(|| "Failed to configure serial stream")?;
 
-    let deployment_loc = get_cfg_string(&settings, "deployment_location");
+    let deployment_loc = settings.deployment.location;
 
     // Decrease the channel size to 4 from 32, in order to prevent OOMs
     let (tx, mut rx) = mpsc::channel(4);

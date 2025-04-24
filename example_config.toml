@@ -1,7 +1,30 @@
+[postgres]
 user = "postgres"
 password = "postgres"
 port = 5431
 host = "localhost"
 dbname = "meshtastic"
-#serial_port = "/dev/ttyACM1"
-deployment_location = "testing"
+# Max and min connection configures how many workers can be allocated
+# for performing postgres connections
+max_connections = 1
+min_connections = 1
+
+[sqlite]
+# Max and min connection configures how many workers can be allocated
+# for performing sqlite connections
+max_connections = 1
+min_connections = 1
+
+[serial]
+# The path to the serial port of a connected Meshtastic node, if left blank
+# the user is prompted for the path out of a list of possible paths
+port = ""
+
+[deployment]
+# The name of this group of nodes
+location = "testing"
+
+[async_runtime]
+# The buffer size impacts how many packets can remain in the queue for
+# processing and submitting to the database
+mpsc_buffer_size = 4

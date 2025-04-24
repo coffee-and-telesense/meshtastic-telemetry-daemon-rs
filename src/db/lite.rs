@@ -1,72 +1,23 @@
 use crate::dto::entities::{airqualitymetrics, devicemetrics, environmentmetrics, nodeinfo};
-use anyhow::{Context, Result};
+use anyhow::Context;
 #[cfg(feature = "debug")]
 use log::error;
-use log::LevelFilter;
 use sea_orm::{
-    sea_query::TableCreateStatement,
-    sqlx::{sqlite, ConnectOptions},
-    ConnectionTrait, DatabaseConnection, DbBackend, Schema, Statement,
+    sea_query::TableCreateStatement, ConnectionTrait, DatabaseConnection, DbBackend, Schema,
+    Statement,
 };
-use std::{str::FromStr, time::Instant};
-
-/// Setup `SQLite3` database
-///
-/// # Returns
-/// * `DatabaseConnection` - Connection to the sqlite3 db
-pub async fn setup() -> Result<DatabaseConnection> {
-    // Create connections options
-    let conn_opts = sqlite::SqliteConnectOptions::from_str("sqlite:///tmp/mesh-tele.db?mode=rwc")
-        .with_context(|| "Error connecting to sqlite db at /tmp/mesh-tele.db");
-    match conn_opts {
-        Ok(mut co) => {
-            co = co
-                // Try write-ahead logging to allow concurrent reads during writes
-                .journal_mode(sqlite::SqliteJournalMode::Wal)
-                // Turn on the shared cache
-                .shared_cache(true)
-                // Try exclusive locking? Useful for when each db has a single thread
-                //.locking_mode(sqlite::SqliteLockingMode::Exclusive)
-                // 50% default of 100 statement cache
-                .statement_cache_capacity(50)
-                // Reduce page size to 50% of default 4096
-                .page_size(2048)
-                // Set synchronous to normal as WAL provides guarantees
-                .synchronous(sqlite::SqliteSynchronous::Normal)
-                // Store temporary files in memory?
-                .pragma("temp_store", "memory")
-                // Use memory mapped I/O, since we are 32 bit 2^32 is upper limit. Set to 2^16
-                .pragma("mmap_size", "65536")
-                // Turn on auto vacuuming
-                .auto_vacuum(sqlite::SqliteAutoVacuum::Full)
-                // Create the file if it is missing
-                .create_if_missing(true);
-            // Logging settings
-            #[cfg(debug_assertions)]
-            let c = co.log_statements(LevelFilter::Trace);
-            #[cfg(not(debug_assertions))]
-            let c = co.log_statements(LevelFilter::Off);
-            // Set connection timeout?
-            let pool_opts = sqlite::SqlitePoolOptions::new()
-                .max_connections(1)
-                .min_connections(1);
-            //    .idle_timeout(None)
-            //    .max_lifetime(None);
-            let pool = pool_opts.connect_lazy_with(c);
-            let db = sea_orm::SqlxSqliteConnector::from_sqlx_sqlite_pool(pool);
-            setup_schema(&db).await;
-            Ok(db)
-        }
-        Err(e) => {
-            error!("{e}");
-            panic!("Could not connect to sqlite db");
-        }
-    }
-}
+use std::time::Instant;
 
 const TABLES: [&str; 3] = ["airqualitymetrics", "devicemetrics", "environmentmetrics"];
 
 /// Drop old table rows periodically
+///
+/// # Arguments
+/// * `db` - A `DatabaseConnection` to the sqlite db
+/// * `last` - An `Instant` representing the last time old table rows were dropped
+///
+/// # Returns
+/// * An `Instant` representing the completion of this dropping of old table rows
 pub async fn drop_old_rows(db: &DatabaseConnection, last: Instant) -> Instant {
     if last.elapsed().as_secs() >= 7200 {
         for t in TABLES {
@@ -90,6 +41,13 @@ pub async fn drop_old_rows(db: &DatabaseConnection, last: Instant) -> Instant {
 
 /// Optimize the db regularly for memory usage and performance
 /// https://www.sqlite.org/pragma.html#pragma_optimize
+///
+/// # Arguments
+/// * `db` - A `DatabaseConnection` to the sqlite db
+/// * `last` - An `Instant` representing the last time a pragma optimize was ran
+///
+/// # Returns
+/// * An `Instant` representing the completion of this pragma optimize
 pub async fn pragma_optimize(db: &DatabaseConnection, last: Instant) -> Instant {
     if last.elapsed().as_secs() >= 86400 {
         match db
@@ -106,7 +64,11 @@ pub async fn pragma_optimize(db: &DatabaseConnection, last: Instant) -> Instant 
     Instant::now()
 }
 
-async fn setup_schema(db: &DatabaseConnection) {
+/// Setup tables for sqlite db
+///
+/// # Arguments
+/// * `db` - A `DatabaseConnection` to the sqlite db
+pub async fn setup_schema(db: &DatabaseConnection) {
     log::trace!("Setting up sqlite database");
     let schema = Schema::new(DbBackend::Sqlite);
     let em_stmt: TableCreateStatement = schema.create_table_from_entity(environmentmetrics::Entity);

@@ -1,5 +1,5 @@
 [build]
-default-target = "mips-unknown-linux-musl"
+#default-target = "mips-unknown-linux-musl"
 
 # AREDN on miktrotik hap ac lite target
 [target.mips-unknown-linux-musl]
