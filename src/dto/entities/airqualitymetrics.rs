@@ -38,8 +38,7 @@ pub struct Model {
     pub particles100um: Option<u32>,
     #[sea_orm(column_type = "custom(\"oid\")", nullable)]
     pub co2: Option<u32>,
-    #[sea_orm(column_type = "custom(\"oid\")", nullable)]
-    pub sensor_type: Option<u32>,
+    pub sensor_type: Option<i32>,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]

@@ -204,14 +204,14 @@ impl ErrorMetricsModel {
             _ => insert_row_gen(self.into_active_model(), db, "errormetrics".to_string()).await,
         }
     }
-    /// Create an Neighbor Info Model
+    /// Create an Error Metrics Model
     ///
     /// # Arguments
     /// * `pkt` - a `Mesh` packet
-    /// * `data` - `NeighborInfo` payload
+    /// * `data` - `ErrorMetrics` payload
     ///
     /// # Returns
-    /// * A Neighbor Info Model
+    /// * A Error Metrics Model
     #[must_use]
     pub(crate) fn create_model(pkt: &Mesh, data: ErrorMetrics) -> Self {
         Self {
