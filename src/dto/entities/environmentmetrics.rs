@@ -34,6 +34,8 @@ pub struct Model {
     pub rainfall_1h: Option<f32>,
     #[sea_orm(column_type = "Float", nullable)]
     pub rainfall_24h: Option<f32>,
+    #[sea_orm(column_type = "custom(\"oid\")", nullable)]
+    pub sensor_type: Option<u32>,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]

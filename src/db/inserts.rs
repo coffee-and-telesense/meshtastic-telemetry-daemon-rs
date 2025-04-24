@@ -97,6 +97,7 @@ impl AirQualityMetricsModel {
             particles50um: data.particles_50um,
             particles100um: data.particles_100um,
             co2: data.co2,
+            sensor_type: data.sensor,
         }
     }
 }
@@ -181,6 +182,7 @@ impl EnvironmentMetricsModel {
             wind_lull: data.wind_lull,
             rainfall_1h: data.rainfall_1h,
             rainfall_24h: data.rainfall_24h,
+            sensor_type: data.sensor,
         }
     }
 }
