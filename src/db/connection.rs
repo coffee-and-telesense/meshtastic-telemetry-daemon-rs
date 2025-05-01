@@ -1,6 +1,7 @@
 use crate::{
     dto::entities::{
-        airqualitymetrics, devicemetrics, environmentmetrics, errormetrics, neighborinfo, nodeinfo,
+        airqualitymetrics, devicemetrics, environmentmetrics, errormetrics, localstats,
+        neighborinfo, nodeinfo,
     },
     util::types::{Mesh, NInfo, Names, Payload, Pkt, Telem},
 };
@@ -54,9 +55,10 @@ pub(crate) async fn update_metrics(
                                 .await
                         }
 
-                        Telem::Local(_data) => {
-                            // not being sent via mesh yet
-                            Ok(0)
+                        Telem::Local(data) => {
+                            localstats::Model::create_model(mp, data)
+                                .insert_row(db)
+                                .await
                         }
 
                         Telem::Error(data) => {

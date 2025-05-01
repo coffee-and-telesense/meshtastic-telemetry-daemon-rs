@@ -31,7 +31,6 @@ use meshtastic::utils;
 #[cfg(feature = "print-packets")]
 use serde_json::to_string_pretty;
 use std::sync::{Arc, Mutex};
-use std::time::Instant;
 use tokio::sync::mpsc;
 
 /// Database interaction module

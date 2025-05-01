@@ -3,7 +3,8 @@ use crate::{
         airqualitymetrics::Model as AirQualityMetricsModel,
         devicemetrics::Model as DeviceMetricsModel,
         environmentmetrics::Model as EnvironmentMetricsModel,
-        errormetrics::Model as ErrorMetricsModel, neighborinfo::Model as NeighborInfoModel,
+        errormetrics::Model as ErrorMetricsModel, localstats::Model as LocalStatsModel,
+        neighborinfo::Model as NeighborInfoModel,
     },
     util::types::{ErrorCounts, Mesh, Names, Neighbor},
 };
@@ -12,7 +13,7 @@ use chrono::Utc;
 #[cfg(feature = "debug")]
 use log::error;
 use meshtastic::protobufs::{
-    AirQualityMetrics, DeviceMetrics, EnvironmentMetrics, ErrorMetrics, NeighborInfo,
+    AirQualityMetrics, DeviceMetrics, EnvironmentMetrics, ErrorMetrics, LocalStats, NeighborInfo,
 };
 use sea_orm::{
     ActiveModelBehavior, ActiveModelTrait, ConnectionTrait, DatabaseBackend, DatabaseConnection,
@@ -232,6 +233,50 @@ impl ErrorMetricsModel {
                 no_channels: data.no_channel,
                 too_large: data.too_large
             })),
+        }
+    }
+}
+
+impl LocalStatsModel {
+    // Insert a Local Stats row
+    //
+    // This function proxies `insert_row_gen()` to leverage generics
+    //
+    // # Arguments
+    // * `self` - A `LocalStats::Model` type
+    // * `db` - A `DatabaseConnection` pool
+    //
+    // # Returns
+    // * Result with number of rows inserted
+    pub(crate) async fn insert_row(self, db: &DatabaseConnection) -> Result<u32> {
+        insert_row_gen(self.into_active_model(), db, "local stats".to_string()).await
+    }
+
+    /// Create a Local Stats Model
+    ///
+    /// # Arguments
+    /// * `pkt` - a `Mesh` packet
+    /// * `data` - `LocalStats` payload
+    ///
+    /// # Returns
+    /// * A Local Stats Model
+    #[must_use]
+    pub(crate) fn create_model(pkt: &Mesh, data: LocalStats) -> Self {
+        Self {
+            msg_id: pkt.id,
+            node_id: pkt.from,
+            time: Utc::now().naive_utc(),
+            uptime_seconds: Some(data.uptime_seconds),
+            channel_util: Some(data.channel_utilization),
+            air_util_tx: Some(data.air_util_tx),
+            num_packets_tx: Some(data.num_packets_tx),
+            num_packets_rx: Some(data.num_packets_rx),
+            num_packets_rx_bad: Some(data.num_packets_rx_bad),
+            num_online_nodes: Some(data.num_online_nodes),
+            num_total_nodes: Some(data.num_total_nodes),
+            num_rx_dupe: Some(data.num_rx_dupe),
+            num_tx_relay: Some(data.num_tx_relay),
+            num_tx_relay_canceled: Some(data.num_tx_relay_canceled),
         }
     }
 }

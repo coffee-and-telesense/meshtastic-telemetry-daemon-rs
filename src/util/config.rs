@@ -1,7 +1,6 @@
 #[cfg(feature = "sqlite")]
 use crate::lite::setup_schema;
 use anyhow::{Context, Result};
-use log::LevelFilter;
 #[cfg(feature = "debug")]
 use log::{error, warn};
 use meshtastic::utils::stream::available_serial_ports;
@@ -10,7 +9,6 @@ use sea_orm::sqlx::{sqlite, ConnectOptions as SqliteConnectionOptions};
 use sea_orm::{ConnectOptions, Database, DatabaseConnection};
 use serde::Deserialize;
 use std::io::{self, BufRead};
-use std::str::FromStr;
 
 /// Struct reprenting a postgres connection's settings
 #[cfg(feature = "postgres")]
@@ -128,9 +126,9 @@ impl SqliteConnection {
                     .create_if_missing(true);
                 // Logging settings
                 #[cfg(debug_assertions)]
-                let c = co.log_statements(LevelFilter::Trace);
+                let c = co.log_statements(log::LevelFilter::Trace);
                 #[cfg(not(debug_assertions))]
-                let c = co.log_statements(LevelFilter::Off);
+                let c = co.log_statements(log::LevelFilter::Off);
                 // Set connection timeout?
                 let pool_opts = sqlite::SqlitePoolOptions::new()
                     .min_connections(self.min_connections)
