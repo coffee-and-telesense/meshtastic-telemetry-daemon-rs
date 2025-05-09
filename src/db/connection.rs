@@ -291,8 +291,8 @@ async fn node_info_conflict(
                 }
                 None => {
                     // No entry in db, so we insert a new unheard node into both devicemetrics
-                    // and the nodeinfo table.
-                    return new_node(ni, db, fake_msg_id, dep_loc).await;
+                    // and the nodeinfo table using the mesh packet id as our fake_msg_id
+                    return new_node(ni, db, Some(mp.id), dep_loc).await;
                 }
             }
         } else {
