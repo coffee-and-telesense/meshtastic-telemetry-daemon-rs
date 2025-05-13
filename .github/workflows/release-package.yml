@@ -1,9 +1,9 @@
-name: Meshtastic Telemetry Daemon (Rust)
-
-on:
-  release:
-    types: [created]
-
+name: Release
+on: [push]
+env:
+  CRATE_NAME: meshtastic-telemetry-daemon-rs
+  GITHUB_TOKEN: ${{ github.token }}
+  RUST_BACKTRACE: 1
 jobs:
   release:
     name: Release - ${{ matrix.platform.os-name }}
@@ -21,6 +21,8 @@ jobs:
           - os-name: Linux_AARCH64_MUSL
             runs-on: ubuntu-24.04
             target: aarch64-unknown-linux-musl
+        toolchain:
+          - nightly
 
     runs-on: ${{ matrix.platform.runs-on }}
     steps:
