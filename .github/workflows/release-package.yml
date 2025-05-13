@@ -13,16 +13,17 @@ jobs:
           - os-name: Linux_MIPS_MUSL
             runs-on: ubuntu-24.04
             target: mips-unknown-linux-musl
+            toolchain: nightly
 
           - os-name: Linux_X86_64_MUSL
             runs-on: ubuntu-24.04
             target: x86_64-unknown-linux-musl
+            toolchain: nightly
 
           - os-name: Linux_AARCH64_MUSL
             runs-on: ubuntu-24.04
             target: aarch64-unknown-linux-musl
-        toolchain:
-          - nightly
+            toolchain: nightly
 
     runs-on: ${{ matrix.platform.runs-on }}
     steps:
