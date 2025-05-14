@@ -13,14 +13,18 @@ jobs:
           - os-name: Linux_MIPS_MUSL
             runs-on: ubuntu-24.04
             target: mips-unknown-linux-musl
+            force-use-cross: true
 
           - os-name: Linux_X86_64_MUSL
             runs-on: ubuntu-24.04
             target: x86_64-unknown-linux-musl
+            force-use-cross: true
 
           - os-name: Linux_AARCH64_MUSL
             runs-on: ubuntu-24.04
             target: aarch64-unknown-linux-musl
+            force-use-cross: true
+
         toolchain:
           - nightly
 
@@ -34,7 +38,7 @@ jobs:
           toolchain: nightly
           override: true
       - name: Build binary
-        uses: houseabsolute/actions-rust-cross@v1
+        uses: actions-rs/cargo@v1
         env:
           CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_RUSTFLAGS: "-Zlocation-detail=none -Zfmt-debug=none"
           CARGO_TARGET_x86_64_UNKNOWN_LINUX_MUSL_RUSTFLAGS: "-Zlocation-detail=none -Zfmt-debug=none"
