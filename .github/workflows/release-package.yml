@@ -34,7 +34,7 @@ jobs:
           CARGO_TARGET_x86_64_UNKNOWN_LINUX_MUSL_RUSTFLAGS: "-Zlocation-detail=none -Zfmt-debug=none"
           CARGO_TARGET_MIPS_UNKNOWN_LINUX_MUSL_RUSTFLAGS: "-Zlocation-detail=none -Zfmt-debug=none"
         with:
-          command: "+nightly build"
+          command: build
           target: ${{ matrix.platform.build_target }}
           toolchain: nightly
           args: "--features alpine --locked --release -Zbuild-std-features=optimize_for_size,panic_immediate_abort"
