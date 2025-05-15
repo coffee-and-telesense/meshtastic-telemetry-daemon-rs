@@ -38,13 +38,13 @@ jobs:
           toolchain: nightly
           override: true
       - name: Build binary
-        uses: actions-rs/cargo@v1
+        uses: houseabsolute/actions-rust-cross@v1
         env:
           CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_RUSTFLAGS: "-Zlocation-detail=none -Zfmt-debug=none"
           CARGO_TARGET_x86_64_UNKNOWN_LINUX_MUSL_RUSTFLAGS: "-Zlocation-detail=none -Zfmt-debug=none"
           CARGO_TARGET_MIPS_UNKNOWN_LINUX_MUSL_RUSTFLAGS: "-Zlocation-detail=none -Zfmt-debug=none"
         with:
-          command: "cross +nightly build"
+          command: "+nightly build"
           target: ${{ matrix.platform.target }}
           args: "--features alpine,postgres --locked --release -Zbuild-std-features=optimize_for_size,panic_immediate_abort"
           force-use-cross: true
