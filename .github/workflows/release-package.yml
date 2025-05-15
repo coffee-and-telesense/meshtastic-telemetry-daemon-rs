@@ -28,6 +28,9 @@ jobs:
             force-use-cross: true
             toolchain: nightly
 
+        toolchain:
+          - nightly
+
     runs-on: ${{ matrix.platform.runs-on }}
     steps:
       - name: Checkout
