@@ -38,7 +38,7 @@ jobs:
           target: ${{ matrix.platform.build_target }}
           toolchain: nightly
           args: "--features alpine --locked --release -Zbuild-std-features=optimize_for_size,panic_immediate_abort"
-          cross-version: "v0.2.5"
+          cross-version: "HEAD"
       - name: Publish artifacts and release
         uses: houseabsolute/actions-rust-release@v0
         with:
