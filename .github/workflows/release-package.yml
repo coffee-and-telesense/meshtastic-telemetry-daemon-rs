@@ -20,6 +20,8 @@ jobs:
             runs-on: ubuntu-24.04
             build_target: aarch64-unknown-linux-musl
             force-use-cross: true
+        toolchain:
+          - nightly
 
     runs-on: ${{ matrix.platform.runs-on }}
     steps:
