@@ -46,8 +46,8 @@ jobs:
         with:
           command: "build"
           target: ${{ matrix.platform.target }}
-          toolchain: ${{ matrix.toolchain }}
-          args: "--features alpine,postgres --locked --release -Zbuild-std-features=optimize_for_size,panic_immediate_abort"
+          args: "--features alpine,postgres --locked --release -Zbuild-std-features=optimize_for_size,panic_immediate_abort --target=${{ matrix.toolchain }}"
+          force-use-cross: true
       - name: Publish artifacts and release
         uses: houseabsolute/actions-rust-release@v0
         with:
