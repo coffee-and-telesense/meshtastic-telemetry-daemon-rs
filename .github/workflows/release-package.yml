@@ -35,11 +35,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Install latest nightly
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: nightly
-          override: true
       - name: Build binary
         uses: houseabsolute/actions-rust-cross@v1
         env:
@@ -51,6 +46,7 @@ jobs:
           target: ${{ matrix.platform.target }}
           args: "--features alpine,postgres --locked --release -Zbuild-std-features=optimize_for_size,panic_immediate_abort"
           force-use-cross: true
+          toolchain: nightly
       - name: Publish artifacts and release
         uses: houseabsolute/actions-rust-release@v0
         with:
