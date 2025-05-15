@@ -13,15 +13,18 @@ jobs:
         platform:
           - os-name: Linux_MIPS_MUSL
             runs-on: ubuntu-24.04
-            target: mips-unknown-linux-musl
+            build_target: mips-unknown-linux-musl
+            force-use-cross: true
 
           - os-name: Linux_X86_64_MUSL
             runs-on: ubuntu-24.04
-            target: x86_64-unknown-linux-musl
+            build_target: x86_64-unknown-linux-musl
+            force-use-cross: true
 
           - os-name: Linux_AARCH64_MUSL
             runs-on: ubuntu-24.04
-            target: aarch64-unknown-linux-musl
+            build_target: aarch64-unknown-linux-musl
+            force-use-cross: true
 
     runs-on: ${{ matrix.platform.runs-on }}
     steps:
@@ -29,16 +32,16 @@ jobs:
         uses: actions/checkout@v4
       - name: Install Rust
         uses: dtolnay/rust-toolchain@nightly
-      - name: Install Cross
-        run: |
-          cargo install cross --git https://github.com/cross-rs/cross
       - name: Build binary
-        run: |
-          export CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_RUSTFLAGS="-Zlocation-detail=none -Zfmt-debug=none" &&
-          export CARGO_TARGET_x86_64_UNKNOWN_LINUX_MUSL_RUSTFLAGS="-Zlocation-detail=none -Zfmt-debug=none" &&
-          export CARGO_TARGET_MIPS_UNKNOWN_LINUX_MUSL_RUSTFLAGS="-Zlocation-detail=none -Zfmt-debug=none" &&
-          export CROSS_CONTAINER_ENGINE_NO_BUILDKIT=true &&
-          cross +nightly build --features alpine --locked --release -Zbuild-std-features=optimize_for_size,panic_immediate_abort --target=${{ matrix.platform.target }}
+        uses: houseabsolute/actions-rust-cross@v1
+        env:
+          CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_RUSTFLAGS: "-Zlocation-detail=none -Zfmt-debug=none"
+          CARGO_TARGET_x86_64_UNKNOWN_LINUX_MUSL_RUSTFLAGS: "-Zlocation-detail=none -Zfmt-debug=none"
+          CARGO_TARGET_MIPS_UNKNOWN_LINUX_MUSL_RUSTFLAGS: "-Zlocation-detail=none -Zfmt-debug=none"
+        with:
+          command: +nightly build
+          target: ${{ matrix.platform.build_target }}
+          args: "--features alpine --locked --release -Zbuild-std-features=optimize_for_size,panic_immediate_abort"
       - name: Publish artifacts and release
         uses: houseabsolute/actions-rust-release@v0
         with:
