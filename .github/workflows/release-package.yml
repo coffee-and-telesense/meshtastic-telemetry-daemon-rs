@@ -14,12 +14,10 @@ jobs:
           - os-name: Linux_X86_64_MUSL
             runs-on: ubuntu-latest
             build_target: x86_64-unknown-linux-musl
-            force-use-cross: true
 
           - os-name: Linux_AARCH64_MUSL
             runs-on: ubuntu-latest
             build_target: aarch64-unknown-linux-musl
-            force-use-cross: true
         toolchain:
           - nightly
 
@@ -27,23 +25,28 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+      - name: Set up QEMU
+        # Add support for more platforms with QEMU (optional)
+        # https://github.com/docker/setup-qemu-action
+        uses: docker/setup-qemu-action@v3
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
       - name: Build binary
         uses: houseabsolute/actions-rust-cross@v1
         env:
           CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_RUSTFLAGS: "-Zlocation-detail=none -Zfmt-debug=none"
-          CARGO_TARGET_x86_64_UNKNOWN_LINUX_MUSL_RUSTFLAGS: "-Zlocation-detail=none -Zfmt-debug=none"
+          CARGO_TARGET_X86_64_UNKNOWN_LINUX_MUSL_RUSTFLAGS: "-Zlocation-detail=none -Zfmt-debug=none"
           CARGO_TARGET_MIPS_UNKNOWN_LINUX_MUSL_RUSTFLAGS: "-Zlocation-detail=none -Zfmt-debug=none"
           # stupid AARCH build fails to start build because of warnings building cross
           CROSS_NO_WARNINGS: 0
-          # stupid AARCH build fails to build the custom container
-          CROSS_CONTAINER_ENGINE_NO_BUILDKIT: 1
         with:
           command: build
           target: ${{ matrix.platform.build_target }}
           toolchain: nightly
           args: "--features alpine --release -Zbuild-std-features=optimize_for_size,panic_immediate_abort"
           cross-version: 50ccc96
-          #force-use-cross: true
+          # this feelsbad, but should work?
+          force-use-cross: ${{ matrix.platform.build_target == 'x86_64-unknown-linux-musl' || matrix.platform.build_target == 'aarch64-unknown-linux-musl' }}
           #use-rust-cache: false
           #cache-cross-binary: false
       - name: Publish artifacts and release
