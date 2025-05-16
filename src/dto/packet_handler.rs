@@ -222,11 +222,6 @@ pub fn process_packet(packet: FromRadio, state: Arc<Mutex<GatewayState>>) -> Opt
             from_radio::PayloadVariant::NodeInfo(ni) => {
                 // https://docs.rs/meshtastic/0.1.6/meshtastic/protobufs/struct.NodeInfo.html
                 let pkt = NInfo::from_remote(ni.clone());
-                // Check if the mesh packet is on the telemetry channel, if not ignore it
-                if pkt.channel != 0 {
-                    info!("nodedb info from outside our channel");
-                    return None;
-                }
                 let mut rv = false;
                 if let Some(user) = ni.user {
                     // Insert a new node into our local state
