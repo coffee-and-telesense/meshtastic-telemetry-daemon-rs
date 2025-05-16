@@ -1,5 +1,8 @@
 name: Release
 on: [push]
+# on:
+#  push:
+#    tags: [ 'v*.*.*' ]
 env:
   CRATE_NAME: meshtastic-telemetry-daemon-rs
   GITHUB_TOKEN: ${{ github.token }}
@@ -47,10 +50,14 @@ jobs:
           cross-version: 50ccc96
           # this feelsbad, but should work?
           force-use-cross: ${{ matrix.platform.build_target == 'x86_64-unknown-linux-musl' || matrix.platform.build_target == 'aarch64-unknown-linux-musl' }}
-          #use-rust-cache: false
-          #cache-cross-binary: false
+      - name: Compress binaries
+        uses: svenstaro/upx-action@v2
+        with:
+          files: |
+            target/release/mything
+            target/release/*
       - name: Publish artifacts and release
         uses: houseabsolute/actions-rust-release@v0
         with:
-          executable-name: ubi
+          executable-name: mtdrs
           target: ${{ matrix.platform.target }}
