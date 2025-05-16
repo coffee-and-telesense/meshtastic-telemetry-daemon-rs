@@ -1,3 +1,5 @@
+#[cfg(feature = "debug")]
+use log::{info, warn};
 use meshtastic::protobufs::{
     mesh_packet::PayloadVariant, AirQualityMetrics, DeviceMetrics, EnvironmentMetrics,
     ErrorMetrics, LocalStats, MeshPacket, MyNodeInfo, NeighborInfo, NodeInfo, Position,
@@ -116,6 +118,7 @@ impl GatewayState {
     pub fn insert(&mut self, node_id: u32, user: User) -> bool {
         // Insert a new node if it does not already exist in the state
         if let std::collections::hash_map::Entry::Vacant(e) = self.nodes.entry(node_id) {
+            info!("Inserting new node to the local state");
             let v = Node {
                 long_name: user.long_name,
                 short_name: user.short_name,
@@ -132,6 +135,7 @@ impl GatewayState {
                 || n.hw_model != user.hw_model)
                 && n.id == user.id
             {
+                warn!("Local state conflicts with nodeinfo received");
                 // Update our local db
                 n.long_name = user.long_name;
                 n.short_name = user.short_name;
