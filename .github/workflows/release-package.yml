@@ -38,7 +38,7 @@ jobs:
           target: ${{ matrix.platform.build_target }}
           toolchain: nightly
           args: "--features alpine --release -Zbuild-std-features=optimize_for_size,panic_immediate_abort"
-          cross-version: HEAD
+          cross-version: v0.2.5
           force-use-cross: true
           use-rust-cache: false
       - name: Publish artifacts and release
