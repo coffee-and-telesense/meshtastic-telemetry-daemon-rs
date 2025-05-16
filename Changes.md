@@ -1,5 +1,11 @@
 
 
+## [v0.1.5] - 2025-05-16
+### :wrench: Chores
+- [`5c880a9`](https://github.com/coffee-and-telesense/meshtastic-telemetry-daemon-rs/commit/5c880a966442e25bdc2f7825632c49d94aa5d03c) - **CI**: fix changelog committing *(commit by [@gatlinnewhouse](https://github.com/gatlinnewhouse))*
+- [`cc79fb3`](https://github.com/coffee-and-telesense/meshtastic-telemetry-daemon-rs/commit/cc79fb398ef329e1ea2afb43c2e1d8854c8155b1) - **cargo version**: update cargo version *(commit by [@gatlinnewhouse](https://github.com/gatlinnewhouse))*
+
+
 ## [v0.1.4] - 2025-05-16
 ### :wrench: Chores
 - [`717e090`](https://github.com/coffee-and-telesense/meshtastic-telemetry-daemon-rs/commit/717e09029ee97f73c6885816a71855f9fb221384) - **CI**: fix committing changes *(commit by [@gatlinnewhouse](https://github.com/gatlinnewhouse))*
@@ -14,3 +20,4 @@
 
 [v0.1.3]: https://github.com/coffee-and-telesense/meshtastic-telemetry-daemon-rs/compare/v0.1.2...v0.1.3
 [v0.1.4]: https://github.com/coffee-and-telesense/meshtastic-telemetry-daemon-rs/compare/v0.1.3...v0.1.4
+[v0.1.5]: https://github.com/coffee-and-telesense/meshtastic-telemetry-daemon-rs/compare/v0.1.4...v0.1.5
