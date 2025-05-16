@@ -28,6 +28,12 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+      - name: Commit CHANGELOG.md
+        uses: stefanzweifel/git-auto-commit-action@v4
+        with:
+          branch: main
+          commit_message: "docs: update Changes.md for ${{ github.ref_name }} [skip ci]"
+          file_pattern: Changes.md
       - name: Set up QEMU
         # Add support for more platforms with QEMU (optional)
         # https://github.com/docker/setup-qemu-action
