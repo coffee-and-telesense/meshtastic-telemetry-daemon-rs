@@ -12,12 +12,12 @@ jobs:
       matrix:
         platform:
           - os-name: Linux_X86_64_MUSL
-            runs-on: ubuntu-24.04
+            runs-on: ubuntu-latest
             build_target: x86_64-unknown-linux-musl
             force-use-cross: true
 
           - os-name: Linux_AARCH64_MUSL
-            runs-on: ubuntu-24.04
+            runs-on: ubuntu-latest
             build_target: aarch64-unknown-linux-musl
             force-use-cross: true
         toolchain:
@@ -33,7 +33,6 @@ jobs:
           CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_RUSTFLAGS: "-Zlocation-detail=none -Zfmt-debug=none -Zbuild-std=std,panic_abort -Zbuild-std-features=optimize_for_size,panic_immediate_abort"
           CARGO_TARGET_x86_64_UNKNOWN_LINUX_MUSL_RUSTFLAGS: "-Zlocation-detail=none -Zfmt-debug=none -Zbuild-std=std,panic_abort -Zbuild-std-features=optimize_for_size,panic_immediate_abort"
           CARGO_TARGET_MIPS_UNKNOWN_LINUX_MUSL_RUSTFLAGS: "-Zlocation-detail=none -Zfmt-debug=none -Zbuild-std=std,panic_abort -Zbuild-std-features=optimize_for_size,panic_immediate_abort"
-          CROSS_COMPATIBILITY_VERSION: 0.2.5
         with:
           command: build
           target: ${{ matrix.platform.build_target }}
