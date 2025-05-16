@@ -38,7 +38,7 @@ jobs:
           target: ${{ matrix.platform.build_target }}
           toolchain: nightly
           args: "--features alpine --release"
-          cross-version: v0.2.5
+          cross-version: 50ccc96
           force-use-cross: true
           use-rust-cache: false
           cache-cross-binary: false
