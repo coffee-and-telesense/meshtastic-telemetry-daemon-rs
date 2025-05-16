@@ -30,14 +30,15 @@ jobs:
       - name: Build binary
         uses: houseabsolute/actions-rust-cross@v1
         env:
-          CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_RUSTFLAGS: "-Zlocation-detail=none -Zfmt-debug=none -Zbuild-std=std,panic_abort -Zbuild-std-features=optimize_for_size,panic_immediate_abort"
-          CARGO_TARGET_x86_64_UNKNOWN_LINUX_MUSL_RUSTFLAGS: "-Zlocation-detail=none -Zfmt-debug=none -Zbuild-std=std,panic_abort -Zbuild-std-features=optimize_for_size,panic_immediate_abort"
-          CARGO_TARGET_MIPS_UNKNOWN_LINUX_MUSL_RUSTFLAGS: "-Zlocation-detail=none -Zfmt-debug=none -Zbuild-std=std,panic_abort -Zbuild-std-features=optimize_for_size,panic_immediate_abort"
+          CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_RUSTFLAGS: "-Zlocation-detail=none -Zfmt-debug=none"
+          CARGO_TARGET_x86_64_UNKNOWN_LINUX_MUSL_RUSTFLAGS: "-Zlocation-detail=none -Zfmt-debug=none"
+          CARGO_TARGET_MIPS_UNKNOWN_LINUX_MUSL_RUSTFLAGS: "-Zlocation-detail=none -Zfmt-debug=none"
+          CROSS_NO_WARNINGS: 0
         with:
           command: build
           target: ${{ matrix.platform.build_target }}
           toolchain: nightly
-          args: "--features alpine --release"
+          args: "--features alpine --release -Zbuild-std-features=optimize_for_size,panic_immediate_abort"
           cross-version: 50ccc96
           force-use-cross: true
           use-rust-cache: false
