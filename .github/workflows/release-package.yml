@@ -41,6 +41,7 @@ jobs:
           cross-version: v0.2.5
           force-use-cross: true
           use-rust-cache: false
+          cache-cross-binary: false
       - name: Publish artifacts and release
         uses: houseabsolute/actions-rust-release@v0
         with:
