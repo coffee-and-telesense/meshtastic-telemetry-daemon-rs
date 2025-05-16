@@ -59,4 +59,4 @@ jobs:
         uses: houseabsolute/actions-rust-release@v0
         with:
           executable-name: meshtastic-telemetry-daemon-rs
-          target: ${{ matrix.platform.target }}
+          target: ${{ matrix.platform.build_target }}
