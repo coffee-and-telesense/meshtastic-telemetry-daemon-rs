@@ -96,7 +96,7 @@ pub(crate) async fn update_metrics(
                             via_mqtt: mp.via_mqtt,
                             hops_away: None,
                         };
-                        return node_info_conflict(ni, Some(mp.clone()), db, fake_msg_id, dep_loc)
+                        return node_info_conflict(ni, Some(mp.clone()), db, Some(mp.id), dep_loc)
                             .await;
                     }
 
