@@ -3,15 +3,17 @@ use crate::{
         airqualitymetrics, devicemetrics, environmentmetrics, errormetrics, localstats,
         neighborinfo, nodeinfo,
     },
-    util::types::{Mesh, NInfo, Names, Payload, Pkt, Telem},
+    util::types::{GatewayState, Mesh, NInfo, Names, Payload, Pkt, Telem},
 };
 use anyhow::{Context, Result};
 use chrono::Utc;
 #[cfg(feature = "debug")]
-use log::{error, info};
+use log::{error, info, trace};
+use meshtastic::protobufs::User;
 use sea_orm::{
     sea_query::OnConflict, ActiveModelTrait, ActiveValue, DatabaseConnection, EntityTrait,
 };
+use std::sync::{Arc, Mutex};
 
 /// Update metrics in database
 ///
@@ -173,6 +175,77 @@ pub(crate) async fn update_metrics(
     }
 }
 
+/// Proactively insert nodeinfo rows for telemetry data received
+///
+/// # Arguments
+/// * `pkt` - A `Mesh` packet reference
+/// * `db` - A database connection
+/// * `dep_loc` - The deployment location string from the config
+/// * `state` - A `GatewayState` ARC clone
+///
+/// # Returns
+/// * Result with the number of rows inserted/updated
+///
+/// # Panics
+/// * Will panic if it fails to acquire a lock on the GatewayState
+/// * Will panic if a fake_node_mg_id cannot be found in the GatewayState before inserts
+pub(crate) async fn proactive_ninfo_insert(
+    pkt: &Mesh,
+    db: &DatabaseConnection,
+    dep_loc: &String,
+    state: Arc<Mutex<GatewayState>>,
+) -> Result<u32> {
+    // Check if we already know this node
+    if state
+        .lock()
+        .expect("Failed to acquire lock for GatewayState in packet_handler()")
+        .find_fake_id(pkt.from)
+        .is_none()
+    {
+        // We do not know this node, so it likely is not in postgres.
+        // First add it to our Gateway state
+        let fake_user = User {
+            id: "".to_string(),
+            long_name: "".to_string(),
+            short_name: "".to_string(),
+            #[allow(deprecated)]
+            macaddr: vec![],
+            hw_model: -1,
+            is_licensed: false,
+            role: -1,
+            public_key: vec![],
+        };
+        state
+            .lock()
+            .expect("Failed to acquire lock for GatewayState in proactive_node_insert()")
+            .insert(pkt.from, fake_user.clone());
+        // Now we insert into postgres
+        let fake_msg_id = state
+            .lock()
+            .expect("Failed to acquire lock for GatewayState in proactive_node_insert()")
+            .find_fake_id(pkt.from)
+            .expect("No fake_msg_id provided in proactive_node_insert()");
+        let fake_ni = NInfo {
+            num: pkt.from,
+            user: Some(fake_user),
+            position: None,
+            snr: -1.0,
+            last_heard: 0,
+            device_metrics: None,
+            channel: 0,
+            via_mqtt: false,
+            hops_away: None,
+        };
+        // Insert it as if it came over serial
+        info!("Proactively inserting a new node info and device metrics row");
+        node_info_conflict(fake_ni, None, db, Some(fake_msg_id as u32), dep_loc).await
+    } else {
+        // We already know about it so return 0 row changes
+        trace!("Node already known, skipping proactive inserts");
+        Ok(0)
+    }
+}
+
 /// Node info conflict resolver
 ///
 /// This function resolves possible conflicts between `NodeInfo` received over Mesh or over serial
@@ -223,6 +296,7 @@ async fn node_info_conflict(
                 Some(u) => {
                     // Found an entry in the db, check if any nodeinfo columns need to be
                     // updated, and if so update them.
+                    info!("Found a possible conflicting nodeinfo entry, possibly updating");
 
                     if u.shortname != user.short_name
                         || u.longname != user.long_name
@@ -262,9 +336,10 @@ async fn node_info_conflict(
                         }) {
                             Ok(_) => {
                                 row_insert_count += 1;
+                                info!("Updated the nodeinfo row");
                             }
                             Err(e) => {
-                                error!("{e}");
+                                error!("{e:#}");
                             }
                         }
 
@@ -284,7 +359,7 @@ async fn node_info_conflict(
                                     row_insert_count += 1;
                                 }
                                 Err(e) => {
-                                    error!("{e}");
+                                    error!("{e:#}");
                                 }
                             }
                     }
@@ -380,30 +455,6 @@ async fn new_node(
         deployment_location: ActiveValue::Set(dep_loc.to_string()),
     };
 
-    // Try inserting devicemetrics row
-    match devicemetrics::Entity::insert(dm)
-        .on_conflict(
-            OnConflict::column(devicemetrics::Column::MsgId)
-                .do_nothing()
-                .to_owned(),
-        )
-        .exec(db)
-        .await
-        .with_context(|| {
-            format!(
-                "Failed to insert device metrics row from serial payload into {} db",
-                db.get_db_name()
-            )
-        }) {
-        Ok(_) => {
-            row_insert_count += 1;
-        }
-        Err(e) => {
-            // These are expected to error out, so lower the log level
-            info!("{e}");
-        }
-    }
-
     // Try inserting nodeinfo row
     match nodeinfo::Entity::insert(ninfo)
         .on_conflict(
@@ -415,7 +466,7 @@ async fn new_node(
         .await
         .with_context(|| {
             format!(
-                "Failed to insert node info row from serial payload into {} db",
+                "Failed to insert node info row from serial payload into {} db for new_node()",
                 db.get_db_name()
             )
         }) {
@@ -424,7 +475,31 @@ async fn new_node(
         }
         Err(e) => {
             // These are expected to error out, so lower the log level
-            info!("{e}");
+            info!("{e:#}");
+        }
+    }
+
+    // Try inserting devicemetrics row
+    match devicemetrics::Entity::insert(dm)
+        .on_conflict(
+            OnConflict::column(devicemetrics::Column::MsgId)
+                .do_nothing()
+                .to_owned(),
+        )
+        .exec(db)
+        .await
+        .with_context(|| {
+            format!(
+                "Failed to insert device metrics row from serial payload into {} db for new_node()",
+                db.get_db_name()
+            )
+        }) {
+        Ok(_) => {
+            row_insert_count += 1;
+        }
+        Err(e) => {
+            // These are expected to error out, so lower the log level
+            info!("{e:#}");
         }
     }
     Ok(row_insert_count)

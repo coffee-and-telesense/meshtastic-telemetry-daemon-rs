@@ -50,7 +50,7 @@ where
     }) {
         Ok(_) => Ok(1),
         Err(e) => {
-            error!("{e}");
+            error!("{e:#}");
             Ok(0)
         }
     }

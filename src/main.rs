@@ -22,6 +22,7 @@ use crate::util::{
     types::{GatewayState, Pkt},
 };
 use anyhow::{Context, Result};
+use db::connection::proactive_ninfo_insert;
 #[cfg(feature = "sqlite")]
 use db::lite::{self, drop_old_rows, pragma_optimize};
 #[cfg(feature = "debug")]
@@ -115,25 +116,66 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         });
         if let Some(pkt) = rx.recv().await.unwrap() {
             match pkt {
-                Pkt::Mesh(ref _mp) => {
+                Pkt::Mesh(ref mp) => {
                     #[cfg(feature = "print-packets")]
-                    println!("{}", to_string_pretty(&_mp).unwrap());
+                    println!("{}", to_string_pretty(&mp).unwrap());
+                    // Before we insert into postgres or sqlite, we should proactively check that the foreign
+                    // key constraint is satisfied and if not we then insert a new nodeinfo row
+                    if let Some(p) = &mp.payload {
+                        match p {
+                            util::types::Payload::NodeinfoApp(_u) => {
+                                info!("Received nodeinfo payload")
+                            }
+                            _ => {
+                                #[cfg(feature = "postgres")]
+                                match proactive_ninfo_insert(
+                                    mp,
+                                    &postgres_db,
+                                    &deployment_loc,
+                                    state.clone(),
+                                )
+                                .await
+                                .with_context(|| {
+                                    "Failed to update postgres database with proactive_node_info()"
+                                }) {
+                                    Ok(v) => {
+                                        info!("Inserted {v} rows into postgres db proactively")
+                                    }
+                                    Err(e) => error!("{e:#}"),
+                                }
+                                #[cfg(feature = "sqlite")]
+                                match proactive_ninfo_insert(
+                                    mp,
+                                    &sqlite_db,
+                                    &deployment_loc,
+                                    state.clone(),
+                                )
+                                .await
+                                .with_context(|| {
+                                    "Failed to update postgres database with proactive_node_info()"
+                                }) {
+                                    Ok(v) => info!("Inserted {v} rows into sqlite db proactively"),
+                                    Err(e) => error!("{e:#}"),
+                                }
+                            }
+                        }
+                    }
                     #[cfg(feature = "postgres")]
                     match update_metrics(&postgres_db, &pkt, None, &deployment_loc)
                         .await
                         .with_context(|| {
                             "Failed to update postgres datatbase with packet from mesh"
                         }) {
-                        Ok(v) => info!("inserted {v} rows into postgres db"),
-                        Err(e) => error!("{e}"),
+                        Ok(v) => info!("Inserted {v} rows into postgres db"),
+                        Err(e) => error!("{e:#}"),
                     }
                     #[cfg(feature = "sqlite")]
                     match update_metrics(&sqlite_db, &pkt, None, &deployment_loc)
                         .await
                         .with_context(|| "Failed to update sqlite datatbase with packet from mesh")
                     {
-                        Ok(v) => info!("inserted {v} rows into sqlite db"),
-                        Err(e) => error!("{e}"),
+                        Ok(v) => info!("Inserted {v} rows into sqlite db"),
+                        Err(e) => error!("{e:#}"),
                     }
                 }
                 Pkt::NInfo(ref ni) => {
@@ -143,20 +185,19 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                         .lock()
                         .expect("Failed to acquire lock for GatewayState in main()")
                         .find_fake_id(ni.num)
-                        .map(|n| Some(n.into()))
                         .expect("No fake_id returned");
                     #[cfg(feature = "postgres")]
-                    match update_metrics(&postgres_db, &pkt, fake, &deployment_loc)
+                    match update_metrics(&postgres_db, &pkt, Some(fake as u32), &deployment_loc)
                         .await
                         .with_context(|| {
                             "Failed to update postgres database with node info packet from serial"
                         }) {
-                        Ok(v) => info!("inserted {v} rows into postgres db"),
+                        Ok(v) => info!("Inserted {v} rows into postgres db"),
                         Err(e) => {
                             // This is a lower priority error message since we favor node info data
                             // from the Mesh rather than from the serial connection. Often times it
                             // just means that we did not insert a row
-                            info!("{e}");
+                            info!("{e:#}");
                         }
                     }
                     #[cfg(feature = "sqlite")]
@@ -165,12 +206,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                         .with_context(|| {
                             "Failed to update sqlite database with node info packet from serial"
                         }) {
-                        Ok(v) => info!("inserted {v} rows into sqlite db"),
+                        Ok(v) => info!("Inserted {v} rows into sqlite db"),
                         Err(e) => {
                             // This is a lower priority error message since we favor node info data
                             // from the Mesh rather than from the serial connection. Often times it
                             // just means that we did not insert a row
-                            info!("{e}");
+                            info!("{e:#}");
                         }
                     }
                 }
