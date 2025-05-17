@@ -38,6 +38,13 @@ jobs:
           tag: ${{ github.ref_name }}
           changelogFilePath: Changes.md
         if: ${{ matrix.platform.build_target == 'x86_64-unknown-linux-musl' }}
+      - name: Commit CHANGELOG.md
+        uses: stefanzweifel/git-auto-commit-action@v4
+        with:
+          branch: main
+          commit_message: "docs: update Changes.md for ${{ github.ref_name }} [skip ci]"
+          file_pattern: Changes.md
+        if: ${{ matrix.platform.build_target == 'x86_64-unknown-linux-musl' }}
       - name: Set up QEMU
         # Add support for more platforms with QEMU (optional)
         # https://github.com/docker/setup-qemu-action
@@ -70,10 +77,3 @@ jobs:
         with:
           executable-name: meshtastic-telemetry-daemon-rs
           target: ${{ matrix.platform.build_target }}
-      - name: Commit CHANGELOG.md
-        uses: stefanzweifel/git-auto-commit-action@v4
-        with:
-          branch: main
-          commit_message: "docs: update Changes.md for ${{ github.ref_name }} [skip ci]"
-          file_pattern: Changes.md
-        if: ${{ matrix.platform.build_target == 'x86_64-unknown-linux-musl' }}
