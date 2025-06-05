@@ -8,7 +8,7 @@ use crate::{
 use anyhow::{Context, Result};
 use chrono::Utc;
 #[cfg(feature = "debug")]
-use log::{error, info, trace};
+use log::{error, info};
 use meshtastic::protobufs::User;
 use sea_orm::{
     sea_query::OnConflict, ActiveModelTrait, ActiveValue, DatabaseConnection, EntityTrait,
@@ -40,30 +40,35 @@ pub(crate) async fn update_metrics(
                 match p {
                     Payload::TelemetryApp(t) => match t {
                         Telem::Environment(data) => {
+                            info!("Environmental Telemetry");
                             environmentmetrics::Model::create_model(&mp, data)
                                 .insert_row(db)
                                 .await
                         }
 
                         Telem::AirQuality(data) => {
+                            info!("Air Quality Telemetry");
                             airqualitymetrics::Model::create_model(&mp, data)
                                 .insert_row(db)
                                 .await
                         }
 
                         Telem::Device(data) => {
+                            info!("Device Metrics Telemetry");
                             devicemetrics::Model::create_dm_model(mp, data)
                                 .insert_row(db)
                                 .await
                         }
 
                         Telem::Local(data) => {
+                            info!("Local Stats Telemetry");
                             localstats::Model::create_model(mp, data)
                                 .insert_row(db)
                                 .await
                         }
 
                         Telem::Error(data) => {
+                            info!("Error Metrics Telemetry");
                             errormetrics::Model::create_model(mp, data)
                                 .insert_row(db)
                                 .await
@@ -85,6 +90,7 @@ pub(crate) async fn update_metrics(
                         // and return how many rows were inserted here to return back to main.
                         // First we need to create a NInfo packet type from the user data payload
                         // in order to pass it along.
+                        info!("Node Info from Mesh");
                         let ni = NInfo {
                             num: mp.from,
                             user: Some(data),
@@ -103,7 +109,7 @@ pub(crate) async fn update_metrics(
                     Payload::PositionApp(data) => {
                         // Updates the position for a given node id that is included in the
                         // packet sent from the mesh
-
+                        info!("Position Telemetry");
                         devicemetrics::Model {
                             msg_id: mp.id,
                             node_id: mp.from,
@@ -123,6 +129,7 @@ pub(crate) async fn update_metrics(
                     }
 
                     Payload::NeighborinfoApp(data) => {
+                        info!("Neighbor Info Telemetry");
                         neighborinfo::Model::create_model(mp, data)
                             .insert_row(db)
                             .await
@@ -141,7 +148,7 @@ pub(crate) async fn update_metrics(
                         // (this has some interesting data about history, stats, and heartbeats),
                         // RangeTestApp (probably not useful to us), TracerouteApp (seems to
                         // provide the same data as the RoutingApp but when users explicitly
-                        // request traceroutes), NeighborinfoApp (adjacency matrix data and
+                        // request Traceroutes), NeighborinfoApp (adjacency matrix data and
                         // other stuff like last heard, might be good for us)
                         //
                         // Some of these may also be provided outside of Mesh packets, so we
@@ -158,6 +165,7 @@ pub(crate) async fn update_metrics(
         }
 
         Pkt::NInfo(ni) => {
+            info!("Node info from serial");
             // This is a NodeInfo payload from serial but not received over the mesh, meaning it is
             // the output from our initial serial connection when we receive a dump of all the
             // nodes in the nodedb of the connected Meshtastic node that is our network bridge.
@@ -241,7 +249,7 @@ pub(crate) async fn proactive_ninfo_insert(
         node_info_conflict(fake_ni, None, db, Some(fake_msg_id as u32), dep_loc).await
     } else {
         // We already know about it so return 0 row changes
-        trace!("Node already known, skipping proactive inserts");
+        info!("Node already known, skipping proactive inserts");
         Ok(0)
     }
 }
