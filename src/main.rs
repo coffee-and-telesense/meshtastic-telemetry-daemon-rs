@@ -147,11 +147,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                                     "Failed to update postgres database with proactive_node_info()"
                                 }) {
                                     Ok(v) => {
-                                        let now = Local::now();
-                                        info!(
-                                            "{}Inserted {v} rows into postgres db proactively",
-                                            now.format("%Y-%m-%d %H:%M:%S - ")
-                                        );
+                                        if v != 0 {
+                                            let now = Local::now();
+                                            info!(
+                                                "{}Inserted {v} rows into NodeInfo table of postgres db proactively",
+                                                now.format("%Y-%m-%d %H:%M:%S - ")
+                                            );
+                                        }
                                     }
                                     Err(e) => {
                                         let now = Local::now();
@@ -167,14 +169,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                                 )
                                 .await
                                 .with_context(|| {
-                                    "Failed to update postgres database with proactive_node_info()"
+                                    "Failed to update sqlite database with proactive_node_info()"
                                 }) {
                                     Ok(v) => {
-                                        let now = Local::now();
-                                        info!(
-                                            "{}Inserted {v} rows into sqlite db proactively",
-                                            now.format("%Y-%m-%d %H:%M:%S - ")
-                                        );
+                                        if v != 0 {
+                                            let now = Local::now();
+                                            info!(
+                                                "{}Inserted {v} rows into NodeInfo table of sqlite db proactively",
+                                                now.format("%Y-%m-%d %H:%M:%S - ")
+                                            );
+                                        }
                                     }
                                     Err(e) => {
                                         let now = Local::now();
@@ -184,16 +188,18 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                             }
                         }
                     }
+                    // Get tablename to inline into insert messages
+                    let tablename = mp.match_tablename();
                     #[cfg(feature = "postgres")]
                     match update_metrics(&postgres_db, &pkt, None, &deployment_loc)
                         .await
                         .with_context(|| {
-                            "Failed to update postgres datatbase with packet from mesh"
+                            format!("Failed to update {} table in postgres datatbase with packet from mesh", tablename)
                         }) {
                         Ok(v) => {
                             let now = Local::now();
                             info!(
-                                "{}Inserted {v} rows into postgres db",
+                                "{}Inserted {v} rows into {tablename} of postgres db",
                                 now.format("%Y-%m-%d %H:%M:%S - ")
                             );
                         }
@@ -205,12 +211,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     #[cfg(feature = "sqlite")]
                     match update_metrics(&sqlite_db, &pkt, None, &deployment_loc)
                         .await
-                        .with_context(|| "Failed to update sqlite datatbase with packet from mesh")
+                        .with_context(|| format("Failed to update {} table in sqlite datatbase with packet from mesh", tablename))
                     {
                         Ok(v) => {
                             let now = Local::now();
                             info!(
-                                "{}Inserted {v} rows into sqlite db",
+                                "{}Inserted {v} rows into {tablename} of sqlite db",
                                 now.format("%Y-%m-%d %H:%M:%S - ")
                             );
                         }
@@ -237,7 +243,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                         Ok(v) => {
                             let now = Local::now();
                             info!(
-                                "{}Inserted {v} rows into postgres db",
+                                "{}Inserted {v} rows into NodeInfo table of postgres db",
                                 now.format("%Y-%m-%d %H:%M:%S - ")
                             );
                         }
@@ -258,7 +264,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                         Ok(v) => {
                             let now = Local::now();
                             info!(
-                                "{}Inserted {v} rows into sqlite db",
+                                "{}Inserted {v} rows into NodeInfo table of sqlite db",
                                 now.format("%Y-%m-%d %H:%M:%S - ")
                             );
                         }

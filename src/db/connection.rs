@@ -40,35 +40,30 @@ pub(crate) async fn update_metrics(
                 match p {
                     Payload::TelemetryApp(t) => match t {
                         Telem::Environment(data) => {
-                            info!("Environmental Telemetry");
                             environmentmetrics::Model::create_model(&mp, data)
                                 .insert_row(db)
                                 .await
                         }
 
                         Telem::AirQuality(data) => {
-                            info!("Air Quality Telemetry");
                             airqualitymetrics::Model::create_model(&mp, data)
                                 .insert_row(db)
                                 .await
                         }
 
                         Telem::Device(data) => {
-                            info!("Device Metrics Telemetry");
                             devicemetrics::Model::create_dm_model(mp, data)
                                 .insert_row(db)
                                 .await
                         }
 
                         Telem::Local(data) => {
-                            info!("Local Stats Telemetry");
                             localstats::Model::create_model(mp, data)
                                 .insert_row(db)
                                 .await
                         }
 
                         Telem::Error(data) => {
-                            info!("Error Metrics Telemetry");
                             errormetrics::Model::create_model(mp, data)
                                 .insert_row(db)
                                 .await
@@ -109,7 +104,6 @@ pub(crate) async fn update_metrics(
                     Payload::PositionApp(data) => {
                         // Updates the position for a given node id that is included in the
                         // packet sent from the mesh
-                        info!("Position Telemetry");
                         devicemetrics::Model {
                             msg_id: mp.id,
                             node_id: mp.from,
@@ -129,7 +123,6 @@ pub(crate) async fn update_metrics(
                     }
 
                     Payload::NeighborinfoApp(data) => {
-                        info!("Neighbor Info Telemetry");
                         neighborinfo::Model::create_model(mp, data)
                             .insert_row(db)
                             .await

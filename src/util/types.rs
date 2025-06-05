@@ -240,6 +240,26 @@ pub enum Telem {
     Error(ErrorMetrics),
 }
 
+impl Telem {
+    /// Match the telemetry type to a str of the tablename
+    ///
+    /// # Arguments
+    /// * `self` - A `Telem` enum
+    ///
+    /// # Returns
+    /// * `&str` - A string of the tablename
+    pub fn telem_name(&self) -> &str {
+        match self {
+            Telem::Device(device_metrics) => "DeviceMetrics",
+            Telem::Environment(environment_metrics) => "EnvironmentalMetrics",
+            Telem::AirQuality(air_quality_metrics) => "AirQualityMetrics",
+            Telem::Power(power_metrics) => "PowerMetrics",
+            Telem::Local(local_stats) => "LocalStats",
+            Telem::Error(error_metrics) => "ErrorMetrics",
+        }
+    }
+}
+
 /// Mesh packet structure that aliases the Meshtastic library's `MeshPacket`
 ///
 /// I need to figure out how to unify my types
@@ -303,6 +323,29 @@ impl Mesh {
             hop_start: def.hop_start,
             payload_variant: def.payload_variant,
             payload: None,
+        }
+    }
+    /// Get the tablename from the Telemetry variant
+    ///
+    /// # Arguments
+    /// * `self` - A `Mesh` structure
+    ///
+    /// # Returns
+    /// * `&str` - A tablename as a string
+    pub fn match_tablename(&self) -> &str {
+        if let Some(p) = &self.payload {
+            match p {
+                Payload::TextMessageApp(_) => "Message",
+                Payload::PositionApp(position) => "Position",
+                Payload::NodeinfoApp(user) => "User/NodeInfo",
+                Payload::RoutingApp(routing) => "Routing",
+                Payload::TelemetryApp(telem) => telem.telem_name(),
+                Payload::TracerouteApp(route_discovery) => "RouteDiscovery",
+                Payload::NeighborinfoApp(neighbor_info) => "NeighborInfo",
+                Payload::Max => "Max",
+            }
+        } else {
+            ""
         }
     }
 }
