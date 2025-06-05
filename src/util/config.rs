@@ -59,19 +59,18 @@ impl PostgresConnection {
         // Connect to postgres db
         let mut opt = ConnectOptions::new(self.build_db_connection_string());
 
-        // Set max connections to 2 and minimum to 1
         opt.max_connections(self.max_connections)
             .min_connections(self.min_connections);
 
         #[cfg(debug_assertions)]
         {
             opt.sqlx_logging(true);
-            opt.sqlx_logging_level(log::LevelFilter::Debug);
+            opt.sqlx_logging_level(log::LevelFilter::Trace);
         }
         #[cfg(not(debug_assertions))]
         {
             opt.sqlx_logging(false);
-            opt.sqlx_logging_level(log::LevelFilter::Off);
+            opt.sqlx_logging_level(log::LevelFilter::Warn);
         }
         Database::connect(opt)
             .await
