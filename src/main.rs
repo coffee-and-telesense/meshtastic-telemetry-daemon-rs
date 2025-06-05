@@ -22,6 +22,7 @@ use crate::util::{
     types::{GatewayState, Pkt},
 };
 use anyhow::{Context, Result};
+use chrono::Local;
 use db::connection::proactive_ninfo_insert;
 #[cfg(feature = "sqlite")]
 use db::lite::{self, drop_old_rows, pragma_optimize};
@@ -139,9 +140,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                                     "Failed to update postgres database with proactive_node_info()"
                                 }) {
                                     Ok(v) => {
-                                        info!("Inserted {v} rows into postgres db proactively")
+                                        let now = Local::now();
+                                        info!("{now} - Inserted {v} rows into postgres db proactively")
                                     }
-                                    Err(e) => error!("{e:#}"),
+                                    Err(e) => {
+                                        let now = Local::now();
+                                        error!("{now} - {e:#}");
+                                    }
                                 }
                                 #[cfg(feature = "sqlite")]
                                 match proactive_ninfo_insert(
@@ -154,8 +159,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                                 .with_context(|| {
                                     "Failed to update postgres database with proactive_node_info()"
                                 }) {
-                                    Ok(v) => info!("Inserted {v} rows into sqlite db proactively"),
-                                    Err(e) => error!("{e:#}"),
+                                    Ok(v) => {
+                                        let now = Local::now();
+                                        info!(
+                                            "{now} - Inserted {v} rows into sqlite db proactively"
+                                        )
+                                    }
+                                    Err(e) => {
+                                        let now = Local::now();
+                                        error!("{now} - {e:#}");
+                                    }
                                 }
                             }
                         }
@@ -166,16 +179,28 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                         .with_context(|| {
                             "Failed to update postgres datatbase with packet from mesh"
                         }) {
-                        Ok(v) => info!("Inserted {v} rows into postgres db"),
-                        Err(e) => error!("{e:#}"),
+                        Ok(v) => {
+                            let now = Local::now();
+                            info!("{now} - Inserted {v} rows into postgres db")
+                        }
+                        Err(e) => {
+                            let now = Local::now();
+                            error!("{now} - {e:#}");
+                        }
                     }
                     #[cfg(feature = "sqlite")]
                     match update_metrics(&sqlite_db, &pkt, None, &deployment_loc)
                         .await
                         .with_context(|| "Failed to update sqlite datatbase with packet from mesh")
                     {
-                        Ok(v) => info!("Inserted {v} rows into sqlite db"),
-                        Err(e) => error!("{e:#}"),
+                        Ok(v) => {
+                            let now = Local::now();
+                            info!("{now} - Inserted {v} rows into sqlite db")
+                        }
+                        Err(e) => {
+                            let now = Local::now();
+                            info!("{now} - {e:#}");
+                        }
                     }
                 }
                 Pkt::NInfo(ref ni) => {
@@ -192,12 +217,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                         .with_context(|| {
                             "Failed to update postgres database with node info packet from serial"
                         }) {
-                        Ok(v) => info!("Inserted {v} rows into postgres db"),
+                        Ok(v) => {
+                            let now = Local::now();
+                            info!("{now} - Inserted {v} rows into postgres db")
+                        }
                         Err(e) => {
                             // This is a lower priority error message since we favor node info data
                             // from the Mesh rather than from the serial connection. Often times it
                             // just means that we did not insert a row
-                            info!("{e:#}");
+                            let now = Local::now();
+                            info!("{now} - {e:#}");
                         }
                     }
                     #[cfg(feature = "sqlite")]
@@ -206,12 +235,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                         .with_context(|| {
                             "Failed to update sqlite database with node info packet from serial"
                         }) {
-                        Ok(v) => info!("Inserted {v} rows into sqlite db"),
+                        Ok(v) => {
+                            let now = Local::now();
+                            info!("{now} - Inserted {v} rows into sqlite db")
+                        }
                         Err(e) => {
                             // This is a lower priority error message since we favor node info data
                             // from the Mesh rather than from the serial connection. Often times it
                             // just means that we did not insert a row
-                            info!("{e:#}");
+                            let now = Local::now();
+                            info!("{now} - {e:#}");
                         }
                     }
                 }
