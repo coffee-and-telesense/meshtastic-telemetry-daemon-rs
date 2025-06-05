@@ -131,11 +131,11 @@ impl GatewayState {
     #[cfg(feature = "debug")]
     pub fn format_rx_counts(&self) -> String {
         let mut rv: String = "Counts:\n".to_owned();
-        for (_key, node) in &self.nodes {
+        for (id, node) in &self.nodes {
             rv.push_str(
                 format!(
-                    "\t{} ({}) - {} packets received\n",
-                    node.long_name, node.id, node.rx_count
+                    "\t{} ({}) {} - {} packets received\n",
+                    node.long_name, node.id, id, node.rx_count
                 )
                 .as_str(),
             );
