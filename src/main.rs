@@ -118,6 +118,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         if let Some(pkt) = rx.recv().await.unwrap() {
             match pkt {
                 Pkt::Mesh(ref mp) => {
+                    // Count received packets in debug builds for periodic reporting in logs
+                    #[cfg(feature = "debug")]
+                    if let Ok(lock) = state.clone().lock() {
+                        lock.increment_rx_count(mp.from);
+                        println!("{}", lock.format_rx_counts());
+                    }
+                    // Print packets if enabled
                     #[cfg(feature = "print-packets")]
                     println!("{}", to_string_pretty(&mp).unwrap());
                     // Before we insert into postgres or sqlite, we should proactively check that the foreign

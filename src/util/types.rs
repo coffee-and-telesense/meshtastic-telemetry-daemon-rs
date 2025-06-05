@@ -46,6 +46,8 @@ pub struct Node {
     id: String,
     /// Fake message id used in devicemetrics for this serial packet
     fake_msg_id: u8,
+    /// Number of received packets
+    rx_count: usize,
 }
 
 /// Declare a type alias for our hashmap of `node_ids` to numbers
@@ -104,6 +106,39 @@ impl GatewayState {
         None
     }
 
+    /// Increment the rx_count for a local state seen node (debug builds only)
+    ///
+    /// # Arguments
+    /// * `self` - Operates on the `GatewayState` struct
+    /// * `node_id` - The `u32` id in the `from` field of packets
+    ///
+    /// # Side effects/state changes
+    /// * Increments the `rx_count` entry of the corresponding `node_id`
+    #[cfg(feature = "debug")]
+    pub fn increment_rx_count(&mut self, node_id: u32) {
+        if let Some(mut f) = self.nodes.get(&node_id) {
+            f.rx_count += 1;
+        }
+    }
+
+    /// Format a message of the received packet counts
+    ///
+    /// # Arguments
+    /// * `self` - Operates on the `GatewayState` struct
+    ///
+    /// # Returns
+    /// * `str` - String of the node counts to print
+    #[cfg(feature = "debug")]
+    pub fn format_rx_counts(&self) -> &str {
+        let mut rv: String = "Counts:\n".to_owned();
+        for (_key, node) in self.nodes {
+            rv.push_str(format!(
+                "{} ({}) - {} packets received\n",
+                node.long_name, node.id, node.rx_count
+            ));
+        }
+    }
+
     /// Insert a new node into the state
     ///
     /// Possibly updating our local state if any of the `Node` struct items have changed
@@ -125,6 +160,7 @@ impl GatewayState {
                 hw_model: user.hw_model,
                 id: user.id,
                 fake_msg_id: self.biggest_fake,
+                rx_count: 1,
             };
             self.biggest_fake += 1;
             e.insert(v);
