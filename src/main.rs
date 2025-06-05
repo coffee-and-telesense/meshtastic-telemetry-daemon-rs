@@ -277,9 +277,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                         }
                     }
                 }
-                Pkt::MyNodeInfo(ref _mi) => {
+                Pkt::MyNodeInfo(ref mi) => {
                     #[cfg(feature = "print-packets")]
-                    println!("{}", to_string_pretty(&_mi).unwrap());
+                    println!("{}", to_string_pretty(&mi).unwrap());
+                    #[cfg(feature = "debug")]
+                    state
+                        .clone()
+                        .lock()
+                        .expect("Failed to acquire lock for GatewayState")
+                        .set_serial_number(mi.my_node_num);
                 }
             }
             // Thread has been used to process and send to DB, kill it

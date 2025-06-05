@@ -60,6 +60,8 @@ pub struct GatewayState {
     nodes: NodeFakePkts,
     /// The biggest fake message id up to a `u8::MAX` of 255
     biggest_fake: u8,
+    /// Connected node number
+    serial_node: u32,
 }
 
 impl Default for GatewayState {
@@ -71,6 +73,7 @@ impl Default for GatewayState {
         GatewayState {
             nodes: NodeFakePkts::new(),
             biggest_fake: 0,
+            serial_node: 0, // Set to 0 by default on init
         }
     }
 }
@@ -87,6 +90,7 @@ impl GatewayState {
         GatewayState {
             nodes: NodeFakePkts::new(),
             biggest_fake: 0,
+            serial_node: 0, // Set to 0 by default on new
         }
     }
 
@@ -134,13 +138,30 @@ impl GatewayState {
         for (id, node) in &self.nodes {
             rv.push_str(
                 format!(
-                    "\t{} ({}) {} - {} packets received\n",
-                    node.long_name, node.id, id, node.rx_count
+                    "{}{} ({}) {} - {} packets received\n",
+                    if *id == self.serial_node {
+                        "*serial "
+                    } else {
+                        "\t"
+                    },
+                    node.long_name,
+                    node.id,
+                    id,
+                    node.rx_count
                 )
                 .as_str(),
             );
         }
         rv
+    }
+
+    /// Modify the serial_node connection
+    ///
+    /// # Arguments
+    /// * `self` - Mutable self reference
+    /// * `num` - The number of the serial node
+    pub fn set_serial_number(&mut self, num: u32) {
+        self.serial_node = num;
     }
 
     /// Insert a new node into the state
