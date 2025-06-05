@@ -120,7 +120,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 Pkt::Mesh(ref mp) => {
                     // Count received packets in debug builds for periodic reporting in logs
                     #[cfg(feature = "debug")]
-                    if let Ok(lock) = state.clone().lock() {
+                    if let Ok(mut lock) = state.clone().lock() {
                         lock.increment_rx_count(mp.from);
                         println!("{}", lock.format_rx_counts());
                     }

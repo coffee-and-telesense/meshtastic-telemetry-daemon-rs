@@ -116,7 +116,7 @@ impl GatewayState {
     /// * Increments the `rx_count` entry of the corresponding `node_id`
     #[cfg(feature = "debug")]
     pub fn increment_rx_count(&mut self, node_id: u32) {
-        if let Some(mut f) = self.nodes.get(&node_id) {
+        if let Some(f) = self.nodes.get_mut(&node_id) {
             f.rx_count += 1;
         }
     }
@@ -127,16 +127,20 @@ impl GatewayState {
     /// * `self` - Operates on the `GatewayState` struct
     ///
     /// # Returns
-    /// * `str` - String of the node counts to print
+    /// * `String` - String of the node counts to print
     #[cfg(feature = "debug")]
-    pub fn format_rx_counts(&self) -> &str {
+    pub fn format_rx_counts(&self) -> String {
         let mut rv: String = "Counts:\n".to_owned();
-        for (_key, node) in self.nodes {
-            rv.push_str(format!(
-                "{} ({}) - {} packets received\n",
-                node.long_name, node.id, node.rx_count
-            ));
+        for (_key, node) in &self.nodes {
+            rv.push_str(
+                format!(
+                    "{} ({}) - {} packets received\n",
+                    node.long_name, node.id, node.rx_count
+                )
+                .as_str(),
+            );
         }
+        rv
     }
 
     /// Insert a new node into the state
