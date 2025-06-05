@@ -148,11 +148,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                                 }) {
                                     Ok(v) => {
                                         let now = Local::now();
-                                        info!("{now} - Inserted {v} rows into postgres db proactively")
+                                        info!(
+                                            "{}Inserted {v} rows into postgres db proactively",
+                                            now.format("%Y-%m-%d %H:%M:%S - ")
+                                        );
                                     }
                                     Err(e) => {
                                         let now = Local::now();
-                                        error!("{now} - {e:#}");
+                                        error!("{}{e:#}", now.format("%Y-%m-%d %H:%M:%S - "));
                                     }
                                 }
                                 #[cfg(feature = "sqlite")]
@@ -169,12 +172,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                                     Ok(v) => {
                                         let now = Local::now();
                                         info!(
-                                            "{now} - Inserted {v} rows into sqlite db proactively"
-                                        )
+                                            "{}Inserted {v} rows into sqlite db proactively",
+                                            now.format("%Y-%m-%d %H:%M:%S - ")
+                                        );
                                     }
                                     Err(e) => {
                                         let now = Local::now();
-                                        error!("{now} - {e:#}");
+                                        error!("{}{e:#}", now.format("%Y-%m-%d %H:%M:%S - "));
                                     }
                                 }
                             }
@@ -188,11 +192,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                         }) {
                         Ok(v) => {
                             let now = Local::now();
-                            info!("{now} - Inserted {v} rows into postgres db")
+                            info!(
+                                "{}Inserted {v} rows into postgres db",
+                                now.format("%Y-%m-%d %H:%M:%S - ")
+                            );
                         }
                         Err(e) => {
                             let now = Local::now();
-                            error!("{now} - {e:#}");
+                            error!("{}{e:#}", now.format("%Y-%m-%d %H:%M:%S - "));
                         }
                     }
                     #[cfg(feature = "sqlite")]
@@ -202,11 +209,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     {
                         Ok(v) => {
                             let now = Local::now();
-                            info!("{now} - Inserted {v} rows into sqlite db")
+                            info!(
+                                "{}Inserted {v} rows into sqlite db",
+                                now.format("%Y-%m-%d %H:%M:%S - ")
+                            );
                         }
                         Err(e) => {
                             let now = Local::now();
-                            info!("{now} - {e:#}");
+                            error!("{}{e:#}", now.format("%Y-%m-%d %H:%M:%S - "));
                         }
                     }
                 }
@@ -226,14 +236,17 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                         }) {
                         Ok(v) => {
                             let now = Local::now();
-                            info!("{now} - Inserted {v} rows into postgres db")
+                            info!(
+                                "{}Inserted {v} rows into postgres db",
+                                now.format("%Y-%m-%d %H:%M:%S - ")
+                            );
                         }
                         Err(e) => {
                             // This is a lower priority error message since we favor node info data
                             // from the Mesh rather than from the serial connection. Often times it
                             // just means that we did not insert a row
                             let now = Local::now();
-                            info!("{now} - {e:#}");
+                            info!("{}{e:#}", now.format("%Y-%m-%d %H:%M:%S - "));
                         }
                     }
                     #[cfg(feature = "sqlite")]
@@ -244,14 +257,17 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                         }) {
                         Ok(v) => {
                             let now = Local::now();
-                            info!("{now} - Inserted {v} rows into sqlite db")
+                            info!(
+                                "{}Inserted {v} rows into sqlite db",
+                                now.format("%Y-%m-%d %H:%M:%S - ")
+                            );
                         }
                         Err(e) => {
                             // This is a lower priority error message since we favor node info data
                             // from the Mesh rather than from the serial connection. Often times it
                             // just means that we did not insert a row
                             let now = Local::now();
-                            info!("{now} - {e:#}");
+                            info!("{}{e:#}", now.format("%Y-%m-%d %H:%M:%S - "));
                         }
                     }
                 }

@@ -134,7 +134,7 @@ impl GatewayState {
         for (_key, node) in &self.nodes {
             rv.push_str(
                 format!(
-                    "{} ({}) - {} packets received\n",
+                    "\t{} ({}) - {} packets received\n",
                     node.long_name, node.id, node.rx_count
                 )
                 .as_str(),
@@ -164,7 +164,7 @@ impl GatewayState {
                 hw_model: user.hw_model,
                 id: user.id,
                 fake_msg_id: self.biggest_fake,
-                rx_count: 1,
+                rx_count: -1, // Initialize to -1 to not count any from nodedb?
             };
             self.biggest_fake += 1;
             e.insert(v);
