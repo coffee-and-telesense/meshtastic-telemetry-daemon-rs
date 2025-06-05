@@ -134,7 +134,11 @@ impl GatewayState {
     /// * `String` - String of the node counts to print
     #[cfg(feature = "debug")]
     pub fn format_rx_counts(&self) -> String {
-        let mut rv: String = "Counts:\n".to_owned();
+        use chrono::Local;
+
+        let now = Local::now();
+        let mut rv: String =
+            format!("{} - Counts:\n", now.format("%Y-%m-%d %H:%M:%S - ")).to_owned();
         for (id, node) in &self.nodes {
             rv.push_str(
                 format!(
