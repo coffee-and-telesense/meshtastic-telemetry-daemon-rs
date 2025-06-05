@@ -164,7 +164,7 @@ impl GatewayState {
                 hw_model: user.hw_model,
                 id: user.id,
                 fake_msg_id: self.biggest_fake,
-                rx_count: -1, // Initialize to -1 to not count any from nodedb?
+                rx_count: 0, // Initialize to 0 to not count any from nodedb?
             };
             self.biggest_fake += 1;
             e.insert(v);
