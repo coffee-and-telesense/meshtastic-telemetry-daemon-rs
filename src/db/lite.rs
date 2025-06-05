@@ -1,7 +1,7 @@
 use crate::dto::entities::{airqualitymetrics, devicemetrics, environmentmetrics, nodeinfo};
 use anyhow::Context;
 #[cfg(feature = "debug")]
-use log::error;
+use log::{error, info};
 use sea_orm::{
     sea_query::TableCreateStatement, ConnectionTrait, DatabaseConnection, DbBackend, Schema,
     Statement,
@@ -28,11 +28,11 @@ pub async fn drop_old_rows(db: &DatabaseConnection, last: Instant) -> Instant {
                 ))
                 .await
             {
-                Ok(a) => log::trace!(
+                Ok(a) => info!(
                     "Successfully dropped {} old rows from sqlite",
                     a.rows_affected()
                 ),
-                Err(e) => log::error!("Error dropping old rows from sqlite: {e}"),
+                Err(e) => error!("Error dropping old rows from sqlite: {e}"),
             }
         }
     }
@@ -57,8 +57,8 @@ pub async fn pragma_optimize(db: &DatabaseConnection, last: Instant) -> Instant 
             ))
             .await
         {
-            Ok(a) => log::trace!("Optimized sqlite: {} rows affected", a.rows_affected()),
-            Err(e) => log::error!("Error optimizing sqlite: {e}"),
+            Ok(a) => info!("Optimized sqlite: {} rows affected", a.rows_affected()),
+            Err(e) => error!("Error optimizing sqlite: {e}"),
         }
     }
     Instant::now()
@@ -69,7 +69,7 @@ pub async fn pragma_optimize(db: &DatabaseConnection, last: Instant) -> Instant 
 /// # Arguments
 /// * `db` - A `DatabaseConnection` to the sqlite db
 pub async fn setup_schema(db: &DatabaseConnection) {
-    log::trace!("Setting up sqlite database");
+    info!("Setting up sqlite database");
     let schema = Schema::new(DbBackend::Sqlite);
     let em_stmt: TableCreateStatement = schema.create_table_from_entity(environmentmetrics::Entity);
     let dm_stmt: TableCreateStatement = schema.create_table_from_entity(devicemetrics::Entity);
