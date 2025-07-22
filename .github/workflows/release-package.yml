@@ -85,11 +85,13 @@ jobs:
           CARGO_TARGET_MIPS_UNKNOWN_LINUX_MUSL_RUSTFLAGS: "-Zlocation-detail=none -Zfmt-debug=none"
           # stupid AARCH build fails to start build because of warnings building cross
           CROSS_NO_WARNINGS: 0
+          # is the aarch64 ubuntu runner a container?
+          CROSS_CONTAINER_IN_CONTAINER: true
         with:
           command: build
           target: ${{ matrix.platform.build_target }}
           toolchain: nightly
-          args: "--features ${{ matrix.platform.features }} --no-default-features --release -Zbuild-std-features=optimize_for_size,panic_immediate_abort"
+          args: "--locked --features ${{ matrix.platform.features }} --no-default-features --release -Zbuild-std-features=optimize_for_size,panic_immediate_abort"
           cross-version: 51f46f2
           # this feelsbad, but should work?
           force-use-cross: ${{ matrix.platform.build_target == 'x86_64-unknown-linux-musl' || matrix.platform.build_target == 'i686-unknown-linux-gnu' || matrix.platform.build_target == 'aarch64-unknown-linux-musl' || matrix.platform.build_target == 'armv7-unknown-linux-gnueabihf' }}
