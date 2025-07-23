@@ -29,7 +29,7 @@ jobs:
           - os-name: Linux_ARMV7_A8_NEON_GNU_HF
             runs-on: ubuntu-24.04
             build_target: armv7-unknown-linux-gnueabihf
-            features: rustssl
+            features: rustssl debug
         toolchain:
           - nightly
 
@@ -73,7 +73,7 @@ jobs:
           command: build
           target: ${{ matrix.platform.build_target }}
           toolchain: nightly
-          args: "--locked --features ${{ matrix.platform.features }} --release -Zbuild-std-features=optimize_for_size,panic_immediate_abort"
+          args: "--locked --features ${{ matrix.platform.features }} --no-default-features --release -Zbuild-std-features=optimize_for_size,panic_immediate_abort"
           cross-version: 50ccc96
           # this feelsbad, but should work?
           force-use-cross: ${{ matrix.platform.build_target == 'x86_64-unknown-linux-musl' || matrix.platform.build_target == 'armv7-unknown-linux-gnueabihf' || matrix.platform.build_target == 'aarch64-unknown-linux-musl' }}
