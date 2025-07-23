@@ -56,8 +56,8 @@ native-tls = ["sea-orm/runtime-tokio-native-tls"]
 rustls = ["sea-orm/runtime-tokio-rustls"]
 
 # Specific shorthand targets
-vendored-ssl = ["dep:syslog", "postgres", "sea-orm/runtime-tokio-native-tls"]
-rust-ssl = ["dep:syslog", "postgres", "sea-orm/runtime-tokio-rustls"]
+vendoredssl = ["dep:syslog", "postgres", "sea-orm/runtime-tokio-native-tls"]
+rustssl = ["dep:syslog", "postgres", "sea-orm/runtime-tokio-rustls"]
 
 [profile.dev]
 debug = 1

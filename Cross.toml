@@ -3,16 +3,16 @@
 
 # AREDN on miktrotik hap ac lite target
 [target.mips-unknown-linux-musl]
-# build-std = ["std", "panic_abort"]
+build-std = ["std", "panic_abort"]
 image = "ghcr.io/cross-rs/mips-unknown-linux-musl:main"
 
 #TODO: Test this build
 # ARM 64 bit linux
 [target.aarch64-unknown-linux-gnu]
-pre-build = [
-  "dpkg --add-architecture $CROSS_DEB_ARCH",
-  "apt-get update && apt-get install --assume-yes libssl1.1:$CROSS_DEB_ARCH libssl-dev:$CROSS_DEB_ARCH",
-]
+# pre-build = [
+#   "dpkg --add-architecture $CROSS_DEB_ARCH",
+#   "apt-get update && apt-get install --assume-yes libssl1.1:$CROSS_DEB_ARCH libssl-dev:$CROSS_DEB_ARCH",
+# ]
 
 #TODO: Test this build
 # ARMv7 32 Linux
@@ -28,18 +28,18 @@ pre-build = [
 #TODO: Test this build
 # 32 bit Linux
 [target.i686-unknown-linux-gnu]
-pre-build = [
-  "dpkg --add-architecture $CROSS_DEB_ARCH",
-  "apt-get update && apt-get install --assume-yes libssl1.1:$CROSS_DEB_ARCH libssl-dev:$CROSS_DEB_ARCH",
-]
+# pre-build = [
+#   "dpkg --add-architecture $CROSS_DEB_ARCH",
+#   "apt-get update && apt-get install --assume-yes libssl1.1:$CROSS_DEB_ARCH libssl-dev:$CROSS_DEB_ARCH",
+# ]
 
 #TODO: Test this build
 # 64 bit Linux
 [target.x86_64-unknown-linux-gnu]
-pre-build = [
-  "dpkg --add-architecture $CROSS_DEB_ARCH",
-  "apt-get update && apt-get install --assume-yes libssl1.1:$CROSS_DEB_ARCH libssl-dev:$CROSS_DEB_ARCH",
-]
+# pre-build = [
+#   "dpkg --add-architecture $CROSS_DEB_ARCH",
+#   "apt-get update && apt-get install --assume-yes libssl1.1:$CROSS_DEB_ARCH libssl-dev:$CROSS_DEB_ARCH",
+# ]
 
 #TODO: Test this build
 # x86 64 bit alpine linux

@@ -19,32 +19,17 @@ jobs:
           - os-name: Linux_X86_64_MUSL
             runs-on: ubuntu-24.04
             build_target: x86_64-unknown-linux-musl
-            features: vendored-ssl
-
-          - os-name: Linux_X86_64_GNU
-            runs-on: ubuntu-24.04
-            build_target: x86_64-unknown-linux-gnu
-            features: vendored-ssl
-
-          - os-name: Linux_I686_GNU
-            runs-on: ubuntu-24.04
-            build_target: i686-unknown-linux-gnu
-            features: vendored-ssl
+            features: vendoredssl
 
           - os-name: Linux_AARCH64_MUSL
-            runs-on: ubuntu-24.04
+            runs-on: ubuntu-24.04-arm
             build_target: aarch64-unknown-linux-musl
-            features: vendored-ssl
+            features: vendoredssl
 
-          - os-name: Linux_AARCH64_GNU
-            runs-on: ubuntu-24.04
-            build_target: aarch64-unknown-linux-gnu
-            features: vendored-ssl
-
-          - os-name: Linux_ARMV7_GNU_HF_A8_NEON
-            runs-on: ubuntu-24.04
+          - os-name: Linux_ARMV7_A8_NEON_GNU_HF
+            runs-on: ubuntu-24.04-arm
             build_target: armv7-unknown-linux-gnueabihf
-            features: rust-ssl
+            features: rustssl
         toolchain:
           - nightly
 
@@ -77,22 +62,19 @@ jobs:
         uses: houseabsolute/actions-rust-cross@v1
         env:
           CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_RUSTFLAGS: "-Zlocation-detail=none -Zfmt-debug=none"
-          CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_RUSTFLAGS: "-Zlocation-detail=none -Zfmt-debug=none"
-          CARGO_TARGET_ARMV7_UNKNOWN_LINUX_GNUEABIHF_RUSTFLAGS: "-Zlocation-detail=none -Zfmt-debug=none -Ctarget-cpu=cortex-a8 -Ctarget-feature=+neon"
           CARGO_TARGET_X86_64_UNKNOWN_LINUX_MUSL_RUSTFLAGS: "-Zlocation-detail=none -Zfmt-debug=none"
-          CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_RUSTFLAGS: "-Zlocation-detail=none -Zfmt-debug=none"
-          CARGO_TARGET_I686_UNKNOWN_LINUX_GNU_RUSTFLAGS: "-Zlocation-detail=none -Zfmt-debug=none"
           CARGO_TARGET_MIPS_UNKNOWN_LINUX_MUSL_RUSTFLAGS: "-Zlocation-detail=none -Zfmt-debug=none"
+          CARGO_TARGET_ARMV7_UNKNOWN_LINUX_GNUEABIHF_RUSTFLAGS: "-Zlocation-detail=none -Zfmt-debug=none -Ctarget-cpu=cortex-a8 -Ctarget-feature=+neon"
           # stupid AARCH build fails to start build because of warnings building cross
           CROSS_NO_WARNINGS: 0
         with:
           command: build
           target: ${{ matrix.platform.build_target }}
           toolchain: nightly
-          args: "--features ${{ matrix.platform.features }} --no-default-features --release -Zbuild-std-features=optimize_for_size,panic_immediate_abort"
-          cross-version: 51f46f2
+          args: "--locked --features ${{ matrix.platform.features }} --release -Zbuild-std-features=optimize_for_size,panic_immediate_abort"
+          cross-version: 50ccc96
           # this feelsbad, but should work?
-          force-use-cross: ${{ matrix.platform.build_target == 'x86_64-unknown-linux-musl' || matrix.platform.build_target == 'i686-unknown-linux-gnu' || matrix.platform.build_target == 'aarch64-unknown-linux-musl' || matrix.platform.build_target == 'armv7-unknown-linux-gnueabihf' }}
+          force-use-cross: ${{ matrix.platform.build_target == 'x86_64-unknown-linux-musl' || matrix.platform.build_target == 'armv7-unknown-linux-gnueabihf' || matrix.platform.build_target == 'aarch64-unknown-linux-musl' }}
       - name: Compress binaries
         uses: svenstaro/upx-action@v2
         with:
@@ -103,3 +85,4 @@ jobs:
         with:
           executable-name: meshtastic-telemetry-daemon-rs
           target: ${{ matrix.platform.build_target }}
+
