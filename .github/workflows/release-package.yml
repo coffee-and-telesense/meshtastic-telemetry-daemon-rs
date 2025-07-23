@@ -32,17 +32,17 @@ jobs:
             features: vendored-ssl
 
           - os-name: Linux_AARCH64_MUSL
-            runs-on: ubuntu-24.04-arm
+            runs-on: ubuntu-24.04
             build_target: aarch64-unknown-linux-musl
             features: vendored-ssl
 
           - os-name: Linux_AARCH64_GNU
-            runs-on: ubuntu-24.04-arm
+            runs-on: ubuntu-24.04
             build_target: aarch64-unknown-linux-gnu
             features: vendored-ssl
 
           - os-name: Linux_ARMV7_GNU_HF_A8_NEON
-            runs-on: ubuntu-24.04-arm
+            runs-on: ubuntu-24.04
             build_target: armv7-unknown-linux-gnueabihf
             features: rust-ssl
         toolchain:
@@ -85,8 +85,6 @@ jobs:
           CARGO_TARGET_MIPS_UNKNOWN_LINUX_MUSL_RUSTFLAGS: "-Zlocation-detail=none -Zfmt-debug=none"
           # stupid AARCH build fails to start build because of warnings building cross
           CROSS_NO_WARNINGS: 0
-          # is the aarch64 ubuntu runner a container?
-          CROSS_CONTAINER_IN_CONTAINER: true
         with:
           command: build
           target: ${{ matrix.platform.build_target }}
