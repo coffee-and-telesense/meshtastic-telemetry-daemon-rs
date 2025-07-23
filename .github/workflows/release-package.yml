@@ -67,6 +67,8 @@ jobs:
           CARGO_TARGET_ARMV7_UNKNOWN_LINUX_GNUEABIHF_RUSTFLAGS: "-Zlocation-detail=none -Zfmt-debug=none -Ctarget-cpu=cortex-a8 -Ctarget-feature=+neon"
           # stupid AARCH build fails to start build because of warnings building cross
           CROSS_NO_WARNINGS: 0
+          # lmao armv7 build error
+          RUST_MIN_STACK: 16777216
         with:
           command: build
           target: ${{ matrix.platform.build_target }}
