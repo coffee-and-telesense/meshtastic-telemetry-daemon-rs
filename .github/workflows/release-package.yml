@@ -79,6 +79,7 @@ jobs:
           force-use-cross: ${{ matrix.platform.build_target == 'x86_64-unknown-linux-musl' || matrix.platform.build_target == 'armv7-unknown-linux-gnueabihf' || matrix.platform.build_target == 'aarch64-unknown-linux-musl' }}
       - name: Compress binaries
         uses: svenstaro/upx-action@v2
+        if: ${{ matrix.platform.build_target != 'armv7-unknown-linux-gnueabihf' }}
         with:
           files: |
             target/${{ matrix.platform.build_target }}/release/meshtastic-telemetry-daemon-rs
