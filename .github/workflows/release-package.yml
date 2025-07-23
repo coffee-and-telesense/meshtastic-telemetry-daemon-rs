@@ -29,7 +29,7 @@ jobs:
           - os-name: Linux_ARMV7_A8_NEON_GNU_HF
             runs-on: ubuntu-24.04
             build_target: armv7-unknown-linux-gnueabihf
-            features: rustssl debug
+            features: rustssl,debug
         toolchain:
           - nightly
 
