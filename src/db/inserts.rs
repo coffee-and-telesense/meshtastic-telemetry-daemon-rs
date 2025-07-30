@@ -118,7 +118,7 @@ impl DeviceMetricsModel {
         insert_row_gen(self.into_active_model(), db, "device".to_string()).await
     }
 
-    /// Create Device Metrics Model for DeviceMetrics payloads
+    /// Create Device Metrics Model for `DeviceMetrics` payloads
     ///
     /// # Arguments
     /// * `pkt` - a `Mesh` packet

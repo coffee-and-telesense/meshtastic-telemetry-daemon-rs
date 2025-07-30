@@ -40,13 +40,13 @@ pub(crate) async fn update_metrics(
                 match p {
                     Payload::TelemetryApp(t) => match t {
                         Telem::Environment(data) => {
-                            environmentmetrics::Model::create_model(&mp, data)
+                            environmentmetrics::Model::create_model(mp, data)
                                 .insert_row(db)
                                 .await
                         }
 
                         Telem::AirQuality(data) => {
-                            airqualitymetrics::Model::create_model(&mp, data)
+                            airqualitymetrics::Model::create_model(mp, data)
                                 .insert_row(db)
                                 .await
                         }
@@ -188,8 +188,8 @@ pub(crate) async fn update_metrics(
 /// * Result with the number of rows inserted/updated
 ///
 /// # Panics
-/// * Will panic if it fails to acquire a lock on the GatewayState
-/// * Will panic if a fake_node_mg_id cannot be found in the GatewayState before inserts
+/// * Will panic if it fails to acquire a lock on the `GatewayState`
+/// * Will panic if a `fake_node_mg_id` cannot be found in the `GatewayState` before inserts
 pub(crate) async fn proactive_ninfo_insert(
     pkt: &Mesh,
     db: &DatabaseConnection,
@@ -206,9 +206,9 @@ pub(crate) async fn proactive_ninfo_insert(
         // We do not know this node, so it likely is not in postgres.
         // First add it to our Gateway state
         let fake_user = User {
-            id: "".to_string(),
-            long_name: "".to_string(),
-            short_name: "".to_string(),
+            id: String::new(),
+            long_name: String::new(),
+            short_name: String::new(),
             #[allow(deprecated)]
             macaddr: vec![],
             hw_model: -1,
@@ -239,7 +239,7 @@ pub(crate) async fn proactive_ninfo_insert(
         };
         // Insert it as if it came over serial
         info!("Proactively inserting a new node info and device metrics row");
-        node_info_conflict(fake_ni, None, db, Some(fake_msg_id as u32), dep_loc).await
+        node_info_conflict(fake_ni, None, db, Some(u32::from(fake_msg_id)), dep_loc).await
     } else {
         // We already know about it so return 0 row changes
         info!("Node already known, skipping proactive inserts");

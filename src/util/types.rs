@@ -110,7 +110,7 @@ impl GatewayState {
         None
     }
 
-    /// Increment the rx_count for a local state seen node (debug builds only)
+    /// Increment the `rx_count` for a local state seen node (debug builds only)
     ///
     /// # Arguments
     /// * `self` - Operates on the `GatewayState` struct
@@ -159,7 +159,7 @@ impl GatewayState {
         rv
     }
 
-    /// Modify the serial_node connection
+    /// Modify the `serial_node` connection
     ///
     /// # Arguments
     /// * `self` - Mutable self reference
@@ -464,7 +464,7 @@ pub enum Pkt {
     MyNodeInfo(MyInfo),
 }
 
-/// Neighbor struct to make JSON for NeighborInfo table
+/// Neighbor struct to make JSON for `NeighborInfo` table
 #[cfg_attr(feature = "print-packets", derive(Deserialize))]
 #[derive(Serialize)]
 pub struct Neighbor {
