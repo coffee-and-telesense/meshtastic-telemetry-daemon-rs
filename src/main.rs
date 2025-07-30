@@ -7,9 +7,9 @@
 
 //! Meshtastic to Postgresql/Sqlite database daemon
 
-#[cfg(not(debug_assertions))]
+#[cfg(feature = "syslog")]
 extern crate syslog;
-#[cfg(not(debug_assertions))]
+#[cfg(feature = "syslog")]
 #[macro_use]
 extern crate log;
 
@@ -33,6 +33,8 @@ use meshtastic::utils;
 #[cfg(feature = "print-packets")]
 use serde_json::to_string_pretty;
 use std::sync::{Arc, Mutex};
+#[cfg(feature = "sqlite")]
+use std::time::Instant;
 use tokio::sync::mpsc;
 
 /// Database interaction module
@@ -111,7 +113,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             // barrier between db inserts and packet receptions. But for now lets do a hacky
             // solution just to test the borrow checker and my async skills as the problem may
             // still exist within the more elegant solution.
-            tx.send(packet_handler::process_packet(decoded, s))
+            tx.send(packet_handler::process_packet(&decoded, &s))
                 .await
                 .unwrap();
         });
@@ -132,7 +134,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     if let Some(p) = &mp.payload {
                         match p {
                             util::types::Payload::NodeinfoApp(_u) => {
-                                info!("Received nodeinfo payload")
+                                info!("Received nodeinfo payload");
                             }
                             _ => {
                                 #[cfg(feature = "postgres")]
@@ -194,7 +196,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     match update_metrics(&postgres_db, &pkt, None, &deployment_loc)
                         .await
                         .with_context(|| {
-                            format!("Failed to update {} table in postgres datatbase with packet from mesh", tablename)
+                            format!("Failed to update {tablename} table in postgres datatbase with packet from mesh")
                         }) {
                         Ok(v) => {
                             let now = Local::now();
@@ -211,7 +213,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     #[cfg(feature = "sqlite")]
                     match update_metrics(&sqlite_db, &pkt, None, &deployment_loc)
                         .await
-                        .with_context(|| format("Failed to update {} table in sqlite datatbase with packet from mesh", tablename))
+                        .with_context(|| format!("Failed to update {} table in sqlite datatbase with packet from mesh", tablename))
                     {
                         Ok(v) => {
                             let now = Local::now();
@@ -235,7 +237,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                         .find_fake_id(ni.num)
                         .expect("No fake_id returned");
                     #[cfg(feature = "postgres")]
-                    match update_metrics(&postgres_db, &pkt, Some(fake as u32), &deployment_loc)
+                    match update_metrics(&postgres_db, &pkt, Some(fake.into()), &deployment_loc)
                         .await
                         .with_context(|| {
                             "Failed to update postgres database with node info packet from serial"
@@ -256,7 +258,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                         }
                     }
                     #[cfg(feature = "sqlite")]
-                    match update_metrics(&sqlite_db, &pkt, fake, &deployment_loc)
+                    match update_metrics(&sqlite_db, &pkt, Some(fake.into()), &deployment_loc)
                         .await
                         .with_context(|| {
                             "Failed to update sqlite database with node info packet from serial"
@@ -289,7 +291,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 }
             }
             // Thread has been used to process and send to DB, kill it
-            let _res = join.await?;
+            join.await?;
             // Dumb sqlite optimizations
             #[cfg(feature = "sqlite")]
             {
@@ -307,3 +309,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     Ok(())
 }
+
+#[cfg(all(feature = "debug", feature = "syslog"))]
+compile_error!("feature \"debug\" and feature \"syslog\" cannot be enabled at the same time");

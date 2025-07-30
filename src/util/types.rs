@@ -275,12 +275,12 @@ impl Telem {
     /// * `&str` - A string of the tablename
     pub fn telem_name(&self) -> &str {
         match self {
-            Telem::Device(device_metrics) => "DeviceMetrics",
-            Telem::Environment(environment_metrics) => "EnvironmentalMetrics",
-            Telem::AirQuality(air_quality_metrics) => "AirQualityMetrics",
-            Telem::Power(power_metrics) => "PowerMetrics",
-            Telem::Local(local_stats) => "LocalStats",
-            Telem::Error(error_metrics) => "ErrorMetrics",
+            Telem::Device(_device_metrics) => "DeviceMetrics",
+            Telem::Environment(_environment_metrics) => "EnvironmentalMetrics",
+            Telem::AirQuality(_air_quality_metrics) => "AirQualityMetrics",
+            Telem::Power(_power_metrics) => "PowerMetrics",
+            Telem::Local(_local_stats) => "LocalStats",
+            Telem::Error(_error_metrics) => "ErrorMetrics",
         }
     }
 }
@@ -360,13 +360,13 @@ impl Mesh {
     pub fn match_tablename(&self) -> &str {
         if let Some(p) = &self.payload {
             match p {
-                Payload::TextMessageApp(_) => "Message",
-                Payload::PositionApp(position) => "Position",
-                Payload::NodeinfoApp(user) => "User/NodeInfo",
-                Payload::RoutingApp(routing) => "Routing",
+                Payload::TextMessageApp(_message) => "Message",
+                Payload::PositionApp(_position) => "Position",
+                Payload::NodeinfoApp(_user) => "User/NodeInfo",
+                Payload::RoutingApp(_routing) => "Routing",
                 Payload::TelemetryApp(telem) => telem.telem_name(),
-                Payload::TracerouteApp(route_discovery) => "RouteDiscovery",
-                Payload::NeighborinfoApp(neighbor_info) => "NeighborInfo",
+                Payload::TracerouteApp(_route_discovery) => "RouteDiscovery",
+                Payload::NeighborinfoApp(_neighbor_info) => "NeighborInfo",
                 Payload::Max => "Max",
             }
         } else {

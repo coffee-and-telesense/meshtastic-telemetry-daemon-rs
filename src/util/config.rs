@@ -9,6 +9,8 @@ use sea_orm::sqlx::{sqlite, ConnectOptions as SqliteConnectionOptions};
 use sea_orm::{ConnectOptions, Database, DatabaseConnection};
 use serde::Deserialize;
 use std::io::{self, BufRead};
+#[cfg(feature = "sqlite")]
+use std::str::FromStr;
 
 /// Struct reprenting a postgres connection's settings
 #[cfg(feature = "postgres")]
@@ -62,12 +64,12 @@ impl PostgresConnection {
         opt.max_connections(self.max_connections)
             .min_connections(self.min_connections);
 
-        #[cfg(debug_assertions)]
+        #[cfg(feature = "debug")]
         {
             opt.sqlx_logging(true);
             opt.sqlx_logging_level(log::LevelFilter::Trace);
         }
-        #[cfg(not(debug_assertions))]
+        #[cfg(feature = "syslog")]
         {
             opt.sqlx_logging(false);
             opt.sqlx_logging_level(log::LevelFilter::Warn);
@@ -124,9 +126,9 @@ impl SqliteConnection {
                     // Create the file if it is missing
                     .create_if_missing(true);
                 // Logging settings
-                #[cfg(debug_assertions)]
+                #[cfg(feature = "debug")]
                 let c = co.log_statements(log::LevelFilter::Trace);
-                #[cfg(not(debug_assertions))]
+                #[cfg(feature = "syslog")]
                 let c = co.log_statements(log::LevelFilter::Off);
                 // Set connection timeout?
                 let pool_opts = sqlite::SqlitePoolOptions::new()
@@ -227,7 +229,7 @@ impl Settings {
     /// This panics if a serial port is not provided by the user in the case that the config file does
     /// not provide a serial port path
     pub(crate) fn get_serial_port(&self) -> String {
-        if self.serial.port == "" {
+        if self.serial.port.is_empty() {
             warn!("Prompting user for serial port instead");
             match available_serial_ports()
                 .with_context(|| "Failed to enumerate list of serial ports")
