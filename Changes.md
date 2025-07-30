@@ -1,5 +1,17 @@
 
 
+## [v0.1.7] - 2025-07-30
+### :bug: Bug Fixes
+- [`4e4afc4`](https://github.com/coffee-and-telesense/meshtastic-telemetry-daemon-rs/commit/4e4afc4203a667396b41aa49421227ec17b223e3) - **clippy**: address clippy concerns and fix *(commit by [@gatlinnewhouse](https://github.com/gatlinnewhouse))*
+
+### :wrench: Chores
+- [`58e8030`](https://github.com/coffee-and-telesense/meshtastic-telemetry-daemon-rs/commit/58e8030c133f8868a8dc24f2f772298f1817b7c6) - **features**: update feature names, default features, and CI *(commit by [@gatlinnewhouse](https://github.com/gatlinnewhouse))*
+- [`1363f6b`](https://github.com/coffee-and-telesense/meshtastic-telemetry-daemon-rs/commit/1363f6bdf0c48e37a0ee36add73f61c6aff6541e) - **README**: update README with build and CI notes *(commit by [@gatlinnewhouse](https://github.com/gatlinnewhouse))*
+- [`6a88af2`](https://github.com/coffee-and-telesense/meshtastic-telemetry-daemon-rs/commit/6a88af2ca7c789f34858584d69aa2b18296de12a) - **features/clippy**: update feature names and clippy lint fixes *(commit by [@gatlinnewhouse](https://github.com/gatlinnewhouse))*
+- [`9e45d6a`](https://github.com/coffee-and-telesense/meshtastic-telemetry-daemon-rs/commit/9e45d6a0da62c0877e86e9dcb0d5f95a1603c9cd) - **toolchain**: set nightly to be default toolchain *(commit by [@gatlinnewhouse](https://github.com/gatlinnewhouse))*
+- [`b7cb156`](https://github.com/coffee-and-telesense/meshtastic-telemetry-daemon-rs/commit/b7cb156b4c76706633da89159589a87c9e48b624) - **Cargo**: bump version number *(commit by [@gatlinnewhouse](https://github.com/gatlinnewhouse))*
+
+
 ## [v0.1.6] - 2025-07-22
 ### :wrench: Chores
 - [`6a0b632`](https://github.com/coffee-and-telesense/meshtastic-telemetry-daemon-rs/commit/6a0b632ce5cd53028a45165f23ce2ad919e47ad6) - **cargo**: bump version again for hotfix *(commit by [@gatlinnewhouse](https://github.com/gatlinnewhouse))*
@@ -71,3 +83,4 @@
 [v0.1.4]: https://github.com/coffee-and-telesense/meshtastic-telemetry-daemon-rs/compare/v0.1.3...v0.1.4
 [v0.1.5]: https://github.com/coffee-and-telesense/meshtastic-telemetry-daemon-rs/compare/v0.1.4...v0.1.5
 [v0.1.6]: https://github.com/coffee-and-telesense/meshtastic-telemetry-daemon-rs/compare/v0.1.5...v0.1.6
+[v0.1.7]: https://github.com/coffee-and-telesense/meshtastic-telemetry-daemon-rs/compare/v0.1.6...v0.1.7
