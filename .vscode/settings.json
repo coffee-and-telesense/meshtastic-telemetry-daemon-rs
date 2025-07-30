@@ -1,0 +1,16 @@
+{
+  "cargo": {
+    "buildScripts": {
+      "enable": true
+    },
+    "noDefaultFeatures": false,
+    "features": []
+  },
+  "procMacro": {
+    "enable": true
+  },
+  "check": {
+    "noDefaultFeatures": false,
+    "features": []
+  }
+}

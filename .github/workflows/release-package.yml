@@ -19,17 +19,17 @@ jobs:
           - os-name: Linux_X86_64_MUSL
             runs-on: ubuntu-24.04
             build_target: x86_64-unknown-linux-musl
-            features: vendoredssl
+            features: alpine
 
           - os-name: Linux_AARCH64_MUSL
             runs-on: ubuntu-24.04-arm
             build_target: aarch64-unknown-linux-musl
-            features: vendoredssl
+            features: alpine
 
           - os-name: Linux_ARMV7_A8_NEON_GNU_HF
             runs-on: ubuntu-24.04
             build_target: armv7-unknown-linux-gnueabihf
-            features: rustssl,debug
+            features: beaglebone
         toolchain:
           - nightly
 
