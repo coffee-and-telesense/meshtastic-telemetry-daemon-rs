@@ -3,7 +3,7 @@ Description=Meshtastic Telemetry Daemon
 After=docker.service
 
 [Service]
-ExecStartPre=/bin/sleep 120
+ExecStartPre=/bin/sleep 30
 ExecStart=/home/debian/meshtastic-telemetry-daemon-rs
 Type=simple
 
