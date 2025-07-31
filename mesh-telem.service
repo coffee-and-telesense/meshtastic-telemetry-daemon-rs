@@ -1,6 +1,6 @@
 [Unit]
 Description=Meshtastic Telemetry Daemon
-After=meshtastic-serial.path
+After=docker.service
 
 [Service]
 ExecStart=/home/debian/meshtastic-telemetry-daemon-rs
