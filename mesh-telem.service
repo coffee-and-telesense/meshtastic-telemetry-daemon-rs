@@ -1,9 +1,10 @@
 [Unit]
 Description=Meshtastic Telemetry Daemon
+After=meshtastic-serial.path
 
 [Service]
 ExecStart=/home/debian/meshtastic-telemetry-daemon-rs
-User=debian
+Type=simple
 
 [Install]
 WantedBy=multi-user.target
