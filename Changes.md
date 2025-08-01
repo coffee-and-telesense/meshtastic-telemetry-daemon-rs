@@ -1,5 +1,20 @@
 
 
+## [v0.1.8] - 2025-08-01
+### :bug: Bug Fixes
+- [`5b9c7da`](https://github.com/coffee-and-telesense/meshtastic-telemetry-daemon-rs/commit/5b9c7da1c0c01077214be573a9bbd23354e1bf00) - **systemd**: 30s delay on beaglebone *(commit by [@gatlinnewhouse](https://github.com/gatlinnewhouse))*
+
+### :wrench: Chores
+- [`0b0114b`](https://github.com/coffee-and-telesense/meshtastic-telemetry-daemon-rs/commit/0b0114b0a174dcf69d8ae6ca88f5652c2a435154) - **systemd**: add systemd unit and path *(commit by [@gatlinnewhouse](https://github.com/gatlinnewhouse))*
+- [`57f50f5`](https://github.com/coffee-and-telesense/meshtastic-telemetry-daemon-rs/commit/57f50f54221cee57cd9152f69946839de349160a) - **systemd**: update service file *(commit by [@gatlinnewhouse](https://github.com/gatlinnewhouse))*
+- [`50f3e09`](https://github.com/coffee-and-telesense/meshtastic-telemetry-daemon-rs/commit/50f3e0971a13905d651b3beb8d23de9dcd3e6f02) - **systemd service**: just wait for docker daemon *(commit by [@gatlinnewhouse](https://github.com/gatlinnewhouse))*
+- [`a225940`](https://github.com/coffee-and-telesense/meshtastic-telemetry-daemon-rs/commit/a225940e4b9730380b537eabc0664450d4e294c9) - **systemd**: delay daemon, destroy path file *(commit by [@gatlinnewhouse](https://github.com/gatlinnewhouse))*
+- [`f75bae5`](https://github.com/coffee-and-telesense/meshtastic-telemetry-daemon-rs/commit/f75bae563b2d5f5e8b4534102d25cef9f203e774) - **systemd**: fix order of startpre *(commit by [@gatlinnewhouse](https://github.com/gatlinnewhouse))*
+- [`0de0a09`](https://github.com/coffee-and-telesense/meshtastic-telemetry-daemon-rs/commit/0de0a09ee2ff916af4a9610da8add32124cbd968) - **systemd**: set it to 120 *(commit by [@gatlinnewhouse](https://github.com/gatlinnewhouse))*
+- [`2f60fd0`](https://github.com/coffee-and-telesense/meshtastic-telemetry-daemon-rs/commit/2f60fd0ebb45e8f1ea10deda420c51e66fef2007) - **CI**: add files to releases *(commit by [@gatlinnewhouse](https://github.com/gatlinnewhouse))*
+- [`07e8a81`](https://github.com/coffee-and-telesense/meshtastic-telemetry-daemon-rs/commit/07e8a81265381d010c58ae1e99ec2249bb9cf072) - **cargo**: update cargo version *(commit by [@gatlinnewhouse](https://github.com/gatlinnewhouse))*
+
+
 ## [v0.1.7] - 2025-07-30
 ### :bug: Bug Fixes
 - [`4e4afc4`](https://github.com/coffee-and-telesense/meshtastic-telemetry-daemon-rs/commit/4e4afc4203a667396b41aa49421227ec17b223e3) - **clippy**: address clippy concerns and fix *(commit by [@gatlinnewhouse](https://github.com/gatlinnewhouse))*
@@ -84,3 +99,4 @@
 [v0.1.5]: https://github.com/coffee-and-telesense/meshtastic-telemetry-daemon-rs/compare/v0.1.4...v0.1.5
 [v0.1.6]: https://github.com/coffee-and-telesense/meshtastic-telemetry-daemon-rs/compare/v0.1.5...v0.1.6
 [v0.1.7]: https://github.com/coffee-and-telesense/meshtastic-telemetry-daemon-rs/compare/v0.1.6...v0.1.7
+[v0.1.8]: https://github.com/coffee-and-telesense/meshtastic-telemetry-daemon-rs/compare/v0.1.7...v0.1.8
