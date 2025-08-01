@@ -88,4 +88,7 @@ jobs:
         with:
           executable-name: meshtastic-telemetry-daemon-rs
           target: ${{ matrix.platform.build_target }}
+          extra-files: |
+            mesh-telem.service
+            example_config.toml
 
