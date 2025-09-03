@@ -32,6 +32,7 @@ use meshtastic::api::StreamApi;
 use meshtastic::utils;
 #[cfg(feature = "print-packets")]
 use serde_json::to_string_pretty;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 #[cfg(feature = "sqlite")]
 use std::time::Instant;
@@ -99,9 +100,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     #[cfg(feature = "sqlite")]
     let mut daily = few_hours.clone();
 
+    let term = Arc::new(AtomicBool::new(false));
+    signal_hook::flag::register(signal_hook::consts::SIGTERM, Arc::clone(&term))?;
+    signal_hook::flag::register(signal_hook::consts::SIGKILL, Arc::clone(&term))?;
+
     // This loop can be broken with ctrl+c, or by disconnecting
-    // the attached serial port.
-    while let Some(decoded) = decoded_listener.recv().await {
+    // the attached serial port, or by sending a SIGTERM signal
+    // through systemctl or other means
+    while !term.load(Ordering::Relaxed)
+        && let Some(decoded) = decoded_listener.recv().await
+    {
         let tx = tx.clone();
         let s = state.clone();
         let join = tokio::spawn(async move {
@@ -260,9 +268,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     #[cfg(feature = "sqlite")]
                     match update_metrics(&sqlite_db, &pkt, Some(fake.into()), &deployment_loc)
                         .await
-                        .with_context(|| {
-                            "Failed to update sqlite database with node info packet from serial"
-                        }) {
+                        .with_context(
+                            || "Failed to update sqlite database with node info packet from serial",
+                        ) {
                         Ok(v) => {
                             let now = Local::now();
                             info!(
@@ -301,10 +309,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     }
 
-    // Note that in this specific example, this will only be called when
-    // the radio is disconnected, as the above loop will never exit.
-    // Typically you would allow the user to manually kill the loop,
-    // for example with tokio::select!.
+    // Called when either the radio is disconnected or the daemon recieves
+    // a SIGTERM or SIGKILL signal from systemctl or by other means
     let _stream_api = stream_api.disconnect().await?;
 
     Ok(())
