@@ -1,4 +1,5 @@
 #![feature(stmt_expr_attributes)]
+#![feature(let_chains)]
 #![warn(missing_docs)]
 #![warn(clippy::cargo)]
 #![warn(clippy::pedantic)]
@@ -102,7 +103,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let term = Arc::new(AtomicBool::new(false));
     signal_hook::flag::register(signal_hook::consts::SIGTERM, Arc::clone(&term))?;
-    signal_hook::flag::register(signal_hook::consts::SIGKILL, Arc::clone(&term))?;
 
     // This loop can be broken with ctrl+c, or by disconnecting
     // the attached serial port, or by sending a SIGTERM signal
