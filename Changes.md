@@ -1,5 +1,13 @@
 
 
+## [v0.1.9] - 2025-09-03
+### :bug: Bug Fixes
+- [`e302123`](https://github.com/coffee-and-telesense/meshtastic-telemetry-daemon-rs/commit/e302123be1c8e00c1c8db1a77f73b376c5b02ddd) - **systemctl signals**: handle stop signal in main() *(commit by [@gatlinnewhouse](https://github.com/gatlinnewhouse))*
+
+### :wrench: Chores
+- [`901495c`](https://github.com/coffee-and-telesense/meshtastic-telemetry-daemon-rs/commit/901495cdbb2af4e9bafc42f47f96970b5f65337c) - **cargo toml**: update to version 0.1.9 *(commit by [@gatlinnewhouse](https://github.com/gatlinnewhouse))*
+
+
 ## [v0.1.8] - 2025-08-01
 ### :bug: Bug Fixes
 - [`5b9c7da`](https://github.com/coffee-and-telesense/meshtastic-telemetry-daemon-rs/commit/5b9c7da1c0c01077214be573a9bbd23354e1bf00) - **systemd**: 30s delay on beaglebone *(commit by [@gatlinnewhouse](https://github.com/gatlinnewhouse))*
@@ -100,3 +108,4 @@
 [v0.1.6]: https://github.com/coffee-and-telesense/meshtastic-telemetry-daemon-rs/compare/v0.1.5...v0.1.6
 [v0.1.7]: https://github.com/coffee-and-telesense/meshtastic-telemetry-daemon-rs/compare/v0.1.6...v0.1.7
 [v0.1.8]: https://github.com/coffee-and-telesense/meshtastic-telemetry-daemon-rs/compare/v0.1.7...v0.1.8
+[v0.1.9]: https://github.com/coffee-and-telesense/meshtastic-telemetry-daemon-rs/compare/v0.1.8...v0.1.9
