@@ -47,6 +47,9 @@ pub(crate) mod dto;
 /// Utilities module
 pub(crate) mod util;
 
+/// Version number of the daemon
+const VERSION: &str = env!("CARGO_PKG_VERSION");
+
 /// Main
 ///
 /// # Returns
@@ -94,6 +97,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Decrease the channel size to 4 from 32, in order to prevent OOMs
     let (tx, mut rx) = mpsc::channel(4);
+
+    // Output the version of the daemon to the logger
+    log::info!("Daemon version: {VERSION}");
 
     // Timers for optimization of sqlite
     #[cfg(feature = "sqlite")]
