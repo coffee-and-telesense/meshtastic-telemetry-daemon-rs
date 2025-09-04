@@ -95,8 +95,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let deployment_loc = settings.deployment.location;
 
-    // Decrease the channel size to 4 from 32, in order to prevent OOMs
-    let (tx, mut rx) = mpsc::channel(4);
+    let (tx, mut rx) = mpsc::channel(settings.async_runtime.mpsc_buffer_size.into());
 
     // Output the version of the daemon to the logger
     log::info!("Daemon version: {VERSION}");
