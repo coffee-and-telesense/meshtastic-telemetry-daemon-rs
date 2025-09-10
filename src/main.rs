@@ -1,5 +1,4 @@
 #![feature(stmt_expr_attributes)]
-#![feature(let_chains)]
 #![warn(missing_docs)]
 #![warn(clippy::cargo)]
 #![warn(clippy::pedantic)]
