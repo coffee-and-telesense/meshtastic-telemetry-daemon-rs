@@ -2,11 +2,11 @@ use crate::util::types::{GatewayState, Mesh, MyInfo, NInfo, Payload, Pkt, Telem}
 use anyhow::Context;
 #[cfg(feature = "debug")]
 use log::info;
-use meshtastic::protobufs::{
-    from_radio, mesh_packet, telemetry, FromRadio, NeighborInfo, PortNum, Position, RouteDiscovery,
-    Routing, User,
-};
 use meshtastic::Message;
+use meshtastic::protobufs::{
+    FromRadio, NeighborInfo, PortNum, Position, RouteDiscovery, Routing, User, from_radio,
+    mesh_packet, telemetry,
+};
 use std::sync::{Arc, Mutex};
 
 /// Process Packets
@@ -140,9 +140,9 @@ pub fn process_packet(packet: &FromRadio, state: &Arc<Mutex<GatewayState>>) -> O
                                 }
 
                                 PortNum::NodeinfoApp => {
-                                    match User::decode(de.payload.as_slice()).with_context(|| {
-                                        "Failed to decode NodeInfo payload from mesh"
-                                    }) {
+                                    match User::decode(de.payload.as_slice()).with_context(
+                                        || "Failed to decode NodeInfo payload from mesh",
+                                    ) {
                                         Ok(data) => {
                                             // Insert into our local node state, if it already
                                             // exists and the values are different then it will
@@ -184,9 +184,9 @@ pub fn process_packet(packet: &FromRadio, state: &Arc<Mutex<GatewayState>>) -> O
 
                                 PortNum::TracerouteApp => {
                                     match RouteDiscovery::decode(de.payload.as_slice())
-                                        .with_context(|| {
-                                            "Failed to decode Traceroute payload from mesh"
-                                        }) {
+                                        .with_context(
+                                            || "Failed to decode Traceroute payload from mesh",
+                                        ) {
                                         Ok(data) => {
                                             pkt.payload_variant = None;
                                             pkt.payload = Some(Payload::TracerouteApp(data));

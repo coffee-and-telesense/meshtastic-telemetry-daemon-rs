@@ -3,8 +3,8 @@ use anyhow::Context;
 #[cfg(feature = "debug")]
 use log::{error, info};
 use sea_orm::{
-    sea_query::TableCreateStatement, ConnectionTrait, DatabaseConnection, DbBackend, Schema,
-    Statement,
+    ConnectionTrait, DatabaseConnection, DbBackend, Schema, Statement,
+    sea_query::TableCreateStatement,
 };
 use std::time::Instant;
 

@@ -1,9 +1,9 @@
 #[cfg(feature = "debug")]
 use log::{info, warn};
 use meshtastic::protobufs::{
-    mesh_packet::PayloadVariant, AirQualityMetrics, DeviceMetrics, EnvironmentMetrics,
-    ErrorMetrics, LocalStats, MeshPacket, MyNodeInfo, NeighborInfo, NodeInfo, Position,
-    PowerMetrics, RouteDiscovery, Routing, User,
+    AirQualityMetrics, DeviceMetrics, EnvironmentMetrics, ErrorMetrics, LocalStats, MeshPacket,
+    MyNodeInfo, NeighborInfo, NodeInfo, Position, PowerMetrics, RouteDiscovery, Routing, User,
+    mesh_packet::PayloadVariant,
 };
 use sea_orm::{ConnectionTrait, DatabaseBackend, DatabaseConnection};
 #[cfg(feature = "print-packets")]

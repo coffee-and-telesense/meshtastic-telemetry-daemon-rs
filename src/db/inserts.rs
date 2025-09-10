@@ -19,7 +19,7 @@ use sea_orm::{
     ActiveModelBehavior, ActiveModelTrait, ConnectionTrait, DatabaseBackend, DatabaseConnection,
     EntityTrait, IntoActiveModel,
 };
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 use std::marker::Send;
 
 /// Insert row to a table

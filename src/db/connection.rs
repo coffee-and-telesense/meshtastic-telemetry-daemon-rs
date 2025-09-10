@@ -11,7 +11,7 @@ use chrono::Utc;
 use log::{error, info};
 use meshtastic::protobufs::User;
 use sea_orm::{
-    sea_query::OnConflict, ActiveModelTrait, ActiveValue, DatabaseConnection, EntityTrait,
+    ActiveModelTrait, ActiveValue, DatabaseConnection, EntityTrait, sea_query::OnConflict,
 };
 use std::sync::{Arc, Mutex};
 
