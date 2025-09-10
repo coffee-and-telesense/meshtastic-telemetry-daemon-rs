@@ -25,7 +25,7 @@ config = { version = "0.15.9", default-features = false, features = [
 # Logger
 log = { version = "0.4.26", default-features = false }
 # My fork of the meshtastic protocol library with updated protobufs---no serde
-meshtastic = { git = "https://github.com/gatlinnewhouse/meshtastic-rust.git", branch = "stable-science", default-features = false }
+meshtastic = { git = "https://github.com/gatlinnewhouse/meshtastic-rust.git", branch = "stable-science", default-features = false, features = ["tokio"] }
 rustc-demangle = "0.1"
 # Handle posting to db, compatible with chrono we use
 sea-orm = { version = "1.1.7", default-features = false, features = [
