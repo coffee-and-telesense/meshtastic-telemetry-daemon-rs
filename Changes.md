@@ -1,5 +1,18 @@
 
 
+## [v0.1.10] - 2025-09-10
+### :sparkles: New Features
+- [`746ad83`](https://github.com/coffee-and-telesense/meshtastic-telemetry-daemon-rs/commit/746ad8304ce89462d932cd07ad5f550ce487ac3f) - **main**: print out daemon version to log *(commit by [@gatlinnewhouse](https://github.com/gatlinnewhouse))*
+- [`5473117`](https://github.com/coffee-and-telesense/meshtastic-telemetry-daemon-rs/commit/5473117775c61a9de16a024cbec4f58c362aa915) - **mpsc_buffer_size**: use configuration value *(commit by [@gatlinnewhouse](https://github.com/gatlinnewhouse))*
+
+### :wrench: Chores
+- [`7fccb50`](https://github.com/coffee-and-telesense/meshtastic-telemetry-daemon-rs/commit/7fccb50e32ea2ff79cc0928543713fcc1cdca0f3) - **example_config**: set conservative mpsc_buffer_size *(commit by [@gatlinnewhouse](https://github.com/gatlinnewhouse))*
+- [`fc3617a`](https://github.com/coffee-and-telesense/meshtastic-telemetry-daemon-rs/commit/fc3617ad43f3cf656e53d5225b759864cc65e313) - **main**: remove redundant clippy allow lint *(commit by [@gatlinnewhouse](https://github.com/gatlinnewhouse))*
+- [`43e739d`](https://github.com/coffee-and-telesense/meshtastic-telemetry-daemon-rs/commit/43e739d3b40755ed6eaa911eddb104fb36b1cefc) - **config**: rustfmt *(commit by [@gatlinnewhouse](https://github.com/gatlinnewhouse))*
+- [`4974396`](https://github.com/coffee-and-telesense/meshtastic-telemetry-daemon-rs/commit/4974396d3a4ad9ea1943b720ba2130c0e6e287a5) - **rustfmt**: run rustfmt on repo *(commit by [@gatlinnewhouse](https://github.com/gatlinnewhouse))*
+- [`4b34b8c`](https://github.com/coffee-and-telesense/meshtastic-telemetry-daemon-rs/commit/4b34b8cb15663e36efd3b638742e132526b8b89f) - **cargo**: update patch version *(commit by [@gatlinnewhouse](https://github.com/gatlinnewhouse))*
+
+
 ## [v0.1.9] - 2025-09-03
 ### :bug: Bug Fixes
 - [`e302123`](https://github.com/coffee-and-telesense/meshtastic-telemetry-daemon-rs/commit/e302123be1c8e00c1c8db1a77f73b376c5b02ddd) - **systemctl signals**: handle stop signal in main() *(commit by [@gatlinnewhouse](https://github.com/gatlinnewhouse))*
@@ -109,3 +122,4 @@
 [v0.1.7]: https://github.com/coffee-and-telesense/meshtastic-telemetry-daemon-rs/compare/v0.1.6...v0.1.7
 [v0.1.8]: https://github.com/coffee-and-telesense/meshtastic-telemetry-daemon-rs/compare/v0.1.7...v0.1.8
 [v0.1.9]: https://github.com/coffee-and-telesense/meshtastic-telemetry-daemon-rs/compare/v0.1.8...v0.1.9
+[v0.1.10]: https://github.com/coffee-and-telesense/meshtastic-telemetry-daemon-rs/compare/v0.1.9...v0.1.10
