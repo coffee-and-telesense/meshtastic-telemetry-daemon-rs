@@ -5,7 +5,7 @@ use anyhow::{Context, Result};
 use log::{error, warn};
 use meshtastic::utils::stream::available_serial_ports;
 #[cfg(feature = "sqlite")]
-use sea_orm::sqlx::{sqlite, ConnectOptions as SqliteConnectionOptions};
+use sea_orm::sqlx::{ConnectOptions as SqliteConnectionOptions, sqlite};
 use sea_orm::{ConnectOptions, Database, DatabaseConnection};
 use serde::Deserialize;
 use std::io::{self, BufRead};
