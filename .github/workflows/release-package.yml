@@ -91,4 +91,4 @@ jobs:
           extra-files: |
             mesh-telem.service
             example_config.toml
-
+            92-usb-input-no-powersave.rules
