@@ -1,0 +1,2 @@
+ACTION=="add", SUBSYSTEM=="input", TEST=="power/control", ATTR{power/control}="on"
+ACTION=="add", SUBSYSTEM=="usb", TEST=="power/autosuspend" ATTR{power/autosuspend}="-1"
