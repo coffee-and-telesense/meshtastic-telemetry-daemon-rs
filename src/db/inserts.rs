@@ -16,8 +16,7 @@ use meshtastic::protobufs::{
     AirQualityMetrics, DeviceMetrics, EnvironmentMetrics, ErrorMetrics, LocalStats, NeighborInfo,
 };
 use sea_orm::{
-    ActiveModelBehavior, ActiveModelTrait, ConnectionTrait, DatabaseBackend, DatabaseConnection,
-    EntityTrait, IntoActiveModel,
+    ActiveModelBehavior, ActiveModelTrait, DatabaseConnection, EntityTrait, IntoActiveModel,
 };
 use serde_json::{Value, json};
 use std::marker::Send;
@@ -200,10 +199,7 @@ impl ErrorMetricsModel {
     // # Returns
     // * Result with number of rows inserted
     pub(crate) async fn insert_row(self, db: &DatabaseConnection) -> Result<u32> {
-        match db.get_database_backend() {
-            DatabaseBackend::Sqlite => Ok(0),
-            _ => insert_row_gen(self.into_active_model(), db, "errormetrics".to_string()).await,
-        }
+        insert_row_gen(self.into_active_model(), db, "errormetrics".to_string()).await
     }
     /// Create an Error Metrics Model
     ///
@@ -293,10 +289,7 @@ impl NeighborInfoModel {
     // # Returns
     // * Result with number of rows inserted
     pub(crate) async fn insert_row(self, db: &DatabaseConnection) -> Result<u32> {
-        match db.get_database_backend() {
-            DatabaseBackend::Sqlite => Ok(0),
-            _ => insert_row_gen(self.into_active_model(), db, "neighborinfo".to_string()).await,
-        }
+        insert_row_gen(self.into_active_model(), db, "neighborinfo".to_string()).await
     }
 
     /// Create an Neighbor Info Model

@@ -1,16 +1,10 @@
-#[cfg(feature = "sqlite")]
-use crate::lite::setup_schema;
 use anyhow::{Context, Result};
 #[cfg(feature = "debug")]
 use log::{error, warn};
 use meshtastic::utils::stream::available_serial_ports;
-#[cfg(feature = "sqlite")]
-use sea_orm::sqlx::{ConnectOptions as SqliteConnectionOptions, sqlite};
 use sea_orm::{ConnectOptions, Database, DatabaseConnection};
 use serde::Deserialize;
 use std::io::{self, BufRead};
-#[cfg(feature = "sqlite")]
-use std::str::FromStr;
 
 /// Struct reprenting a postgres connection's settings
 #[cfg(feature = "postgres")]
@@ -80,75 +74,6 @@ impl PostgresConnection {
     }
 }
 
-/// Struct reprenting a sqlite connection's settings
-#[cfg(feature = "sqlite")]
-#[derive(Debug, Deserialize)]
-#[allow(unused)]
-struct SqliteConnection {
-    /// Maximum connection workers for db connection
-    max_connections: u32,
-    /// Minimum connection workers for db connection
-    min_connections: u32,
-}
-
-#[cfg(feature = "sqlite")]
-impl SqliteConnection {
-    /// Setup `SQLite3` database
-    ///
-    /// # Returns
-    /// * `DatabaseConnection` - Connection to the sqlite3 db
-    pub async fn setup(&self) -> Result<DatabaseConnection> {
-        // Create connections options
-        let conn_opts =
-            sqlite::SqliteConnectOptions::from_str("sqlite:///tmp/mesh-tele.db?mode=rwc")
-                .with_context(|| "Error connecting to sqlite db at /tmp/mesh-tele.db");
-        match conn_opts {
-            Ok(mut co) => {
-                co = co
-                    // Try write-ahead logging to allow concurrent reads during writes
-                    .journal_mode(sqlite::SqliteJournalMode::Wal)
-                    // Turn on the shared cache
-                    .shared_cache(true)
-                    // Try exclusive locking? Useful for when each db has a single thread
-                    //.locking_mode(sqlite::SqliteLockingMode::Exclusive)
-                    // 50% default of 100 statement cache
-                    .statement_cache_capacity(50)
-                    // Reduce page size to 50% of default 4096
-                    .page_size(2048)
-                    // Set synchronous to normal as WAL provides guarantees
-                    .synchronous(sqlite::SqliteSynchronous::Normal)
-                    // Store temporary files in memory?
-                    .pragma("temp_store", "memory")
-                    // Use memory mapped I/O, since we are 32 bit 2^32 is upper limit. Set to 2^16
-                    .pragma("mmap_size", "65536")
-                    // Turn on auto vacuuming
-                    .auto_vacuum(sqlite::SqliteAutoVacuum::Full)
-                    // Create the file if it is missing
-                    .create_if_missing(true);
-                // Logging settings
-                #[cfg(feature = "debug")]
-                let c = co.log_statements(log::LevelFilter::Trace);
-                #[cfg(feature = "syslog")]
-                let c = co.log_statements(log::LevelFilter::Off);
-                // Set connection timeout?
-                let pool_opts = sqlite::SqlitePoolOptions::new()
-                    .min_connections(self.min_connections)
-                    .max_connections(self.max_connections);
-                //    .idle_timeout(None)
-                //    .max_lifetime(None);
-                let pool = pool_opts.connect_lazy_with(c);
-                let db = sea_orm::SqlxSqliteConnector::from_sqlx_sqlite_pool(pool);
-                setup_schema(&db).await;
-                Ok(db)
-            }
-            Err(e) => {
-                error!("{e}");
-                panic!("Could not connect to sqlite db");
-            }
-        }
-    }
-}
-
 /// Struct reprenting a connection to a serial port's settings
 #[derive(Debug, Deserialize)]
 #[allow(unused)]
@@ -182,9 +107,6 @@ pub struct Settings {
     /// The postgres connection config
     #[cfg(feature = "postgres")]
     postgres: PostgresConnection,
-    /// The sqlite connection config
-    #[cfg(feature = "sqlite")]
-    sqlite: SqliteConnection,
     /// The serial connection to a Meshtastic node config
     serial: SerialConnection,
     /// The deployment config
@@ -269,15 +191,5 @@ impl Settings {
     #[cfg(feature = "postgres")]
     pub(crate) async fn setup_postgres(&self) -> Result<DatabaseConnection> {
         self.postgres.setup().await
-    }
-
-    /// Setup sqlite connection
-    ///
-    /// # Returns
-    /// * `Result<DatabaseConnection>` - An `anyhow` result with a connection pool to the sqlite
-    ///   database
-    #[cfg(feature = "sqlite")]
-    pub(crate) async fn setup_sqlite(&self) -> Result<DatabaseConnection> {
-        self.sqlite.setup().await
     }
 }

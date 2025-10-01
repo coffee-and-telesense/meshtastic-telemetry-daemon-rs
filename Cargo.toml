@@ -57,7 +57,6 @@ print-packets = ["meshtastic/serde"]
 syslog = ["dep:syslog"]
 
 # db config:
-sqlite = ["sea-orm/sqlx-sqlite"]
 postgres = ["sea-orm/sqlx-postgres", "sea-orm/postgres-vector"]
 
 # TLS config:
