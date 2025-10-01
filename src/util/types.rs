@@ -86,7 +86,6 @@ impl GatewayState {
     #[must_use]
     pub fn new() -> GatewayState {
         // Stub this function for now, but in the future:
-        // TODO - get the nodes and corresponding fake msg ids from local sqlite db
         GatewayState {
             nodes: NodeFakePkts::new(),
             biggest_fake: 0,

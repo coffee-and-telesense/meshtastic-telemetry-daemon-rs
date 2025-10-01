@@ -5,7 +5,7 @@
 // Unfortunately we have duplicate dependencies with different versions
 #![allow(clippy::multiple_crate_versions)]
 
-//! Meshtastic to Postgresql/Sqlite database daemon
+//! Meshtastic to Postgresql database daemon
 
 #[cfg(feature = "syslog")]
 extern crate syslog;
@@ -13,7 +13,7 @@ extern crate syslog;
 #[macro_use]
 extern crate log;
 
-#[cfg(any(feature = "sqlite", feature = "postgres"))]
+#[cfg(feature = "postgres")]
 use crate::db::connection::update_metrics;
 use crate::dto::packet_handler;
 use crate::util::{
@@ -24,8 +24,6 @@ use crate::util::{
 use anyhow::{Context, Result};
 use chrono::Local;
 use db::connection::proactive_ninfo_insert;
-#[cfg(feature = "sqlite")]
-use db::lite::{self, drop_old_rows, pragma_optimize};
 #[cfg(feature = "debug")]
 use log::{error, info, warn};
 use meshtastic::api::StreamApi;
@@ -34,12 +32,10 @@ use meshtastic::utils;
 use serde_json::to_string_pretty;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
-#[cfg(feature = "sqlite")]
-use std::time::Instant;
 use tokio::sync::mpsc;
 
 /// Database interaction module
-#[cfg(any(feature = "sqlite", feature = "postgres"))]
+#[cfg(feature = "postgres")]
 pub(crate) mod db;
 /// Handle data transfer objects
 pub(crate) mod dto;
@@ -72,13 +68,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .await
         .with_context(|| "Failed to connect to postgresql database")?;
 
-    // Create sqlite db
-    #[cfg(feature = "sqlite")]
-    let sqlite_db = settings
-        .setup_sqlite()
-        .await
-        .with_context(|| "Failed to setup sqlite database")?;
-
     // Connect to serial meshtastic
     let stream_api = StreamApi::new();
     let entered_port = settings.get_serial_port();
@@ -98,12 +87,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Output the version of the daemon to the logger
     log::info!("Daemon version: {VERSION}");
-
-    // Timers for optimization of sqlite
-    #[cfg(feature = "sqlite")]
-    let mut few_hours = Instant::now();
-    #[cfg(feature = "sqlite")]
-    let mut daily = few_hours.clone();
 
     let term = Arc::new(AtomicBool::new(false));
     signal_hook::flag::register(signal_hook::consts::SIGTERM, Arc::clone(&term))?;
@@ -141,7 +124,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     // Print packets if enabled
                     #[cfg(feature = "print-packets")]
                     println!("{}", to_string_pretty(&mp).unwrap());
-                    // Before we insert into postgres or sqlite, we should proactively check that the foreign
+                    // Before we insert into postgres, we should proactively check that the foreign
                     // key constraint is satisfied and if not we then insert a new nodeinfo row
                     if let Some(p) = &mp.payload {
                         match p {
@@ -174,31 +157,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                                         error!("{}{e:#}", now.format("%Y-%m-%d %H:%M:%S - "));
                                     }
                                 }
-                                #[cfg(feature = "sqlite")]
-                                match proactive_ninfo_insert(
-                                    mp,
-                                    &sqlite_db,
-                                    &deployment_loc,
-                                    state.clone(),
-                                )
-                                .await
-                                .with_context(|| {
-                                    "Failed to update sqlite database with proactive_node_info()"
-                                }) {
-                                    Ok(v) => {
-                                        if v != 0 {
-                                            let now = Local::now();
-                                            info!(
-                                                "{}Inserted {v} rows into NodeInfo table of sqlite db proactively",
-                                                now.format("%Y-%m-%d %H:%M:%S - ")
-                                            );
-                                        }
-                                    }
-                                    Err(e) => {
-                                        let now = Local::now();
-                                        error!("{}{e:#}", now.format("%Y-%m-%d %H:%M:%S - "));
-                                    }
-                                }
                             }
                         }
                     }
@@ -214,23 +172,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                             let now = Local::now();
                             info!(
                                 "{}Inserted {v} rows into {tablename} of postgres db",
-                                now.format("%Y-%m-%d %H:%M:%S - ")
-                            );
-                        }
-                        Err(e) => {
-                            let now = Local::now();
-                            error!("{}{e:#}", now.format("%Y-%m-%d %H:%M:%S - "));
-                        }
-                    }
-                    #[cfg(feature = "sqlite")]
-                    match update_metrics(&sqlite_db, &pkt, None, &deployment_loc)
-                        .await
-                        .with_context(|| format!("Failed to update {} table in sqlite datatbase with packet from mesh", tablename))
-                    {
-                        Ok(v) => {
-                            let now = Local::now();
-                            info!(
-                                "{}Inserted {v} rows into {tablename} of sqlite db",
                                 now.format("%Y-%m-%d %H:%M:%S - ")
                             );
                         }
@@ -269,27 +210,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                             info!("{}{e:#}", now.format("%Y-%m-%d %H:%M:%S - "));
                         }
                     }
-                    #[cfg(feature = "sqlite")]
-                    match update_metrics(&sqlite_db, &pkt, Some(fake.into()), &deployment_loc)
-                        .await
-                        .with_context(
-                            || "Failed to update sqlite database with node info packet from serial",
-                        ) {
-                        Ok(v) => {
-                            let now = Local::now();
-                            info!(
-                                "{}Inserted {v} rows into NodeInfo table of sqlite db",
-                                now.format("%Y-%m-%d %H:%M:%S - ")
-                            );
-                        }
-                        Err(e) => {
-                            // This is a lower priority error message since we favor node info data
-                            // from the Mesh rather than from the serial connection. Often times it
-                            // just means that we did not insert a row
-                            let now = Local::now();
-                            info!("{}{e:#}", now.format("%Y-%m-%d %H:%M:%S - "));
-                        }
-                    }
                 }
                 Pkt::MyNodeInfo(ref mi) => {
                     #[cfg(feature = "print-packets")]
@@ -304,12 +224,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
             // Thread has been used to process and send to DB, kill it
             join.await?;
-            // Dumb sqlite optimizations
-            #[cfg(feature = "sqlite")]
-            {
-                few_hours = pragma_optimize(&sqlite_db, few_hours).await;
-                daily = drop_old_rows(&sqlite_db, daily).await;
-            }
         }
     }
 
