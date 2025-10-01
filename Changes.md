@@ -1,5 +1,15 @@
 
 
+## [v0.1.11] - 2025-10-01
+### :sparkles: New Features
+- [`3e471f3`](https://github.com/coffee-and-telesense/meshtastic-telemetry-daemon-rs/commit/3e471f335d29ffa931fc3583106b0cc3b202fc8d) - **udev**: add udev rule to disable autosuspend *(commit by [@gatlinnewhouse](https://github.com/gatlinnewhouse))*
+- [`6247f38`](https://github.com/coffee-and-telesense/meshtastic-telemetry-daemon-rs/commit/6247f381e1151ba503befe4fa8224741840929d6) - **udev**: add autostart to systemd service *(commit by [@gatlinnewhouse](https://github.com/gatlinnewhouse))*
+
+### :wrench: Chores
+- [`38bb4e4`](https://github.com/coffee-and-telesense/meshtastic-telemetry-daemon-rs/commit/38bb4e4847d17ec1640c9fcbc0e4168eca3b6ff7) - **CI**: include udev rules in packaging *(commit by [@gatlinnewhouse](https://github.com/gatlinnewhouse))*
+- [`d8a44fb`](https://github.com/coffee-and-telesense/meshtastic-telemetry-daemon-rs/commit/d8a44fbe01f2f06ec55b73f28afa22c1c3f23e53) - **cargo**: bump version number *(commit by [@gatlinnewhouse](https://github.com/gatlinnewhouse))*
+
+
 ## [v0.1.10] - 2025-09-10
 ### :sparkles: New Features
 - [`746ad83`](https://github.com/coffee-and-telesense/meshtastic-telemetry-daemon-rs/commit/746ad8304ce89462d932cd07ad5f550ce487ac3f) - **main**: print out daemon version to log *(commit by [@gatlinnewhouse](https://github.com/gatlinnewhouse))*
@@ -123,3 +133,4 @@
 [v0.1.8]: https://github.com/coffee-and-telesense/meshtastic-telemetry-daemon-rs/compare/v0.1.7...v0.1.8
 [v0.1.9]: https://github.com/coffee-and-telesense/meshtastic-telemetry-daemon-rs/compare/v0.1.8...v0.1.9
 [v0.1.10]: https://github.com/coffee-and-telesense/meshtastic-telemetry-daemon-rs/compare/v0.1.9...v0.1.10
+[v0.1.11]: https://github.com/coffee-and-telesense/meshtastic-telemetry-daemon-rs/compare/v0.1.10...v0.1.11
