@@ -21,6 +21,11 @@ location = "testing"
 
 [async_runtime]
 # The buffer size impacts how many packets can remain in the queue for
-# processing and submitting to the database
-mpsc_buffer_size = 4
-#TODO: Add more settings
+# processing and submitting to the database.
+mpsc_buffer_size = 32
+# Default value is the number of cores available on the system
+worker_threads = 4
+# Default value is 512
+max_blocking_threads = 512
+# Default stack size is 2MiB (see Tokio docs)
+thread_stack_size = 2097000
