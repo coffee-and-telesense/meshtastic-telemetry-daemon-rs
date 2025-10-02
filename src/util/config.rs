@@ -98,6 +98,14 @@ pub struct AsyncSettings {
     /// The buffer size impacts how many packets can remain in the queue for
     /// processing and submitting to the database
     pub mpsc_buffer_size: u8,
+    /// Sets the number of worker threads the runtime will use. By default
+    /// tokio chooses the number of cores on a system.
+    pub worker_threads: u8,
+    /// Specify the limit for additional threads spawned by the runtime for
+    /// blocling operations. Default of 512
+    pub max_blocking_threads: u16,
+    /// Thread stack size, default is 2 MiB, or 2097000.
+    pub thread_stack_size: u32,
 }
 
 /// Settings struct that parses a config and performs setup

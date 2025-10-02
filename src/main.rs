@@ -32,6 +32,7 @@ use meshtastic::utils;
 use serde_json::to_string_pretty;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
+use tokio::runtime::Builder;
 use tokio::sync::mpsc;
 
 /// Database interaction module
@@ -45,12 +46,7 @@ pub(crate) mod util;
 /// Version number of the daemon
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 
-/// Main
-///
-/// # Returns
-/// * Result of () or an Error
-#[tokio::main(worker_threads = 2)]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
+fn main() -> std::result::Result<(), anyhow::Error> {
     #[cfg(debug_assertions)]
     let settings = Settings::new("example_config.toml");
     #[cfg(not(debug_assertions))]
@@ -58,6 +54,18 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     set_logger();
 
+    Builder::new_multi_thread()
+        .enable_all()
+        .thread_name("mesh-telem")
+        .worker_threads(settings.async_runtime.worker_threads as usize)
+        .max_blocking_threads(settings.async_runtime.max_blocking_threads as usize)
+        .thread_stack_size(settings.async_runtime.thread_stack_size as usize)
+        .build()
+        .unwrap()
+        .block_on(async { rt_main(settings).await })
+}
+
+async fn rt_main(settings: Settings) -> Result<(), anyhow::Error> {
     // Create the gateway's state object
     let state = Arc::new(Mutex::new(GatewayState::new()));
 
