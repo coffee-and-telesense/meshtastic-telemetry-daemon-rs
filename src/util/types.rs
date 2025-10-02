@@ -193,24 +193,23 @@ impl GatewayState {
             self.biggest_fake += 1;
             e.insert(v);
             return true;
-        } else if let Some(n) = self.nodes.get_mut(&node_id) {
-            if (n.long_name != user.long_name
+        } else if let Some(n) = self.nodes.get_mut(&node_id)
+            && (n.long_name != user.long_name
                 || n.short_name != user.short_name
                 || n.hw_model != user.hw_model)
-                && n.id == user.id
-            {
-                warn!("Local state conflicts with nodeinfo received");
-                // Update our local db
-                n.long_name = user.long_name;
-                n.short_name = user.short_name;
-                n.hw_model = user.hw_model;
-                // Increase the biggest_fake to reflect eventual change in db
-                self.biggest_fake += 1;
-                // Set the updated entry to use this new biggest_fake
-                n.fake_msg_id = self.biggest_fake;
-                self.biggest_fake += 1;
-                return true;
-            }
+            && n.id == user.id
+        {
+            warn!("Local state conflicts with nodeinfo received");
+            // Update our local db
+            n.long_name = user.long_name;
+            n.short_name = user.short_name;
+            n.hw_model = user.hw_model;
+            // Increase the biggest_fake to reflect eventual change in db
+            self.biggest_fake += 1;
+            // Set the updated entry to use this new biggest_fake
+            n.fake_msg_id = self.biggest_fake;
+            self.biggest_fake += 1;
+            return true;
         }
         false
     }
@@ -226,6 +225,7 @@ impl GatewayState {
 #[cfg_attr(feature = "print-packets", derive(Serialize, Deserialize))]
 #[cfg_attr(debug_assertions, derive(Debug))]
 #[derive(Clone)]
+#[allow(unused)]
 pub enum Payload {
     /// Text messages
     TextMessageApp(String),
@@ -290,6 +290,7 @@ impl Telem {
 #[cfg_attr(feature = "print-packets", derive(Serialize, Deserialize))]
 #[cfg_attr(debug_assertions, derive(Debug))]
 #[derive(Clone)]
+#[allow(unused)]
 pub struct Mesh {
     /// What node id `u32` is this from?
     pub from: u32,
@@ -378,6 +379,7 @@ impl Mesh {
 #[cfg_attr(feature = "print-packets", derive(Serialize, Deserialize))]
 #[cfg_attr(debug_assertions, derive(Debug))]
 #[derive(Clone)]
+#[allow(unused)]
 pub struct NInfo {
     /// The nodedb entry's node id `u32`
     pub num: u32,
