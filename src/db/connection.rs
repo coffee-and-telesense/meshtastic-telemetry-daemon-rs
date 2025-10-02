@@ -32,7 +32,7 @@ pub(crate) async fn update_metrics(
     db: &DatabaseConnection,
     packet: &Pkt,
     fake_msg_id: Option<u32>,
-    dep_loc: &String,
+    dep_loc: &str,
 ) -> Result<u32> {
     match packet {
         Pkt::Mesh(mp) => {
@@ -193,7 +193,7 @@ pub(crate) async fn update_metrics(
 pub(crate) async fn proactive_ninfo_insert(
     pkt: &Mesh,
     db: &DatabaseConnection,
-    dep_loc: &String,
+    dep_loc: &str,
     state: Arc<Mutex<GatewayState>>,
 ) -> Result<u32> {
     // Check if we already know this node
@@ -266,7 +266,7 @@ async fn node_info_conflict(
     pkt: Option<Mesh>,
     db: &DatabaseConnection,
     fake_msg_id: Option<u32>,
-    dep_loc: &String,
+    dep_loc: &str,
 ) -> Result<u32> {
     let mut row_insert_count = 0;
 
@@ -302,7 +302,7 @@ async fn node_info_conflict(
                     if u.shortname != user.short_name
                         || u.longname != user.long_name
                         || u.hwmodel != user.hw_model
-                        || &u.deployment_location != dep_loc
+                        || u.deployment_location != dep_loc
                     {
                         // Update the nodeinfo row values, node_id remains the same
                         let mut upd_ni: nodeinfo::ActiveModel = u.into();
@@ -408,7 +408,7 @@ async fn new_node(
     ni: NInfo,
     db: &DatabaseConnection,
     fake_msg_id: Option<u32>,
-    dep_loc: &String,
+    dep_loc: &str,
 ) -> Result<u32> {
     let mut row_insert_count = 0;
 
