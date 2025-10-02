@@ -25,7 +25,7 @@ use anyhow::{Context, Result};
 use chrono::Local;
 use db::connection::proactive_ninfo_insert;
 #[cfg(feature = "debug")]
-use log::{error, info, trace, warn};
+use log::{error, info, warn};
 use meshtastic::api::StreamApi;
 use meshtastic::utils;
 #[cfg(feature = "print-packets")]
@@ -127,7 +127,7 @@ async fn rt_main(settings: Settings) -> Result<(), anyhow::Error> {
                     #[cfg(feature = "debug")]
                     if let Ok(mut lock) = state.clone().lock() {
                         lock.increment_rx_count(mp.from);
-                        trace!("{}", lock.format_rx_counts());
+                        info!("{}", lock.format_rx_counts());
                     }
                     // Performance metrics with regular printing
                     #[cfg(feature = "perf")]
@@ -137,7 +137,7 @@ async fn rt_main(settings: Settings) -> Result<(), anyhow::Error> {
                         let nw = metrics.num_workers();
                         let nat = metrics.num_alive_tasks();
                         let gqd = metrics.global_queue_depth();
-                        trace!(
+                        info!(
                             "RUNTIME PERF: {} workers used, {} alive tasks, {} global queue depth",
                             nw, nat, gqd
                         );

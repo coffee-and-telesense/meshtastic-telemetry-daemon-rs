@@ -8,7 +8,7 @@ use crate::{
 use anyhow::{Context, Result};
 use chrono::Utc;
 #[cfg(feature = "debug")]
-use log::{error, info, trace};
+use log::{error, info};
 use meshtastic::protobufs::User;
 use sea_orm::{
     ActiveModelTrait, ActiveValue, DatabaseConnection, EntityTrait, sea_query::OnConflict,
@@ -158,7 +158,7 @@ pub(crate) async fn update_metrics(
         }
 
         Pkt::NInfo(ni) => {
-            trace!("Node info from serial");
+            info!("Node info from serial");
             // This is a NodeInfo payload from serial but not received over the mesh, meaning it is
             // the output from our initial serial connection when we receive a dump of all the
             // nodes in the nodedb of the connected Meshtastic node that is our network bridge.
@@ -242,7 +242,7 @@ pub(crate) async fn proactive_ninfo_insert(
         node_info_conflict(fake_ni, None, db, Some(u32::from(fake_msg_id)), dep_loc).await
     } else {
         // We already know about it so return 0 row changes
-        trace!("Node already known, skipping proactive inserts");
+        info!("Node already known, skipping proactive inserts");
         Ok(0)
     }
 }
