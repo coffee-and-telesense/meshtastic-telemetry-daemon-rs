@@ -129,6 +129,19 @@ async fn rt_main(settings: Settings) -> Result<(), anyhow::Error> {
                         lock.increment_rx_count(mp.from);
                         println!("{}", lock.format_rx_counts());
                     }
+                    // Performance metrics with regular printing
+                    #[cfg(feature = "perf")]
+                    {
+                        use tokio::runtime::Handle;
+                        let metrics = Handle::current().metrics();
+                        let nw = metrics.num_workers();
+                        let nat = metrics.num_alive_tasks();
+                        let gqd = metrics.global_queue_depth();
+                        println!(
+                            "RUNTIME PERF: {} workers used, {} alive tasks, {} global queue depth",
+                            nw, nat, gqd
+                        );
+                    }
                     // Print packets if enabled
                     #[cfg(feature = "print-packets")]
                     println!("{}", to_string_pretty(&mp).unwrap());
