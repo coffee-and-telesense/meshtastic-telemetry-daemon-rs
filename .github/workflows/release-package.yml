@@ -30,6 +30,11 @@ jobs:
             runs-on: ubuntu-24.04
             build_target: armv7-unknown-linux-gnueabihf
             features: beaglebone
+
+          - os-name: Linux_ARMV8_A72_NEON_GNU_HF
+            runs-on: ubuntu-24.04
+            build_target: aarch64-unknown-linux-gnu
+            features: beaglebone
         toolchain:
           - nightly
 
@@ -65,6 +70,7 @@ jobs:
           CARGO_TARGET_X86_64_UNKNOWN_LINUX_MUSL_RUSTFLAGS: "-Zlocation-detail=none -Zfmt-debug=none"
           CARGO_TARGET_MIPS_UNKNOWN_LINUX_MUSL_RUSTFLAGS: "-Zlocation-detail=none -Zfmt-debug=none"
           CARGO_TARGET_ARMV7_UNKNOWN_LINUX_GNUEABIHF_RUSTFLAGS: "-Zlocation-detail=none -Zfmt-debug=none -Ctarget-cpu=cortex-a8 -Ctarget-feature=+neon"
+          CARGO_TARGET_ARMV8_UNKNOWN_LINUX_GNUEABIHF_RUSTFLAGS: "-Zlocation-detail=none -Zfmt-debug=none -Ctarget-cpu=cortex-a72 -Ctarget-feature=+neon"
           # stupid AARCH build fails to start build because of warnings building cross
           CROSS_NO_WARNINGS: 0
           # lmao armv7 build error
