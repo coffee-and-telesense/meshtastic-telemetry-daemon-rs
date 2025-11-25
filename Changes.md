@@ -1,5 +1,22 @@
 
 
+## [v0.1.12] - 2025-11-25
+### :sparkles: New Features
+- [`341d413`](https://github.com/coffee-and-telesense/meshtastic-telemetry-daemon-rs/commit/341d413688e46e543045d4a671cc708b28d7b76b) - **async_runtime**: add more async runtime config *(commit by [@gatlinnewhouse](https://github.com/gatlinnewhouse))*
+- [`092445e`](https://github.com/coffee-and-telesense/meshtastic-telemetry-daemon-rs/commit/092445e908e9a90cedce8b706269bb45da02d8cc) - **perf metrics**: add runtime perf monitoring? *(commit by [@gatlinnewhouse](https://github.com/gatlinnewhouse))*
+
+### :bug: Bug Fixes
+- [`688f216`](https://github.com/coffee-and-telesense/meshtastic-telemetry-daemon-rs/commit/688f2165d683efea8da902a6a792a628179baadf) - **sqlite**: remove sqlite from daemon *(commit by [@gatlinnewhouse](https://github.com/gatlinnewhouse))*
+- [`d155329`](https://github.com/coffee-and-telesense/meshtastic-telemetry-daemon-rs/commit/d15532963a1c98b063ce88fee8d01da8fcb4c2cf) - **dep_loc**: change to &str from &String *(commit by [@gatlinnewhouse](https://github.com/gatlinnewhouse))*
+- [`2979c2a`](https://github.com/coffee-and-telesense/meshtastic-telemetry-daemon-rs/commit/2979c2aea347c2950f8e1d92e35c8b138357d3cd) - **log levels**: lower some log levels *(commit by [@gatlinnewhouse](https://github.com/gatlinnewhouse))*
+- [`902d65e`](https://github.com/coffee-and-telesense/meshtastic-telemetry-daemon-rs/commit/902d65e493211166507cb106fa9edc3ea26db9f3) - **info**: colog lacks trace macro *(commit by [@gatlinnewhouse](https://github.com/gatlinnewhouse))*
+- [`8c1d739`](https://github.com/coffee-and-telesense/meshtastic-telemetry-daemon-rs/commit/8c1d73946fbd39f691d72983b3cd3d558a9ff6ea) - **formatting**: node count formatting for log *(commit by [@gatlinnewhouse](https://github.com/gatlinnewhouse))*
+
+### :wrench: Chores
+- [`5713b16`](https://github.com/coffee-and-telesense/meshtastic-telemetry-daemon-rs/commit/5713b1690906b0d1198ab6aba657d6213379fc47) - **warnings**: repress warnings on unread fields *(commit by [@gatlinnewhouse](https://github.com/gatlinnewhouse))*
+- [`d47b529`](https://github.com/coffee-and-telesense/meshtastic-telemetry-daemon-rs/commit/d47b5290095dd6bd22445d712838f5005b2601ae) - **CI**: add support for pi4 to CI and bump version *(commit by [@gatlinnewhouse](https://github.com/gatlinnewhouse))*
+
+
 ## [v0.1.11] - 2025-10-01
 ### :sparkles: New Features
 - [`3e471f3`](https://github.com/coffee-and-telesense/meshtastic-telemetry-daemon-rs/commit/3e471f335d29ffa931fc3583106b0cc3b202fc8d) - **udev**: add udev rule to disable autosuspend *(commit by [@gatlinnewhouse](https://github.com/gatlinnewhouse))*
@@ -134,3 +151,4 @@
 [v0.1.9]: https://github.com/coffee-and-telesense/meshtastic-telemetry-daemon-rs/compare/v0.1.8...v0.1.9
 [v0.1.10]: https://github.com/coffee-and-telesense/meshtastic-telemetry-daemon-rs/compare/v0.1.9...v0.1.10
 [v0.1.11]: https://github.com/coffee-and-telesense/meshtastic-telemetry-daemon-rs/compare/v0.1.10...v0.1.11
+[v0.1.12]: https://github.com/coffee-and-telesense/meshtastic-telemetry-daemon-rs/compare/v0.1.11...v0.1.12
