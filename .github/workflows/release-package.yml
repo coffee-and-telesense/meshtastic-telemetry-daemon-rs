@@ -19,21 +19,25 @@ jobs:
           - os-name: Linux_X86_64_MUSL
             runs-on: ubuntu-24.04
             build_target: x86_64-unknown-linux-musl
+            strip_compress: true
             features: alpine
 
           - os-name: Linux_AARCH64_MUSL
             runs-on: ubuntu-24.04-arm
             build_target: aarch64-unknown-linux-musl
+            strip_compress: true
             features: alpine
 
           - os-name: Linux_ARMV7_A8_NEON_GNU_HF
             runs-on: ubuntu-24.04
             build_target: armv7-unknown-linux-gnueabihf
+            strip_compress: false
             features: beaglebone
 
           - os-name: Linux_ARMV8_A72_NEON_GNU_HF
             runs-on: ubuntu-24.04
             build_target: aarch64-unknown-linux-gnu
+            strip_compress: false
             features: beaglebone
         toolchain:
           - nightly
@@ -82,10 +86,10 @@ jobs:
           args: "--locked --features ${{ matrix.platform.features }} --no-default-features --release -Zbuild-std-features=optimize_for_size,panic_immediate_abort"
           cross-version: 50ccc96
           # this feelsbad, but should work?
-          force-use-cross: ${{ matrix.platform.build_target == 'x86_64-unknown-linux-musl' || matrix.platform.build_target == 'armv7-unknown-linux-gnueabihf' || matrix.platform.build_target == 'aarch64-unknown-linux-musl' || matrix.platform.build_target != 'aarch64-unknown-linux-gnu' }}
+          force-use-cross: ${{ matrix.platform.build_target == 'x86_64-unknown-linux-musl' || matrix.platform.build_target == 'armv7-unknown-linux-gnueabihf' || matrix.platform.build_target == 'aarch64-unknown-linux-musl' || matrix.platform.build_target == 'aarch64-unknown-linux-gnu' }}
       - name: Compress binaries
         uses: svenstaro/upx-action@v2
-        if: ${{ matrix.platform.build_target != 'armv7-unknown-linux-gnueabihf' || matrix.platform.build_target != 'aarch64-unknown-linux-gnu' }}
+        if: ${{ matrix.platform.strip_compress }}
         with:
           files: |
             target/${{ matrix.platform.build_target }}/release/meshtastic-telemetry-daemon-rs
