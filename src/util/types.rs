@@ -470,6 +470,10 @@ pub enum Pkt {
 pub struct Neighbor {
     pub node_id: u32,
     pub snr: f32,
+    pub last_rx_time: u32,
+    pub node_broadcast_interval_secs: u32,
+    pub num_packets_rx: u32,
+    pub rssi: i32,
 }
 
 /// Error reason counts
