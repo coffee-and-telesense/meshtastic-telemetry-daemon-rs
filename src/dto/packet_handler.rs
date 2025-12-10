@@ -1,5 +1,5 @@
 use crate::util::types::{GatewayState, Mesh, MyInfo, NInfo, Payload, Pkt, Telem};
-use anyhow::Context;
+use anyhow::{Context, Error};
 #[cfg(feature = "debug")]
 use log::info;
 use meshtastic::Message;
@@ -42,9 +42,11 @@ pub fn process_packet(packet: &FromRadio, state: &Arc<Mutex<GatewayState>>) -> O
                         mesh_packet::PayloadVariant::Decoded(de) => {
                             match de.portnum() {
                                 PortNum::PositionApp => {
-                                    match Position::decode(de.payload.as_slice()).with_context(
-                                        || "Failed to decode Position payload from mesh",
-                                    ) {
+                                    match Position::decode(de.payload.as_slice())
+                                        .map_err(Error::msg)
+                                        .with_context(
+                                            || "Failed to decode Position payload from mesh",
+                                        ) {
                                         Ok(data) => {
                                             // Set the packet received time to position timestamp
                                             pkt.rx_time = data.timestamp;
@@ -63,6 +65,7 @@ pub fn process_packet(packet: &FromRadio, state: &Arc<Mutex<GatewayState>>) -> O
                                     match meshtastic::protobufs::Telemetry::decode(
                                         de.payload.as_slice(),
                                     )
+                                    .map_err(Error::msg)
                                     .with_context(|| "Failed to decode Telemetry payload from mesh")
                                     {
                                         Ok(data) => {
@@ -124,9 +127,11 @@ pub fn process_packet(packet: &FromRadio, state: &Arc<Mutex<GatewayState>>) -> O
                                 }
 
                                 PortNum::NeighborinfoApp => {
-                                    match NeighborInfo::decode(de.payload.as_slice()).with_context(
-                                        || "Failed to decode NeighborInfo payload from mesh",
-                                    ) {
+                                    match NeighborInfo::decode(de.payload.as_slice())
+                                        .map_err(Error::msg)
+                                        .with_context(
+                                            || "Failed to decode NeighborInfo payload from mesh",
+                                        ) {
                                         Ok(data) => {
                                             pkt.payload_variant = None;
                                             pkt.payload = Some(Payload::NeighborinfoApp(data));
@@ -140,9 +145,11 @@ pub fn process_packet(packet: &FromRadio, state: &Arc<Mutex<GatewayState>>) -> O
                                 }
 
                                 PortNum::NodeinfoApp => {
-                                    match User::decode(de.payload.as_slice()).with_context(
-                                        || "Failed to decode NodeInfo payload from mesh",
-                                    ) {
+                                    match User::decode(de.payload.as_slice())
+                                        .map_err(Error::msg)
+                                        .with_context(
+                                            || "Failed to decode NodeInfo payload from mesh",
+                                        ) {
                                         Ok(data) => {
                                             // Insert into our local node state, if it already
                                             // exists and the values are different then it will
@@ -167,9 +174,11 @@ pub fn process_packet(packet: &FromRadio, state: &Arc<Mutex<GatewayState>>) -> O
                                 }
 
                                 PortNum::RoutingApp => {
-                                    match Routing::decode(de.payload.as_slice()).with_context(
-                                        || "Failed to decode Routing payload from mesh",
-                                    ) {
+                                    match Routing::decode(de.payload.as_slice())
+                                        .map_err(Error::msg)
+                                        .with_context(
+                                            || "Failed to decode Routing payload from mesh",
+                                        ) {
                                         Ok(data) => {
                                             pkt.payload_variant = None;
                                             pkt.payload = Some(Payload::RoutingApp(data));
@@ -184,6 +193,7 @@ pub fn process_packet(packet: &FromRadio, state: &Arc<Mutex<GatewayState>>) -> O
 
                                 PortNum::TracerouteApp => {
                                     match RouteDiscovery::decode(de.payload.as_slice())
+                                        .map_err(Error::msg)
                                         .with_context(
                                             || "Failed to decode Traceroute payload from mesh",
                                         ) {
