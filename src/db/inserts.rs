@@ -315,6 +315,10 @@ impl NeighborInfoModel {
                         json!(&Neighbor {
                             node_id: n.node_id,
                             snr: n.snr,
+                            last_rx_time: n.last_rx_time,
+                            node_broadcast_interval_secs: n.node_broadcast_interval_secs,
+                            num_packets_rx: n.num_packets_rx,
+                            rssi: n.rssi,
                         })
                     })
                     .collect::<Vec<Value>>(),
