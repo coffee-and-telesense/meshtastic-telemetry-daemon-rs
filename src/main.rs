@@ -57,7 +57,7 @@ fn main() -> std::result::Result<(), anyhow::Error> {
         .max_blocking_threads(settings.async_runtime.max_blocking_threads as usize)
         .thread_stack_size(settings.async_runtime.thread_stack_size as usize)
         .build()
-        .unwrap()
+        .with_context(|| "Failed to build tokio multithreaded runtime")?
         .block_on(async { rt_main(settings).await })
 }
 
@@ -115,9 +115,13 @@ async fn rt_main(settings: Settings<'static>) -> Result<(), anyhow::Error> {
             // still exist within the more elegant solution.
             tx.send(packet_handler::process_packet(&decoded, &s))
                 .await
-                .unwrap();
+                .expect("Failed to process a packet on the tx channel");
         });
-        if let Some(pkt) = rx.recv().await.unwrap() {
+        if let Some(pkt) = rx
+            .recv()
+            .await
+            .with_context(|| "Failed to receive a packet on the rx channel")?
+        {
             match pkt {
                 Pkt::Mesh(ref mp) => {
                     // Count received packets in debug builds for periodic reporting in logs
@@ -141,7 +145,10 @@ async fn rt_main(settings: Settings<'static>) -> Result<(), anyhow::Error> {
                     }
                     // Print packets if enabled
                     #[cfg(feature = "print-packets")]
-                    println!("{}", to_string_pretty(&mp).unwrap());
+                    println!(
+                        "{}",
+                        to_string_pretty(&mp).expect("Failed to pretty pint a packet")
+                    );
                     // Before we insert into postgres, we should proactively check that the foreign
                     // key constraint is satisfied and if not we then insert a new nodeinfo row
                     if let Some(p) = &mp.payload {
@@ -201,7 +208,10 @@ async fn rt_main(settings: Settings<'static>) -> Result<(), anyhow::Error> {
                 }
                 Pkt::NInfo(ref ni) => {
                     #[cfg(feature = "print-packets")]
-                    println!("{}", to_string_pretty(&ni).unwrap());
+                    println!(
+                        "{}",
+                        to_string_pretty(&ni).expect("Failed to pretty pint a packet")
+                    );
                     let fake = state
                         .lock()
                         .expect("Failed to acquire lock for GatewayState in main()")
@@ -231,7 +241,10 @@ async fn rt_main(settings: Settings<'static>) -> Result<(), anyhow::Error> {
                 }
                 Pkt::MyNodeInfo(ref mi) => {
                     #[cfg(feature = "print-packets")]
-                    println!("{}", to_string_pretty(&mi).unwrap());
+                    println!(
+                        "{}",
+                        to_string_pretty(&mi).expect("Failed to pretty pint a packet")
+                    );
                     #[cfg(feature = "debug")]
                     state
                         .clone()
