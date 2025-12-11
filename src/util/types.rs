@@ -274,11 +274,11 @@ impl MyInfo {
 #[derive(Clone)]
 pub enum Pkt {
     /// `Mesh` packets, or those arriving on `LoRa`
-    Mesh(Box<Mesh>),
+    Mesh(Mesh),
     /// `NInfo` packets, or the serial packets of nodes in the nodedb
-    NInfo(Box<NInfo>),
+    NInfo(NInfo),
     /// `MyNodeInfo` packets arriving on serial
-    MyNodeInfo(Box<MyInfo>),
+    MyNodeInfo(MyInfo),
 }
 
 /// Neighbor struct to make JSON for `NeighborInfo` table
