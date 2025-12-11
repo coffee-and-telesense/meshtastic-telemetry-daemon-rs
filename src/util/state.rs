@@ -99,7 +99,7 @@ impl<'a> GatewayState<'a> {
     /// * `self` - Operates on the `GatewayState` struct
     ///
     /// # Returns
-    /// * `String` - String of the node counts to print
+    /// * `Cow<'_, str>` - String of the node counts to print
     #[cfg(feature = "debug")]
     pub fn format_rx_counts(&self) -> Cow<'_, str> {
         use chrono::Local;

@@ -61,7 +61,7 @@ fn main() -> std::result::Result<(), anyhow::Error> {
         .block_on(async { rt_main(settings).await })
 }
 
-async fn rt_main(settings: Settings) -> Result<(), anyhow::Error> {
+async fn rt_main(settings: Settings<'static>) -> Result<(), anyhow::Error> {
     // Create the gateway's state object
     let state = Arc::new(Mutex::new(GatewayState::new()));
 
@@ -75,8 +75,9 @@ async fn rt_main(settings: Settings) -> Result<(), anyhow::Error> {
     // Connect to serial meshtastic
     let stream_api = StreamApi::new();
     let entered_port = settings.get_serial_port();
-    let serial_stream = utils::stream::build_serial_stream(entered_port.clone(), None, None, None)
-        .with_context(|| format!("Failed to build serial stream for {entered_port}"))?;
+    let serial_stream =
+        utils::stream::build_serial_stream(entered_port.to_string(), None, None, None)
+            .with_context(|| format!("Failed to build serial stream for {entered_port}"))?;
     let (mut decoded_listener, stream_api) = stream_api.connect(serial_stream).await;
 
     let config_id = utils::generate_rand_id();

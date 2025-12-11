@@ -4,23 +4,25 @@ use log::{error, warn};
 use meshtastic::utils::stream::available_serial_ports;
 use sea_orm::{ConnectOptions, Database, DatabaseConnection};
 use serde::Deserialize;
+#[cfg(feature = "postgres")]
+use std::borrow::Cow;
 use std::io::{self, BufRead};
 
 /// Struct reprenting a postgres connection's settings
 #[cfg(feature = "postgres")]
 #[derive(Debug, Deserialize)]
 #[allow(unused)]
-struct PostgresConnection {
+struct PostgresConnection<'a> {
     /// Username for postgres db
-    user: String,
+    user: Cow<'a, str>,
     /// Password for postgres db
-    password: String,
+    password: Cow<'a, str>,
     /// Port for postgres db
     port: u32,
     /// Hostname of postgres db
-    host: String,
+    host: Cow<'a, str>,
     /// Database name for postgres db
-    dbname: String,
+    dbname: Cow<'a, str>,
     /// Maximum connection workers for db connection
     max_connections: u32,
     /// Minimum connection workers for db connection
@@ -28,7 +30,7 @@ struct PostgresConnection {
 }
 
 #[cfg(feature = "postgres")]
-impl PostgresConnection {
+impl<'a> PostgresConnection<'a> {
     /// Build a postgresql connection string
     ///
     /// Formats entries from the config file into:
@@ -77,18 +79,18 @@ impl PostgresConnection {
 /// Struct reprenting a connection to a serial port's settings
 #[derive(Debug, Deserialize)]
 #[allow(unused)]
-struct SerialConnection {
+struct SerialConnection<'a> {
     /// The path to the serial port of a connected Meshtastic node, if left
     /// blank the user is prompted for the path out of a list of possible paths
-    port: String,
+    port: Cow<'a, str>,
 }
 
 /// Struct representing configured deployment information, like location
 #[derive(Debug, Deserialize)]
 #[allow(unused)]
-pub struct DeploymentSettings {
+pub struct DeploymentSettings<'a> {
     /// The name of this group of nodes
-    pub location: String,
+    pub location: Cow<'a, str>,
 }
 
 /// Struct representing configured async runtime settings
@@ -111,19 +113,19 @@ pub struct AsyncSettings {
 /// Settings struct that parses a config and performs setup
 #[derive(Debug, Deserialize)]
 #[allow(unused)]
-pub struct Settings {
+pub struct Settings<'a> {
     /// The postgres connection config
     #[cfg(feature = "postgres")]
-    postgres: PostgresConnection,
+    postgres: PostgresConnection<'a>,
     /// The serial connection to a Meshtastic node config
-    serial: SerialConnection,
+    serial: SerialConnection<'a>,
     /// The deployment config
-    pub deployment: DeploymentSettings,
+    pub deployment: DeploymentSettings<'a>,
     /// The asynchronous runtime config
     pub async_runtime: AsyncSettings,
 }
 
-impl Settings {
+impl<'a> Settings<'a> {
     /// Read config file and create settings structure
     ///
     /// # Arguments
@@ -158,7 +160,7 @@ impl Settings {
     /// # Panics
     /// This panics if a serial port is not provided by the user in the case that the config file does
     /// not provide a serial port path
-    pub(crate) fn get_serial_port(&self) -> String {
+    pub(crate) fn get_serial_port(&self) -> Cow<'a, str> {
         if self.serial.port.is_empty() {
             warn!("Prompting user for serial port instead");
             match available_serial_ports()
@@ -180,7 +182,7 @@ impl Settings {
                 .expect("Failed to find next line")
                 .with_context(|| "Could not read from stdin")
             {
-                Ok(sp) => sp,
+                Ok(sp) => Cow::Owned(sp.as_str().to_owned()),
                 Err(e) => {
                     eprintln!("No serial port provided by user");
                     panic!("{e}");
