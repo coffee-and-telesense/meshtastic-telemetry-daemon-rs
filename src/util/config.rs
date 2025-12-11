@@ -30,7 +30,7 @@ struct PostgresConnection<'a> {
 }
 
 #[cfg(feature = "postgres")]
-impl<'a> PostgresConnection<'a> {
+impl PostgresConnection<'_> {
     /// Build a postgresql connection string
     ///
     /// Formats entries from the config file into:

@@ -51,7 +51,7 @@ pub fn process_packet(packet: &FromRadio, state: &Arc<Mutex<GatewayState>>) -> O
                                             pkt.rx_time = data.timestamp;
                                             pkt.payload_variant = None;
                                             pkt.payload = Some(Payload::PositionApp(data));
-                                            return Some(Pkt::Mesh(pkt));
+                                            return Some(Pkt::Mesh(Box::new(pkt)));
                                         }
                                         Err(e) => {
                                             info!("{e}");
@@ -78,31 +78,31 @@ pub fn process_packet(packet: &FromRadio, state: &Arc<Mutex<GatewayState>>) -> O
                                                         pkt.payload = Some(Payload::TelemetryApp(
                                                             Telem::Environment(env),
                                                         ));
-                                                        return Some(Pkt::Mesh(pkt));
+                                                        return Some(Pkt::Mesh(Box::new(pkt)));
                                                     }
                                                     telemetry::Variant::DeviceMetrics(dm) => {
                                                         pkt.payload = Some(Payload::TelemetryApp(
                                                             Telem::Device(dm),
                                                         ));
-                                                        return Some(Pkt::Mesh(pkt));
+                                                        return Some(Pkt::Mesh(Box::new(pkt)));
                                                     }
                                                     telemetry::Variant::AirQualityMetrics(aqi) => {
                                                         pkt.payload = Some(Payload::TelemetryApp(
                                                             Telem::AirQuality(aqi),
                                                         ));
-                                                        return Some(Pkt::Mesh(pkt));
+                                                        return Some(Pkt::Mesh(Box::new(pkt)));
                                                     }
                                                     telemetry::Variant::PowerMetrics(pwm) => {
                                                         pkt.payload = Some(Payload::TelemetryApp(
                                                             Telem::Power(pwm),
                                                         ));
-                                                        return Some(Pkt::Mesh(pkt));
+                                                        return Some(Pkt::Mesh(Box::new(pkt)));
                                                     }
                                                     telemetry::Variant::LocalStats(lstats) => {
                                                         pkt.payload = Some(Payload::TelemetryApp(
                                                             Telem::Local(lstats),
                                                         ));
-                                                        return Some(Pkt::Mesh(pkt));
+                                                        return Some(Pkt::Mesh(Box::new(pkt)));
                                                     }
                                                     telemetry::Variant::HealthMetrics(_) => {
                                                         // Do not care about health metrics right now
@@ -112,7 +112,7 @@ pub fn process_packet(packet: &FromRadio, state: &Arc<Mutex<GatewayState>>) -> O
                                                         pkt.payload = Some(Payload::TelemetryApp(
                                                             Telem::Error(em),
                                                         ));
-                                                        return Some(Pkt::Mesh(pkt));
+                                                        return Some(Pkt::Mesh(Box::new(pkt)));
                                                     }
                                                 }
                                             }
@@ -131,7 +131,7 @@ pub fn process_packet(packet: &FromRadio, state: &Arc<Mutex<GatewayState>>) -> O
                                         Ok(data) => {
                                             pkt.payload_variant = None;
                                             pkt.payload = Some(Payload::NeighborinfoApp(data));
-                                            return Some(Pkt::Mesh(pkt));
+                                            return Some(Pkt::Mesh(Box::new(pkt)));
                                         }
                                         Err(e) => {
                                             info!("{e}");
@@ -156,7 +156,7 @@ pub fn process_packet(packet: &FromRadio, state: &Arc<Mutex<GatewayState>>) -> O
                                             pkt.payload_variant = None;
                                             pkt.payload = Some(Payload::NodeinfoApp(data));
                                             if rv {
-                                                return Some(Pkt::Mesh(pkt));
+                                                return Some(Pkt::Mesh(Box::new(pkt)));
                                             }
                                             return None;
                                         }
@@ -174,7 +174,7 @@ pub fn process_packet(packet: &FromRadio, state: &Arc<Mutex<GatewayState>>) -> O
                                         Ok(data) => {
                                             pkt.payload_variant = None;
                                             pkt.payload = Some(Payload::RoutingApp(data));
-                                            return Some(Pkt::Mesh(pkt));
+                                            return Some(Pkt::Mesh(Box::new(pkt)));
                                         }
                                         Err(e) => {
                                             info!("{e}");
@@ -191,7 +191,7 @@ pub fn process_packet(packet: &FromRadio, state: &Arc<Mutex<GatewayState>>) -> O
                                         Ok(data) => {
                                             pkt.payload_variant = None;
                                             pkt.payload = Some(Payload::TracerouteApp(data));
-                                            return Some(Pkt::Mesh(pkt));
+                                            return Some(Pkt::Mesh(Box::new(pkt)));
                                         }
                                         Err(e) => {
                                             info!("{e}");
@@ -217,7 +217,7 @@ pub fn process_packet(packet: &FromRadio, state: &Arc<Mutex<GatewayState>>) -> O
             from_radio::PayloadVariant::MyInfo(mi) => {
                 // https://docs.rs/meshtastic/0.1.6/meshtastic/protobufs/struct.MyNodeInfo.html
                 let pkt = MyInfo::from_remote(&mi);
-                return Some(Pkt::MyNodeInfo(pkt));
+                return Some(Pkt::MyNodeInfo(Box::new(pkt)));
             }
 
             from_radio::PayloadVariant::NodeInfo(ni) => {
@@ -232,7 +232,7 @@ pub fn process_packet(packet: &FromRadio, state: &Arc<Mutex<GatewayState>>) -> O
                         .insert(ni.num, &user);
                 }
                 if rv {
-                    return Some(Pkt::NInfo(pkt));
+                    return Some(Pkt::NInfo(Box::new(pkt)));
                 }
                 return None;
             }

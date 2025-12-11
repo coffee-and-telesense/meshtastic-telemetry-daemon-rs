@@ -33,7 +33,7 @@ pub struct GatewayState<'a> {
     serial_node: u32,
 }
 
-impl<'a> Default for GatewayState<'a> {
+impl Default for GatewayState<'_> {
     /// Default constructor
     ///
     /// # Returns
