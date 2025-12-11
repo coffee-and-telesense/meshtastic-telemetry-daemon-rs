@@ -3,7 +3,8 @@ use crate::{
         airqualitymetrics, devicemetrics, environmentmetrics, errormetrics, localstats,
         neighborinfo, nodeinfo,
     },
-    util::types::{GatewayState, Mesh, NInfo, Names, Payload, Pkt, Telem},
+    util::state::GatewayState,
+    util::types::{Mesh, NInfo, Names, Payload, Pkt, Telem},
 };
 use anyhow::{Context, Result};
 use chrono::Utc;
@@ -194,7 +195,7 @@ pub(crate) async fn proactive_ninfo_insert(
     pkt: &Mesh,
     db: &DatabaseConnection,
     dep_loc: &str,
-    state: Arc<Mutex<GatewayState>>,
+    state: Arc<Mutex<GatewayState<'_>>>,
 ) -> Result<u32> {
     // Check if we already know this node
     if state
@@ -219,7 +220,7 @@ pub(crate) async fn proactive_ninfo_insert(
         state
             .lock()
             .expect("Failed to acquire lock for GatewayState in proactive_node_insert()")
-            .insert(pkt.from, fake_user.clone());
+            .insert(pkt.from, &fake_user);
         // Now we insert into postgres
         let fake_msg_id = state
             .lock()

@@ -16,11 +16,7 @@ extern crate log;
 #[cfg(feature = "postgres")]
 use crate::db::connection::update_metrics;
 use crate::dto::packet_handler;
-use crate::util::{
-    config::Settings,
-    log::set_logger,
-    types::{GatewayState, Pkt},
-};
+use crate::util::{config::Settings, log::set_logger, state::GatewayState, types::Pkt};
 use anyhow::{Context, Result};
 use chrono::Local;
 use db::connection::proactive_ninfo_insert;

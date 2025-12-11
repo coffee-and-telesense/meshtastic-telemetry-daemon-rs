@@ -1,4 +1,5 @@
-use crate::util::types::{GatewayState, Mesh, MyInfo, NInfo, Payload, Pkt, Telem};
+use crate::util::state::GatewayState;
+use crate::util::types::{Mesh, MyInfo, NInfo, Payload, Pkt, Telem};
 use anyhow::Context;
 #[cfg(feature = "debug")]
 use log::info;
@@ -151,7 +152,7 @@ pub fn process_packet(packet: &FromRadio, state: &Arc<Mutex<GatewayState>>) -> O
                                             let rv = state
                                                 .lock()
                                                 .expect("Failed to acquire lock for GatewayState in packet_handler()")
-                                                .insert(pkt.from, data.clone());
+                                                .insert(pkt.from, &data);
                                             pkt.payload_variant = None;
                                             pkt.payload = Some(Payload::NodeinfoApp(data));
                                             if rv {
@@ -228,7 +229,7 @@ pub fn process_packet(packet: &FromRadio, state: &Arc<Mutex<GatewayState>>) -> O
                     rv = state
                         .lock()
                         .expect("Failed to acquire lock for GatewayState in packet_handler()")
-                        .insert(ni.num, user);
+                        .insert(ni.num, &user);
                 }
                 if rv {
                     return Some(Pkt::NInfo(pkt));
