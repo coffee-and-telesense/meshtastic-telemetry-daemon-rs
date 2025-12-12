@@ -34,8 +34,14 @@ pub fn process_packet(packet: &FromRadio, state: &Arc<Mutex<GatewayState>>) -> O
             if pa.channel != 0 {
                 return None;
             }
+
             // https://docs.rs/meshtastic/0.1.6/meshtastic/protobufs/struct.MeshPacket.html
-            let pkt: Mesh = Mesh::from_remote(&pa);
+            let mut pkt: Mesh = Mesh::from_remote(&pa);
+
+            // Set the time to the time when the embedded device received the packet
+            pkt.rx_time = pa.rx_time;
+
+            // Decode the payload into a local type
             return decode_payload(state, &pa, pkt);
         }
         match payload_v {
