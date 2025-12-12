@@ -148,7 +148,7 @@ impl Mesh {
     /// # Returns
     /// * `Mesh` - `Mesh` variant of `Pkt` enum
     #[must_use]
-    pub fn from_remote(def: MeshPacket) -> Mesh {
+    pub fn from_remote(def: &MeshPacket) -> Mesh {
         Mesh {
             from: def.from,
             to: def.to,
@@ -162,7 +162,7 @@ impl Mesh {
             rx_rssi: def.rx_rssi,
             via_mqtt: def.via_mqtt,
             hop_start: def.hop_start,
-            payload_variant: def.payload_variant,
+            payload_variant: def.payload_variant.clone(),
             payload: None,
         }
     }
