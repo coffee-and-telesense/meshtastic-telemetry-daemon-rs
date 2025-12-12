@@ -6,14 +6,15 @@ use crate::{
         errormetrics::Model as ErrorMetricsModel, localstats::Model as LocalStatsModel,
         neighborinfo::Model as NeighborInfoModel,
     },
-    util::types::{ErrorCounts, Mesh, Names, Neighbor},
+    util::types::{ErrorCounts, Names, Neighbor},
 };
 use anyhow::{Context, Result};
-use chrono::Utc;
+use chrono::{NaiveDateTime, Utc};
 #[cfg(feature = "debug")]
 use log::error;
 use meshtastic::protobufs::{
-    AirQualityMetrics, DeviceMetrics, EnvironmentMetrics, ErrorMetrics, LocalStats, NeighborInfo,
+    AirQualityMetrics, DeviceMetrics, EnvironmentMetrics, ErrorMetrics, LocalStats, MeshPacket,
+    NeighborInfo,
 };
 use sea_orm::{
     ActiveModelBehavior, ActiveModelTrait, DatabaseConnection, EntityTrait, IntoActiveModel,
@@ -55,6 +56,27 @@ where
     }
 }
 
+/// Create a NaiveDateTime from a unix epoch timestamp
+///
+/// # Arguments
+/// * `epoch` - u32 from packet
+///
+/// # Returns
+/// * `NaiveDateTime` - u32 epoch value or the Utc::now() value of the daemon if the epoch value is
+///   zero
+///
+/// # Panics
+/// * If the epoch is more than 250,000 year from the common era or if the nanosecs is > 2
+#[inline]
+fn timestamp(epoch: u32) -> NaiveDateTime {
+    if epoch != 0 {
+        #[allow(deprecated)] //TODO: fix sea-orm type to not require deprecated functions
+        NaiveDateTime::from_timestamp(epoch.into(), 0)
+    } else {
+        Utc::now().naive_utc()
+    }
+}
+
 impl AirQualityMetricsModel {
     // Insert an Air Quality Metrics row
     //
@@ -79,11 +101,11 @@ impl AirQualityMetricsModel {
     /// # Returns
     /// * An Air Quality Metrics Model
     #[must_use]
-    pub(crate) fn create_model(pkt: &Mesh, data: AirQualityMetrics) -> Self {
+    pub(crate) fn create_model(pkt: &MeshPacket, data: &AirQualityMetrics) -> Self {
         Self {
             msg_id: pkt.id,
             node_id: pkt.from,
-            time: Utc::now().naive_utc(),
+            time: timestamp(pkt.rx_time),
             pm10standard: data.pm10_standard,
             pm25standard: data.pm25_standard,
             pm100standard: data.pm100_standard,
@@ -125,11 +147,11 @@ impl DeviceMetricsModel {
     ///
     /// # Returns
     /// * A Device Metrics Model
-    pub(crate) fn create_dm_model(pkt: &Mesh, data: DeviceMetrics) -> Self {
+    pub(crate) fn create_dm_model(pkt: &MeshPacket, data: &DeviceMetrics) -> Self {
         Self {
             msg_id: pkt.id,
             node_id: pkt.from,
-            time: Utc::now().naive_utc(),
+            time: timestamp(pkt.rx_time),
             battery_levels: data.battery_level,
             voltage: data.voltage,
             channelutil: data.channel_utilization,
@@ -166,11 +188,11 @@ impl EnvironmentMetricsModel {
     /// # Returns
     /// * An Environmental Metrics Model
     #[must_use]
-    pub(crate) fn create_model(pkt: &Mesh, data: EnvironmentMetrics) -> Self {
+    pub(crate) fn create_model(pkt: &MeshPacket, data: &EnvironmentMetrics) -> Self {
         Self {
             msg_id: pkt.id,
             node_id: pkt.from,
-            time: Utc::now().naive_utc(),
+            time: timestamp(pkt.rx_time),
             relative_humidity: data.relative_humidity,
             tempurature: data.temperature,
             barometric_pressure: data.barometric_pressure,
@@ -210,11 +232,11 @@ impl ErrorMetricsModel {
     /// # Returns
     /// * A Error Metrics Model
     #[must_use]
-    pub(crate) fn create_model(pkt: &Mesh, data: ErrorMetrics) -> Self {
+    pub(crate) fn create_model(pkt: &MeshPacket, data: &ErrorMetrics) -> Self {
         Self {
             msg_id: pkt.id,
             node_id: pkt.from,
-            time: Utc::now().naive_utc(),
+            time: timestamp(pkt.rx_time),
             collision_rate: data.collision_rate,
             node_reach: data.node_reach,
             num_nodes: data.num_nodes,
@@ -257,11 +279,11 @@ impl LocalStatsModel {
     /// # Returns
     /// * A Local Stats Model
     #[must_use]
-    pub(crate) fn create_model(pkt: &Mesh, data: LocalStats) -> Self {
+    pub(crate) fn create_model(pkt: &MeshPacket, data: &LocalStats) -> Self {
         Self {
             msg_id: pkt.id,
             node_id: pkt.from,
-            time: Utc::now().naive_utc(),
+            time: timestamp(pkt.rx_time),
             uptime_seconds: Some(data.uptime_seconds),
             channel_util: Some(data.channel_utilization),
             air_util_tx: Some(data.air_util_tx),
@@ -301,15 +323,16 @@ impl NeighborInfoModel {
     /// # Returns
     /// * A Neighbor Info Model
     #[must_use]
-    pub(crate) fn create_model(pkt: &Mesh, data: NeighborInfo) -> Self {
+    pub(crate) fn create_model(pkt: &MeshPacket, data: &NeighborInfo) -> Self {
         Self {
             msg_id: pkt.id,
             node_id: pkt.from,
-            time: Utc::now().naive_utc(),
+            time: timestamp(pkt.rx_time),
             last_sent_by_id: Some(data.last_sent_by_id),
             node_broadcast_interval_secs: Some(data.node_broadcast_interval_secs),
             neighbors: Some(
                 data.neighbors
+                    .to_owned()
                     .into_iter()
                     .map(|n| {
                         json!(&Neighbor {
