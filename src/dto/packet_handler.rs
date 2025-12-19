@@ -27,7 +27,7 @@ use std::sync::{Arc, Mutex};
 ///
 /// # Panics
 /// This function will panic if it fails to acquire a lock on the `GatewayState`
-pub fn process_packet(packet: &FromRadio, state: &Arc<Mutex<GatewayState>>) -> Option<Pkt> {
+pub fn process_packet(packet: &FromRadio, state: &Arc<Mutex<GatewayState>>) -> Option<Box<Pkt>> {
     if let Some(payload_v) = packet.payload_variant.clone() {
         if let from_radio::PayloadVariant::Packet(pa) = payload_v {
             // Check if the mesh packet is on the telemetry channel, if not ignore it
@@ -48,7 +48,7 @@ pub fn process_packet(packet: &FromRadio, state: &Arc<Mutex<GatewayState>>) -> O
             from_radio::PayloadVariant::MyInfo(mi) => {
                 // https://docs.rs/meshtastic/0.1.6/meshtastic/protobufs/struct.MyNodeInfo.html
                 let pkt = MyInfo::from_remote(&mi);
-                return Some(Pkt::MyNodeInfo(pkt));
+                return Some(Box::new(Pkt::MyNodeInfo(pkt)));
             }
 
             from_radio::PayloadVariant::NodeInfo(ni) => {
@@ -63,7 +63,7 @@ pub fn process_packet(packet: &FromRadio, state: &Arc<Mutex<GatewayState>>) -> O
                         .insert(ni.num, &user);
                 }
                 if rv {
-                    return Some(Pkt::NInfo(pkt));
+                    return Some(Box::new(Pkt::NInfo(pkt)));
                 }
                 return None;
             }
@@ -101,7 +101,7 @@ fn decode_payload(
     state: &Arc<Mutex<GatewayState<'_>>>,
     packet: &MeshPacket,
     mut pkt: Mesh,
-) -> Option<Pkt> {
+) -> Option<Box<Pkt>> {
     if let Some(payload) = packet.payload_variant.clone() {
         match payload.clone() {
             mesh_packet::PayloadVariant::Decoded(de) => {
@@ -115,7 +115,7 @@ fn decode_payload(
                                 pkt.rx_time = data.timestamp;
                                 pkt.payload_variant = None;
                                 pkt.payload = Some(Payload::PositionApp(data));
-                                return Some(Pkt::Mesh(pkt));
+                                return Some(Box::new(Pkt::Mesh(pkt)));
                             }
                             Err(e) => {
                                 info!("{e}");
@@ -140,27 +140,27 @@ fn decode_payload(
                                             pkt.payload = Some(Payload::TelemetryApp(
                                                 Telem::Environment(env),
                                             ));
-                                            return Some(Pkt::Mesh(pkt));
+                                            return Some(Box::new(Pkt::Mesh(pkt)));
                                         }
                                         telemetry::Variant::DeviceMetrics(dm) => {
                                             pkt.payload =
                                                 Some(Payload::TelemetryApp(Telem::Device(dm)));
-                                            return Some(Pkt::Mesh(pkt));
+                                            return Some(Box::new(Pkt::Mesh(pkt)));
                                         }
                                         telemetry::Variant::AirQualityMetrics(aqi) => {
                                             pkt.payload =
                                                 Some(Payload::TelemetryApp(Telem::AirQuality(aqi)));
-                                            return Some(Pkt::Mesh(pkt));
+                                            return Some(Box::new(Pkt::Mesh(pkt)));
                                         }
                                         telemetry::Variant::PowerMetrics(pwm) => {
                                             pkt.payload =
                                                 Some(Payload::TelemetryApp(Telem::Power(pwm)));
-                                            return Some(Pkt::Mesh(pkt));
+                                            return Some(Box::new(Pkt::Mesh(pkt)));
                                         }
                                         telemetry::Variant::LocalStats(lstats) => {
                                             pkt.payload =
                                                 Some(Payload::TelemetryApp(Telem::Local(lstats)));
-                                            return Some(Pkt::Mesh(pkt));
+                                            return Some(Box::new(Pkt::Mesh(pkt)));
                                         }
                                         telemetry::Variant::HealthMetrics(_) => {
                                             // Do not care about health metrics right now
@@ -169,7 +169,7 @@ fn decode_payload(
                                         telemetry::Variant::ErrorMetrics(em) => {
                                             pkt.payload =
                                                 Some(Payload::TelemetryApp(Telem::Error(em)));
-                                            return Some(Pkt::Mesh(pkt));
+                                            return Some(Box::new(Pkt::Mesh(pkt)));
                                         }
                                     }
                                 }
@@ -188,7 +188,7 @@ fn decode_payload(
                             Ok(data) => {
                                 pkt.payload_variant = None;
                                 pkt.payload = Some(Payload::NeighborinfoApp(data));
-                                return Some(Pkt::Mesh(pkt));
+                                return Some(Box::new(Pkt::Mesh(pkt)));
                             }
                             Err(e) => {
                                 info!("{e}");
@@ -213,7 +213,7 @@ fn decode_payload(
                                 pkt.payload_variant = None;
                                 pkt.payload = Some(Payload::NodeinfoApp(data));
                                 if rv {
-                                    return Some(Pkt::Mesh(pkt));
+                                    return Some(Box::new(Pkt::Mesh(pkt)));
                                 }
                                 return None;
                             }
@@ -231,7 +231,7 @@ fn decode_payload(
                             Ok(data) => {
                                 pkt.payload_variant = None;
                                 pkt.payload = Some(Payload::RoutingApp(data));
-                                return Some(Pkt::Mesh(pkt));
+                                return Some(Box::new(Pkt::Mesh(pkt)));
                             }
                             Err(e) => {
                                 info!("{e}");
@@ -247,7 +247,7 @@ fn decode_payload(
                             Ok(data) => {
                                 pkt.payload_variant = None;
                                 pkt.payload = Some(Payload::TracerouteApp(data));
-                                return Some(Pkt::Mesh(pkt));
+                                return Some(Box::new(Pkt::Mesh(pkt)));
                             }
                             Err(e) => {
                                 info!("{e}");

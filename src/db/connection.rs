@@ -41,31 +41,31 @@ pub(crate) async fn update_metrics(
                 match p {
                     Payload::TelemetryApp(t) => match t {
                         Telem::Environment(data) => {
-                            environmentmetrics::Model::create_model(mp, data)
+                            environmentmetrics::Model::create_model(mp, &data)
                                 .insert_row(db)
                                 .await
                         }
 
                         Telem::AirQuality(data) => {
-                            airqualitymetrics::Model::create_model(mp, data)
+                            airqualitymetrics::Model::create_model(mp, &data)
                                 .insert_row(db)
                                 .await
                         }
 
                         Telem::Device(data) => {
-                            devicemetrics::Model::create_dm_model(mp, data)
+                            devicemetrics::Model::create_dm_model(mp, &data)
                                 .insert_row(db)
                                 .await
                         }
 
                         Telem::Local(data) => {
-                            localstats::Model::create_model(mp, data)
+                            localstats::Model::create_model(mp, &data)
                                 .insert_row(db)
                                 .await
                         }
 
                         Telem::Error(data) => {
-                            errormetrics::Model::create_model(mp, data)
+                            errormetrics::Model::create_model(mp, &data)
                                 .insert_row(db)
                                 .await
                         }
@@ -123,7 +123,7 @@ pub(crate) async fn update_metrics(
                     }
 
                     Payload::NeighborinfoApp(data) => {
-                        neighborinfo::Model::create_model(mp, data)
+                        neighborinfo::Model::create_model(mp, &data)
                             .insert_row(db)
                             .await
                     }
@@ -368,7 +368,7 @@ async fn node_info_conflict(
                 None => {
                     // No entry in db, so we insert a new unheard node into both devicemetrics
                     // and the nodeinfo table using the mesh packet id as our fake_msg_id
-                    return new_node(&ni, db, Some(mp.id), dep_loc).await;
+                    return new_node(ni, db, Some(mp.id), dep_loc).await;
                 }
             }
         } else {
@@ -382,7 +382,7 @@ async fn node_info_conflict(
         // We have a serial payload, so we need to insert a fake devicemetrics with the data in the
         // payload, and we need to potentially insert a node to the nodeinfo table but if either
         // already exists then we do not do anything on conflicts.
-        return new_node(&ni, db, fake_msg_id, dep_loc).await;
+        return new_node(ni, db, fake_msg_id, dep_loc).await;
     }
 
     Ok(row_insert_count)

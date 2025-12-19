@@ -6,15 +6,14 @@ use crate::{
         errormetrics::Model as ErrorMetricsModel, localstats::Model as LocalStatsModel,
         neighborinfo::Model as NeighborInfoModel,
     },
-    util::types::{ErrorCounts, Names, Neighbor},
+    util::types::{ErrorCounts, Mesh, Names, Neighbor},
 };
 use anyhow::{Context, Result};
 use chrono::{NaiveDateTime, Utc};
 #[cfg(feature = "debug")]
 use log::error;
 use meshtastic::protobufs::{
-    AirQualityMetrics, DeviceMetrics, EnvironmentMetrics, ErrorMetrics, LocalStats, MeshPacket,
-    NeighborInfo,
+    AirQualityMetrics, DeviceMetrics, EnvironmentMetrics, ErrorMetrics, LocalStats, NeighborInfo,
 };
 use sea_orm::{
     ActiveModelBehavior, ActiveModelTrait, DatabaseConnection, EntityTrait, IntoActiveModel,
@@ -56,13 +55,13 @@ where
     }
 }
 
-/// Create a NaiveDateTime from a unix epoch timestamp
+/// Create a `NaiveDateTime` from a unix epoch timestamp
 ///
 /// # Arguments
 /// * `epoch` - u32 from packet
 ///
 /// # Returns
-/// * `NaiveDateTime` - u32 epoch value or the Utc::now() value of the daemon if the epoch value is
+/// * `NaiveDateTime` - u32 epoch value or the `Utc::now()` value of the daemon if the epoch value is
 ///   zero
 ///
 /// # Panics
@@ -101,7 +100,7 @@ impl AirQualityMetricsModel {
     /// # Returns
     /// * An Air Quality Metrics Model
     #[must_use]
-    pub(crate) fn create_model(pkt: &MeshPacket, data: &AirQualityMetrics) -> Self {
+    pub(crate) fn create_model(pkt: &Mesh, data: &AirQualityMetrics) -> Self {
         Self {
             msg_id: pkt.id,
             node_id: pkt.from,
@@ -147,7 +146,7 @@ impl DeviceMetricsModel {
     ///
     /// # Returns
     /// * A Device Metrics Model
-    pub(crate) fn create_dm_model(pkt: &MeshPacket, data: &DeviceMetrics) -> Self {
+    pub(crate) fn create_dm_model(pkt: &Mesh, data: &DeviceMetrics) -> Self {
         Self {
             msg_id: pkt.id,
             node_id: pkt.from,
@@ -188,7 +187,7 @@ impl EnvironmentMetricsModel {
     /// # Returns
     /// * An Environmental Metrics Model
     #[must_use]
-    pub(crate) fn create_model(pkt: &MeshPacket, data: &EnvironmentMetrics) -> Self {
+    pub(crate) fn create_model(pkt: &Mesh, data: &EnvironmentMetrics) -> Self {
         Self {
             msg_id: pkt.id,
             node_id: pkt.from,
@@ -232,7 +231,7 @@ impl ErrorMetricsModel {
     /// # Returns
     /// * A Error Metrics Model
     #[must_use]
-    pub(crate) fn create_model(pkt: &MeshPacket, data: &ErrorMetrics) -> Self {
+    pub(crate) fn create_model(pkt: &Mesh, data: &ErrorMetrics) -> Self {
         Self {
             msg_id: pkt.id,
             node_id: pkt.from,
@@ -279,7 +278,7 @@ impl LocalStatsModel {
     /// # Returns
     /// * A Local Stats Model
     #[must_use]
-    pub(crate) fn create_model(pkt: &MeshPacket, data: &LocalStats) -> Self {
+    pub(crate) fn create_model(pkt: &Mesh, data: &LocalStats) -> Self {
         Self {
             msg_id: pkt.id,
             node_id: pkt.from,
@@ -323,7 +322,7 @@ impl NeighborInfoModel {
     /// # Returns
     /// * A Neighbor Info Model
     #[must_use]
-    pub(crate) fn create_model(pkt: &MeshPacket, data: &NeighborInfo) -> Self {
+    pub(crate) fn create_model(pkt: &Mesh, data: &NeighborInfo) -> Self {
         Self {
             msg_id: pkt.id,
             node_id: pkt.from,
@@ -332,8 +331,7 @@ impl NeighborInfoModel {
             node_broadcast_interval_secs: Some(data.node_broadcast_interval_secs),
             neighbors: Some(
                 data.neighbors
-                    .to_owned()
-                    .into_iter()
+                    .iter()
                     .map(|n| {
                         json!(&Neighbor {
                             node_id: n.node_id,

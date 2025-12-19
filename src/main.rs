@@ -122,8 +122,8 @@ async fn rt_main(settings: Settings<'static>) -> Result<(), anyhow::Error> {
             .await
             .with_context(|| "Failed to receive a packet on the rx channel")?
         {
-            match pkt {
-                Pkt::Mesh(ref mp) => {
+            match pkt.as_ref() {
+                Pkt::Mesh(mp) => {
                     // Count received packets in debug builds for periodic reporting in logs
                     #[cfg(feature = "debug")]
                     if let Ok(mut lock) = state.clone().lock() {
@@ -206,7 +206,7 @@ async fn rt_main(settings: Settings<'static>) -> Result<(), anyhow::Error> {
                         }
                     }
                 }
-                Pkt::NInfo(ref ni) => {
+                Pkt::NInfo(ni) => {
                     #[cfg(feature = "print-packets")]
                     println!(
                         "{}",
@@ -239,7 +239,7 @@ async fn rt_main(settings: Settings<'static>) -> Result<(), anyhow::Error> {
                         }
                     }
                 }
-                Pkt::MyNodeInfo(ref mi) => {
+                Pkt::MyNodeInfo(mi) => {
                     #[cfg(feature = "print-packets")]
                     println!(
                         "{}",
