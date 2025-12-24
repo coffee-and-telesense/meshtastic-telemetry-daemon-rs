@@ -22,19 +22,13 @@ config = { version = "0.15.9", default-features = false, features = [
   "async",
   "toml",
 ] }
+# Derive new functions for structs
+derive-new = "0.7"
 # Logger
 log = { version = "0.4.26", default-features = false }
 # My fork of the meshtastic protocol library with updated protobufs---no serde
-meshtastic = { git = "https://github.com/gatlinnewhouse/meshtastic-rust.git", branch = "stable-science", default-features = false, features = ["tokio"] }
+meshtastic = { git = "https://github.com/gatlinnewhouse/meshtastic-rust.git", branch = "stable-science", default-features = false, features = ["tokio", "serde"] }
 rustc-demangle = "0.1"
-# Handle posting to db, compatible with chrono we use
-sea-orm = { version = "1.1.7", default-features = false, features = [
-  "macros",
-  "with-chrono",
-  "with-bigdecimal",
-  "with-time",
-  "with-json",
-] }
 # Serialize/deserialize, add deriving trait
 serde = { version = "1.0.218", default-features = false, features = ["derive"] }
 # Serialize/deserialze json, mainly print debugging
@@ -43,30 +37,31 @@ serde_json = { version = "1.0.140", default-features = false, features = [
 ] }
 # Handle system signals correctly
 signal-hook = { version = "0.3.18" }
+# Postgres connection
+sqlx = { version = "0.8", default-features = false, features = ["postgres", "chrono", "macros", "json", "rust_decimal"]}
+sqlxinsert = { version = "0.12", default-features = false, features = ["postgres"]}
 # Release logger
 syslog = { version = "7.0.0", optional = true }
 # Async runtime with tokio::main macro
 tokio = { version = "1.43.0", features = ["macros"] }
 
 [features]
-default = ["debug", "native-tls", "postgres"]
+default = ["debug", "native-tls", "trace"]
 perf = []
 
 # stdout/logging config:
 debug = ["dep:colog", "anyhow/std", "anyhow/backtrace"]
 print-packets = ["meshtastic/serde"]
 syslog = ["dep:syslog"]
-
-# db config:
-postgres = ["sea-orm/sqlx-postgres", "sea-orm/postgres-vector"]
+trace = []
 
 # TLS config:
-native-tls = ["sea-orm/runtime-tokio-native-tls"]
-rustls = ["sea-orm/runtime-tokio-rustls"]
+native-tls = ["sqlx/runtime-tokio-native-tls"]
+rustls = ["sqlx/runtime-tokio-rustls"]
 
 # Specific shorthand targets
-alpine = ["postgres", "syslog", "native-tls"]
-beaglebone = ["postgres", "rustls", "debug"]
+alpine = ["syslog", "native-tls"]
+beaglebone = ["rustls", "debug"]
 
 [profile.dev]
 debug = 1

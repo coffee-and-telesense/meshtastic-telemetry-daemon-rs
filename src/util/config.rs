@@ -2,14 +2,17 @@ use anyhow::{Context, Result};
 #[cfg(feature = "debug")]
 use log::{error, warn};
 use meshtastic::utils::stream::available_serial_ports;
-use sea_orm::{ConnectOptions, Database, DatabaseConnection};
 use serde::Deserialize;
-#[cfg(feature = "postgres")]
+use sqlx::PgPool;
+use sqlx::postgres::PgPoolOptions;
 use std::borrow::Cow;
 use std::io::{self, BufRead};
+use tokio::sync::OnceCell;
+
+/// Deployment location constant to initialize with config value
+pub(crate) static DEPLOYMENT_LOCATION: OnceCell<String> = OnceCell::const_new();
 
 /// Struct reprenting a postgres connection's settings
-#[cfg(feature = "postgres")]
 #[derive(Debug, Deserialize)]
 #[allow(unused)]
 struct PostgresConnection<'a> {
@@ -29,7 +32,6 @@ struct PostgresConnection<'a> {
     min_connections: u32,
 }
 
-#[cfg(feature = "postgres")]
 impl PostgresConnection<'_> {
     /// Build a postgresql connection string
     ///
@@ -51,28 +53,14 @@ impl PostgresConnection<'_> {
     /// Setup a Postgresql connection pool
     ///
     /// # Returns
-    /// * `Result<DatabaseConnection>` - An `anyhow` result with a connection pool to the postgresql
+    /// * `Result<PgPool>` - An `anyhow` result with a connection pool to the postgresql
     ///   database
-    async fn setup(&self) -> Result<DatabaseConnection> {
-        // Connect to postgres db
-        let mut opt = ConnectOptions::new(self.build_db_connection_string());
-
-        opt.max_connections(self.max_connections)
-            .min_connections(self.min_connections);
-
-        #[cfg(feature = "debug")]
-        {
-            opt.sqlx_logging(true);
-            opt.sqlx_logging_level(log::LevelFilter::Trace);
-        }
-        #[cfg(feature = "syslog")]
-        {
-            opt.sqlx_logging(false);
-            opt.sqlx_logging_level(log::LevelFilter::Warn);
-        }
-        Database::connect(opt)
-            .await
-            .with_context(|| "Failed to connect to the database")
+    fn setup(&self) -> Result<PgPool> {
+        PgPoolOptions::new()
+            .max_connections(self.max_connections)
+            .min_connections(self.min_connections)
+            .connect_lazy(self.build_db_connection_string().as_str())
+            .map_err(anyhow::Error::from)
     }
 }
 
@@ -115,7 +103,6 @@ pub struct AsyncSettings {
 #[allow(unused)]
 pub struct Settings<'a> {
     /// The postgres connection config
-    #[cfg(feature = "postgres")]
     postgres: PostgresConnection<'a>,
     /// The serial connection to a Meshtastic node config
     serial: SerialConnection<'a>,
@@ -196,10 +183,9 @@ impl<'a> Settings<'a> {
     /// Setup postgres connection
     ///
     /// # Returns
-    /// * `Result<DatabaseConnection>` - An `anyhow` result with a connection pool to the postgresql
+    /// * `Result<PgPool>` - An `anyhow` result with a connection pool to the postgresql
     ///   database
-    #[cfg(feature = "postgres")]
-    pub(crate) async fn setup_postgres(&self) -> Result<DatabaseConnection> {
-        self.postgres.setup().await
+    pub(crate) fn setup_postgres(&self) -> Result<PgPool> {
+        self.postgres.setup()
     }
 }

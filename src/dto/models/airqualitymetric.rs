@@ -1,0 +1,20 @@
+#[derive(Debug, Clone, derive_new::new, sqlx::FromRow, sqlxinsert::PgInsert)]
+pub struct Airqualitymetric {
+    msg_id: sqlx::postgres::types::Oid,
+    node_id: sqlx::postgres::types::Oid,
+    time: chrono::NaiveDateTime,
+    pm_10_standard: Option<sqlx::postgres::types::Oid>,
+    pm_25_standard: Option<sqlx::postgres::types::Oid>,
+    pm_100_standard: Option<sqlx::postgres::types::Oid>,
+    pm_10_environmental: Option<sqlx::postgres::types::Oid>,
+    pm_25_environmental: Option<sqlx::postgres::types::Oid>,
+    pm_100_environmental: Option<sqlx::postgres::types::Oid>,
+    particles_03_um: Option<sqlx::postgres::types::Oid>,
+    particles_05_um: Option<sqlx::postgres::types::Oid>,
+    particles_10_um: Option<sqlx::postgres::types::Oid>,
+    particles_25_um: Option<sqlx::postgres::types::Oid>,
+    particles_50_um: Option<sqlx::postgres::types::Oid>,
+    particles_100_um: Option<sqlx::postgres::types::Oid>,
+    co_2: Option<sqlx::postgres::types::Oid>,
+    sensor_type: Option<i32>,
+}
