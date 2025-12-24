@@ -1,4 +1,4 @@
-#[derive(Debug, Clone, derive_new::new, sqlx::FromRow, sqlxinsert::PgInsert)]
+#[derive(Default, Debug, Clone, derive_new::new, sqlx::FromRow, sqlxinsert::PgInsert)]
 pub struct Errormetric {
     msg_id: sqlx::postgres::types::Oid,
     node_id: sqlx::postgres::types::Oid,
