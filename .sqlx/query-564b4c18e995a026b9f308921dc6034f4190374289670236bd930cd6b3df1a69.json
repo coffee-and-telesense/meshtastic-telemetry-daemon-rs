@@ -1,0 +1,27 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\nUPDATE LocalStats\nSET\n  node_id = $2,\n  TIME = $3,\n  uptime_seconds = $4,\n  channel_util = $5,\n  air_util_tx = $6,\n  num_packets_tx = $7,\n  num_packets_rx = $8,\n  num_packets_rx_bad = $9,\n  num_online_nodes = $10,\n  num_total_nodes = $11,\n  num_rx_dupe = $12,\n  num_tx_relay = $13,\n  num_tx_relay_canceled = $14\nWHERE\n  msg_id = $1\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Oid",
+        "Oid",
+        "Timestamp",
+        "Oid",
+        "Float4",
+        "Float4",
+        "Oid",
+        "Oid",
+        "Oid",
+        "Oid",
+        "Oid",
+        "Oid",
+        "Oid",
+        "Oid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "564b4c18e995a026b9f308921dc6034f4190374289670236bd930cd6b3df1a69"
+}

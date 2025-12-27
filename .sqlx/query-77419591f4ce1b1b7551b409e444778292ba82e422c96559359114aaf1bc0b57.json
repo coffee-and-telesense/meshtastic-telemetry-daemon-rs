@@ -1,0 +1,23 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\nUPDATE ErrorMetrics\nSET\n  node_id = $2,\n  time = $3,\n  collision_rate = $4,\n  node_reach = $5,\n  num_nodes = $6,\n  usefulness = $7,\n  avg_delay = $8,\n  period = $9,\n  errors = $10\nWHERE\n  msg_id = $1\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Oid",
+        "Oid",
+        "Timestamp",
+        "Float4",
+        "Float4",
+        "Oid",
+        "Float4",
+        "Oid",
+        "Oid",
+        "Jsonb"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "77419591f4ce1b1b7551b409e444778292ba82e422c96559359114aaf1bc0b57"
+}
