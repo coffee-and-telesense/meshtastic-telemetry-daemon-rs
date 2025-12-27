@@ -1,0 +1,23 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\nINSERT INTO\n  ErrorMetrics (\n    msg_id,\n    node_id,\n    time,\n    collision_rate,\n    node_reach,\n    num_nodes,\n    usefulness,\n    avg_delay,\n    period,\n    errors\n)\nVALUES\n  (\n    $1,\n    $2,\n    $3,\n    $4,\n    $5,\n    $6,\n    $7,\n    $8,\n    $9,\n    $10\n  )\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Oid",
+        "Oid",
+        "Timestamp",
+        "Float4",
+        "Float4",
+        "Oid",
+        "Float4",
+        "Oid",
+        "Oid",
+        "Jsonb"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "bfb939fea9d607b7e8e76c609d55d75c6f861f63b238bb43da4993140dff8c6d"
+}

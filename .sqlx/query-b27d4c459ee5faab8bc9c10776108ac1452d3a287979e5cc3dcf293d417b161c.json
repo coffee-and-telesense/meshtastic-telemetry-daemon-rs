@@ -1,0 +1,28 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\nUPDATE EnvironmentMetrics\nSET\n  node_id = $2,\n  time = $3,\n  tempurature = $4,\n  relative_humidity = $5,\n  barometric_pressure = $6,\n  gas_resistance = $7,\n  iaq = $8,\n  wind_direction = $9,\n  wind_speed = $10,\n  wind_gust = $11,\n  wind_lull = $12,\n  rainfall_1h = $13,\n  rainfall_24h = $14,\n  sensor_type = $15\nWHERE\n  msg_id = $1\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Oid",
+        "Oid",
+        "Timestamp",
+        "Float4",
+        "Float4",
+        "Float4",
+        "Float4",
+        "Oid",
+        "Oid",
+        "Float4",
+        "Float4",
+        "Float4",
+        "Float4",
+        "Float4",
+        "Int4"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "b27d4c459ee5faab8bc9c10776108ac1452d3a287979e5cc3dcf293d417b161c"
+}

@@ -4,7 +4,7 @@ use crate::{
             Airqualitymetric, Devicemetric, Environmentmetric, Errormetric, Localstat,
             Neighborinfo, Nodeinfo,
         },
-        types::{ToRow, timestamp},
+        types::{DbOps, ToRow, timestamp},
     },
     util::{log::log_msg, state::GatewayState},
 };
@@ -57,9 +57,15 @@ pub async fn process_packet(
             from_radio::PayloadVariant::NodeInfo(node_info) => {
                 // none of the arguments are used, so do dummy args
                 let row: Nodeinfo = node_info.to_row(Oid(0), Oid(node_info.num), timestamp(0));
-                match row.insert::<Nodeinfo>(pool, "NodeInfo").await {
+                match row.insert(pool).await {
                     Ok(_) => log_msg("Inserted 1 row into NodeInfo table", log::Level::Info),
-                    Err(e) => log_msg(format!("{e}").as_str(), log::Level::Error),
+                    Err(_) => {
+                        // Try updating the row
+                        match row.update(pool).await {
+                            Ok(_) => log_msg("Updated 1 row in NodeInfo table", log::Level::Info),
+                            Err(e) => log_msg(format!("{e}").as_str(), log::Level::Error),
+                        }
+                    }
                 }
             }
             #[cfg(not(feature = "trace"))]
@@ -217,12 +223,23 @@ async fn decode_payload(
                         Ok(ni) => {
                             let row: Devicemetric =
                                 ni.to_row(Oid(pkt.id), Oid(pkt.from), timestamp(pkt.rx_time));
-                            match row.insert::<Devicemetric>(pool, "DeviceMetrics").await {
+                            match row.insert(pool).await {
                                 Ok(_) => log_msg(
                                     "Inserted 1 row into DeviceMetrics table",
                                     log::Level::Info,
                                 ),
-                                Err(e) => log_msg(format!("{e}").as_str(), log::Level::Error),
+                                Err(_) => {
+                                    // Try updating the row
+                                    match row.update(pool).await {
+                                        Ok(_) => log_msg(
+                                            "Updated 1 row in NodeInfo table",
+                                            log::Level::Info,
+                                        ),
+                                        Err(e) => {
+                                            log_msg(format!("{e}").as_str(), log::Level::Error);
+                                        }
+                                    }
+                                }
                             }
                         }
                         Err(e) => log_msg(format!("{e}").as_str(), log::Level::Warn),
@@ -236,7 +253,7 @@ async fn decode_payload(
                         Ok(ni) => {
                             let row: Neighborinfo =
                                 ni.to_row(Oid(pkt.id), Oid(pkt.from), timestamp(pkt.rx_time));
-                            match row.insert::<Neighborinfo>(pool, "NeighborInfo").await {
+                            match row.insert(pool).await {
                                 Ok(_) => log_msg(
                                     "Inserted 1 row into NeighborInfo table",
                                     log::Level::Info,
@@ -481,7 +498,7 @@ async fn decode_telemetry(pkt: &MeshPacket, tm: Telemetry, pool: &Pool<Postgres>
             Variant::DeviceMetrics(device_metrics) => {
                 let row: Devicemetric =
                     device_metrics.to_row(Oid(pkt.id), Oid(pkt.from), timestamp(tm.time));
-                match row.insert::<Devicemetric>(pool, "DeviceMetrics").await {
+                match row.insert(pool).await {
                     Ok(_) => log_msg("Inserted 1 row into DeviceMetrics table", log::Level::Info),
                     Err(e) => log_msg(format!("{e}").as_str(), log::Level::Error),
                 }
@@ -489,7 +506,7 @@ async fn decode_telemetry(pkt: &MeshPacket, tm: Telemetry, pool: &Pool<Postgres>
             Variant::EnvironmentMetrics(environment_metrics) => {
                 let row: Environmentmetric =
                     environment_metrics.to_row(Oid(pkt.id), Oid(pkt.from), timestamp(tm.time));
-                match row.insert::<Devicemetric>(pool, "EnvironmentMetrics").await {
+                match row.insert(pool).await {
                     Ok(_) => log_msg(
                         "Inserted 1 row into EnvironmentMetrics table",
                         log::Level::Info,
@@ -500,7 +517,7 @@ async fn decode_telemetry(pkt: &MeshPacket, tm: Telemetry, pool: &Pool<Postgres>
             Variant::AirQualityMetrics(air_quality_metrics) => {
                 let row: Airqualitymetric =
                     air_quality_metrics.to_row(Oid(pkt.id), Oid(pkt.from), timestamp(tm.time));
-                match row.insert::<Devicemetric>(pool, "AirQualityMetrics").await {
+                match row.insert(pool).await {
                     Ok(_) => log_msg(
                         "Inserted 1 row into AirQualityMetrics table",
                         log::Level::Info,
@@ -511,7 +528,7 @@ async fn decode_telemetry(pkt: &MeshPacket, tm: Telemetry, pool: &Pool<Postgres>
             Variant::LocalStats(local_stats) => {
                 let row: Localstat =
                     local_stats.to_row(Oid(pkt.id), Oid(pkt.from), timestamp(tm.time));
-                match row.insert::<Devicemetric>(pool, "LocalStats").await {
+                match row.insert(pool).await {
                     Ok(_) => log_msg("Inserted 1 row into LocalStats table", log::Level::Info),
                     Err(e) => log_msg(format!("{e}").as_str(), log::Level::Error),
                 }
@@ -519,7 +536,7 @@ async fn decode_telemetry(pkt: &MeshPacket, tm: Telemetry, pool: &Pool<Postgres>
             Variant::ErrorMetrics(error_metrics) => {
                 let row: Errormetric =
                     error_metrics.to_row(Oid(pkt.id), Oid(pkt.from), timestamp(tm.time));
-                match row.insert::<Devicemetric>(pool, "ErrorMetrics").await {
+                match row.insert(pool).await {
                     Ok(_) => log_msg("Inserted 1 row into ErrorMetrics table", log::Level::Info),
                     Err(e) => log_msg(format!("{e}").as_str(), log::Level::Error),
                 }

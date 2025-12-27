@@ -1,0 +1,18 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\nUPDATE NodeInfo\nSET\n  longname = $2,\n  shortname = $3,\n  hwmodel = $4,\n  deployment_location = $5\nWHERE\n  node_id = $1\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Oid",
+        "Text",
+        "Text",
+        "Int4",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "aa593b8ae0064ea6f3aa9467275d689a18052a45dd2eaffc516fba5f3eb9519b"
+}

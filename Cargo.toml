@@ -39,14 +39,13 @@ serde_json = { version = "1.0.140", default-features = false, features = [
 signal-hook = { version = "0.3.18" }
 # Postgres connection
 sqlx = { version = "0.8", default-features = false, features = ["postgres", "chrono", "macros", "json", "rust_decimal"]}
-sqlxinsert = { version = "0.12", default-features = false, features = ["postgres"]}
 # Release logger
 syslog = { version = "7.0.0", optional = true }
 # Async runtime with tokio::main macro
 tokio = { version = "1.43.0", features = ["macros"] }
 
 [features]
-default = ["debug", "native-tls", "trace"]
+default = ["debug", "native-tls"]
 perf = []
 
 # stdout/logging config:

@@ -5,6 +5,7 @@ use crate::{
     },
     util::config::DEPLOYMENT_LOCATION,
 };
+use anyhow::{Error, Result};
 use chrono::{NaiveDateTime, Utc};
 use meshtastic::protobufs::{
     AirQualityMetrics, DeviceMetrics, EnvironmentMetrics, ErrorMetrics, LocalStats, Neighbor,
@@ -12,7 +13,16 @@ use meshtastic::protobufs::{
 };
 use serde::Serialize;
 use serde_json::{Value, json};
-use sqlx::postgres::types::Oid;
+use sqlx::{
+    Pool, Postgres,
+    postgres::{PgQueryResult, types::Oid},
+};
+
+/// Operations on the Database
+pub(crate) trait DbOps {
+    async fn insert(&self, pool: &Pool<Postgres>) -> Result<PgQueryResult, Error>;
+    async fn update(&self, pool: &Pool<Postgres>) -> Result<PgQueryResult, Error>;
+}
 
 /// Create a timestamp from a given epoch `u32`
 ///
