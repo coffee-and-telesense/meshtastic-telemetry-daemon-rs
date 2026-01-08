@@ -74,70 +74,70 @@ pub async fn process_packet(
             from_radio::PayloadVariant::MyInfo(my_node_info) => {
                 log_msg(
                     format!("Received MyInfo packet: {my_node_info:?}").as_str(),
-                    log::Level::Trace,
+                    log::Level::Info,
                 );
             }
             #[cfg(feature = "trace")]
             from_radio::PayloadVariant::Config(config) => {
                 log_msg(
                     format!("Received config packet: {config:?}").as_str(),
-                    log::Level::Trace,
+                    log::Level::Info,
                 );
             }
             #[cfg(feature = "trace")]
             from_radio::PayloadVariant::LogRecord(log_record) => {
                 log_msg(
                     format!("Received log_record packet: {log_record:?}").as_str(),
-                    log::Level::Trace,
+                    log::Level::Info,
                 );
             }
             #[cfg(feature = "trace")]
             from_radio::PayloadVariant::ConfigCompleteId(id) => {
                 log_msg(
                     format!("Received config {id} complete packet over serial").as_str(),
-                    log::Level::Trace,
+                    log::Level::Info,
                 );
             }
             #[cfg(feature = "trace")]
             from_radio::PayloadVariant::Rebooted(rbt) => {
                 log_msg(
                     format!("Received rebooted packet: {rbt}").as_str(),
-                    log::Level::Trace,
+                    log::Level::Info,
                 );
             }
             #[cfg(feature = "trace")]
             from_radio::PayloadVariant::ModuleConfig(module_config) => {
                 log_msg(
                     format!("Received module_config packet: {module_config:?}").as_str(),
-                    log::Level::Trace,
+                    log::Level::Info,
                 );
             }
             #[cfg(feature = "trace")]
             from_radio::PayloadVariant::Channel(channel) => {
                 log_msg(
                     format!("Received channel packet: {channel:?}").as_str(),
-                    log::Level::Trace,
+                    log::Level::Info,
                 );
             }
             #[cfg(feature = "trace")]
             from_radio::PayloadVariant::QueueStatus(queue_status) => {
                 log_msg(
                     format!("Received queue_status packet: {queue_status:?}").as_str(),
-                    log::Level::Trace,
+                    log::Level::Info,
                 );
             }
             #[cfg(feature = "trace")]
             from_radio::PayloadVariant::XmodemPacket(xmodem) => {
                 log_msg(
                     format!("Received xmodem packet: {xmodem:?}").as_str(),
-                    log::Level::Trace,
+                    log::Level::Info,
                 );
             }
             #[cfg(feature = "trace")]
             from_radio::PayloadVariant::Metadata(device_metadata) => {
                 log_msg(
                     format!("Received device_metadata packet: {device_metadata:?}").as_str(),
-                    log::Level::Trace,
+                    log::Level::Info,
                 );
             }
             #[cfg(feature = "trace")]
@@ -147,14 +147,14 @@ pub async fn process_packet(
                         "Received mqtt_client_proxy_message packet: {mqtt_client_proxy_message:?}"
                     )
                     .as_str(),
-                    log::Level::Trace,
+                    log::Level::Info,
                 );
             }
             #[cfg(feature = "trace")]
             from_radio::PayloadVariant::FileInfo(file_info) => {
                 log_msg(
                     format!("Received file_info packet: {file_info:?}").as_str(),
-                    log::Level::Trace,
+                    log::Level::Info,
                 );
             }
             #[cfg(feature = "trace")]
@@ -162,14 +162,14 @@ pub async fn process_packet(
                 log_msg(
                     format!("Received client_notification packet: {client_notification:?}")
                         .as_str(),
-                    log::Level::Trace,
+                    log::Level::Info,
                 );
             }
             #[cfg(feature = "trace")]
             from_radio::PayloadVariant::DeviceuiConfig(device_ui_config) => {
                 log_msg(
                     format!("Received device_ui_config packet: {device_ui_config:?}").as_str(),
-                    log::Level::Trace,
+                    log::Level::Info,
                 );
             }
         }
@@ -189,7 +189,7 @@ pub async fn process_packet(
 fn decode_and_trace<P: Debug>(ptype: &str, payload: P) {
     log_msg(
         format!("Received {ptype} packet: {payload:?}").as_str(),
-        log::Level::Trace,
+        log::Level::Info,
     );
 }
 
@@ -264,7 +264,7 @@ async fn decode_payload(
                         Err(e) => log_msg(format!("{e}").as_str(), log::Level::Warn),
                     },
                     #[cfg(not(feature = "trace"))]
-                    _ => log_msg("Received untracked payload", log::Level::Trace),
+                    _ => log_msg("Received untracked payload", log::Level::Info),
                     // The others are nice for tracing during development
                     #[cfg(feature = "trace")]
                     PortNum::UnknownApp => {
@@ -485,7 +485,7 @@ async fn decode_payload(
             mesh_packet::PayloadVariant::Encrypted(items) => {
                 log_msg(
                     format!("Received encrypted packet: {items:?}").as_str(),
-                    log::Level::Trace,
+                    log::Level::Info,
                 );
             }
         }
@@ -547,14 +547,14 @@ async fn decode_telemetry(pkt: &MeshPacket, tm: Telemetry, pool: &Pool<Postgres>
             Variant::PowerMetrics(power_metrics) => {
                 log_msg(
                     format!("Received PowerMetrics packet: {power_metrics:?}").as_str(),
-                    log::Level::Trace,
+                    log::Level::Info,
                 );
             }
             #[cfg(feature = "trace")]
             Variant::HealthMetrics(health_metrics) => {
                 log_msg(
                     format!("Received HealthMetrics packet: {health_metrics:?}").as_str(),
-                    log::Level::Trace,
+                    log::Level::Info,
                 );
             }
         }
