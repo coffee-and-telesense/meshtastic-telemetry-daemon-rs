@@ -1,6 +1,7 @@
 use crate::dto::types::DbOps;
 use anyhow::Context;
 
+#[allow(clippy::too_many_arguments)]
 #[derive(derive_new::new, sqlx::FromRow)]
 pub struct Errormetric {
     msg_id: sqlx::postgres::types::Oid,
