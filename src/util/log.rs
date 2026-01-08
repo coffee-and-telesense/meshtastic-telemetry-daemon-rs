@@ -67,3 +67,15 @@ pub(crate) fn log_msg(msg: &str, lvl: Level) {
         Level::Trace => trace!("{}{}", now.format("%Y-%m-%d %H:%M:%S - "), msg),
     }
 }
+
+/// Performance metrics with regular printing for debugging
+#[cfg(feature = "debug")]
+#[inline]
+pub(crate) fn log_perf() {
+    use tokio::runtime::Handle;
+    let metrics = Handle::current().metrics();
+    let nw = metrics.num_workers();
+    let nat = metrics.num_alive_tasks();
+    let gqd = metrics.global_queue_depth();
+    println!("RUNTIME PERF: {nw} workers used, {nat} alive tasks, {gqd} global queue depth");
+}

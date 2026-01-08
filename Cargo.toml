@@ -45,7 +45,6 @@ tokio = { version = "1.43", features = ["macros"] }
 
 [features]
 default = ["debug", "native-tls"]
-perf = []
 
 # stdout/logging config:
 debug = ["dep:colog", "anyhow/std", "anyhow/backtrace"]

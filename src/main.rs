@@ -15,7 +15,7 @@ extern crate log;
 
 use crate::dto::packet_handler::process_packet;
 use crate::util::config::DEPLOYMENT_LOCATION;
-use crate::util::log::log_msg;
+use crate::util::log::{log_msg, log_perf};
 use crate::util::{config::Settings, log::set_logger, state::GatewayState};
 use anyhow::{Context, Result};
 use meshtastic::api::StreamApi;
@@ -105,6 +105,10 @@ async fn rt_main(settings: Settings<'static>) -> Result<(), anyhow::Error> {
         && let Some(from_radio) = decoded_listener.recv().await
     {
         process_packet(&from_radio, &state, &postgres_db).await;
+        #[cfg(feature = "debug")]
+        {
+            log_perf();
+        }
     }
 
     // Called when either the radio is disconnected or the daemon recieves
