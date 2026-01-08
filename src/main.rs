@@ -16,11 +16,7 @@ extern crate log;
 #[cfg(feature = "postgres")]
 use crate::db::connection::update_metrics;
 use crate::dto::packet_handler;
-use crate::util::{
-    config::Settings,
-    log::set_logger,
-    types::{GatewayState, Pkt},
-};
+use crate::util::{config::Settings, log::set_logger, state::GatewayState, types::Pkt};
 use anyhow::{Context, Result};
 use chrono::Local;
 use db::connection::proactive_ninfo_insert;
@@ -61,11 +57,11 @@ fn main() -> std::result::Result<(), anyhow::Error> {
         .max_blocking_threads(settings.async_runtime.max_blocking_threads as usize)
         .thread_stack_size(settings.async_runtime.thread_stack_size as usize)
         .build()
-        .unwrap()
+        .with_context(|| "Failed to build tokio multithreaded runtime")?
         .block_on(async { rt_main(settings).await })
 }
 
-async fn rt_main(settings: Settings) -> Result<(), anyhow::Error> {
+async fn rt_main(settings: Settings<'static>) -> Result<(), anyhow::Error> {
     // Create the gateway's state object
     let state = Arc::new(Mutex::new(GatewayState::new()));
 
@@ -79,8 +75,9 @@ async fn rt_main(settings: Settings) -> Result<(), anyhow::Error> {
     // Connect to serial meshtastic
     let stream_api = StreamApi::new();
     let entered_port = settings.get_serial_port();
-    let serial_stream = utils::stream::build_serial_stream(entered_port.clone(), None, None, None)
-        .with_context(|| format!("Failed to build serial stream for {entered_port}"))?;
+    let serial_stream =
+        utils::stream::build_serial_stream(entered_port.to_string(), None, None, None)
+            .with_context(|| format!("Failed to build serial stream for {entered_port}"))?;
     let (mut decoded_listener, stream_api) = stream_api.connect(serial_stream).await;
 
     let config_id = utils::generate_rand_id();
@@ -118,11 +115,15 @@ async fn rt_main(settings: Settings) -> Result<(), anyhow::Error> {
             // still exist within the more elegant solution.
             tx.send(packet_handler::process_packet(&decoded, &s))
                 .await
-                .unwrap();
+                .expect("Failed to process a packet on the tx channel");
         });
-        if let Some(pkt) = rx.recv().await.unwrap() {
-            match pkt {
-                Pkt::Mesh(ref mp) => {
+        if let Some(pkt) = rx
+            .recv()
+            .await
+            .with_context(|| "Failed to receive a packet on the rx channel")?
+        {
+            match pkt.as_ref() {
+                Pkt::Mesh(mp) => {
                     // Count received packets in debug builds for periodic reporting in logs
                     #[cfg(feature = "debug")]
                     if let Ok(mut lock) = state.clone().lock() {
@@ -144,7 +145,10 @@ async fn rt_main(settings: Settings) -> Result<(), anyhow::Error> {
                     }
                     // Print packets if enabled
                     #[cfg(feature = "print-packets")]
-                    println!("{}", to_string_pretty(&mp).unwrap());
+                    println!(
+                        "{}",
+                        to_string_pretty(&mp).expect("Failed to pretty pint a packet")
+                    );
                     // Before we insert into postgres, we should proactively check that the foreign
                     // key constraint is satisfied and if not we then insert a new nodeinfo row
                     if let Some(p) = &mp.payload {
@@ -202,9 +206,12 @@ async fn rt_main(settings: Settings) -> Result<(), anyhow::Error> {
                         }
                     }
                 }
-                Pkt::NInfo(ref ni) => {
+                Pkt::NInfo(ni) => {
                     #[cfg(feature = "print-packets")]
-                    println!("{}", to_string_pretty(&ni).unwrap());
+                    println!(
+                        "{}",
+                        to_string_pretty(&ni).expect("Failed to pretty pint a packet")
+                    );
                     let fake = state
                         .lock()
                         .expect("Failed to acquire lock for GatewayState in main()")
@@ -232,9 +239,12 @@ async fn rt_main(settings: Settings) -> Result<(), anyhow::Error> {
                         }
                     }
                 }
-                Pkt::MyNodeInfo(ref mi) => {
+                Pkt::MyNodeInfo(mi) => {
                     #[cfg(feature = "print-packets")]
-                    println!("{}", to_string_pretty(&mi).unwrap());
+                    println!(
+                        "{}",
+                        to_string_pretty(&mi).expect("Failed to pretty pint a packet")
+                    );
                     #[cfg(feature = "debug")]
                     state
                         .clone()

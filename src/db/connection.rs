@@ -3,7 +3,8 @@ use crate::{
         airqualitymetrics, devicemetrics, environmentmetrics, errormetrics, localstats,
         neighborinfo, nodeinfo,
     },
-    util::types::{GatewayState, Mesh, NInfo, Names, Payload, Pkt, Telem},
+    util::state::GatewayState,
+    util::types::{Mesh, NInfo, Names, Payload, Pkt, Telem},
 };
 use anyhow::{Context, Result};
 use chrono::Utc;
@@ -40,31 +41,31 @@ pub(crate) async fn update_metrics(
                 match p {
                     Payload::TelemetryApp(t) => match t {
                         Telem::Environment(data) => {
-                            environmentmetrics::Model::create_model(mp, data)
+                            environmentmetrics::Model::create_model(mp, &data)
                                 .insert_row(db)
                                 .await
                         }
 
                         Telem::AirQuality(data) => {
-                            airqualitymetrics::Model::create_model(mp, data)
+                            airqualitymetrics::Model::create_model(mp, &data)
                                 .insert_row(db)
                                 .await
                         }
 
                         Telem::Device(data) => {
-                            devicemetrics::Model::create_dm_model(mp, data)
+                            devicemetrics::Model::create_dm_model(mp, &data)
                                 .insert_row(db)
                                 .await
                         }
 
                         Telem::Local(data) => {
-                            localstats::Model::create_model(mp, data)
+                            localstats::Model::create_model(mp, &data)
                                 .insert_row(db)
                                 .await
                         }
 
                         Telem::Error(data) => {
-                            errormetrics::Model::create_model(mp, data)
+                            errormetrics::Model::create_model(mp, &data)
                                 .insert_row(db)
                                 .await
                         }
@@ -97,8 +98,7 @@ pub(crate) async fn update_metrics(
                             via_mqtt: mp.via_mqtt,
                             hops_away: None,
                         };
-                        return node_info_conflict(ni, Some(mp.clone()), db, Some(mp.id), dep_loc)
-                            .await;
+                        return node_info_conflict(&ni, Some(mp), db, Some(mp.id), dep_loc).await;
                     }
 
                     Payload::PositionApp(data) => {
@@ -123,7 +123,7 @@ pub(crate) async fn update_metrics(
                     }
 
                     Payload::NeighborinfoApp(data) => {
-                        neighborinfo::Model::create_model(mp, data)
+                        neighborinfo::Model::create_model(mp, &data)
                             .insert_row(db)
                             .await
                     }
@@ -164,7 +164,7 @@ pub(crate) async fn update_metrics(
             // nodes in the nodedb of the connected Meshtastic node that is our network bridge.
             // These packets possibly have user info, in which case we treat it the same as those
             // from the mesh and pass it to the conflict resoltuion function.
-            return node_info_conflict(ni.clone(), None, db, fake_msg_id, dep_loc).await;
+            return node_info_conflict(ni, None, db, fake_msg_id, dep_loc).await;
         }
 
         Pkt::MyNodeInfo(_) => {
@@ -194,7 +194,7 @@ pub(crate) async fn proactive_ninfo_insert(
     pkt: &Mesh,
     db: &DatabaseConnection,
     dep_loc: &str,
-    state: Arc<Mutex<GatewayState>>,
+    state: Arc<Mutex<GatewayState<'_>>>,
 ) -> Result<u32> {
     // Check if we already know this node
     if state
@@ -219,7 +219,7 @@ pub(crate) async fn proactive_ninfo_insert(
         state
             .lock()
             .expect("Failed to acquire lock for GatewayState in proactive_node_insert()")
-            .insert(pkt.from, fake_user.clone());
+            .insert(pkt.from, &fake_user);
         // Now we insert into postgres
         let fake_msg_id = state
             .lock()
@@ -239,7 +239,7 @@ pub(crate) async fn proactive_ninfo_insert(
         };
         // Insert it as if it came over serial
         info!("Proactively inserting a new node info and device metrics row");
-        node_info_conflict(fake_ni, None, db, Some(u32::from(fake_msg_id)), dep_loc).await
+        node_info_conflict(&fake_ni, None, db, Some(u32::from(fake_msg_id)), dep_loc).await
     } else {
         // We already know about it so return 0 row changes
         info!("Node already known, skipping proactive inserts");
@@ -262,8 +262,8 @@ pub(crate) async fn proactive_ninfo_insert(
 /// # Returns
 /// * Result with the number of rows inserted/updated
 async fn node_info_conflict(
-    ni: NInfo,
-    pkt: Option<Mesh>,
+    ni: &NInfo,
+    pkt: Option<&Mesh>,
     db: &DatabaseConnection,
     fake_msg_id: Option<u32>,
     dep_loc: &str,
@@ -405,7 +405,7 @@ async fn node_info_conflict(
 /// This function will panic if no `fake_msg_id` was provided or if the user data like longname are
 /// None values.
 async fn new_node(
-    ni: NInfo,
+    ni: &NInfo,
     db: &DatabaseConnection,
     fake_msg_id: Option<u32>,
     dep_loc: &str,
