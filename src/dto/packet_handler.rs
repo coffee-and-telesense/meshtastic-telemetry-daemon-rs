@@ -210,7 +210,10 @@ async fn decode_payload(
     state: &Arc<Mutex<GatewayState<'_>>>,
     pool: &Pool<Postgres>,
 ) {
-    if let Some(payload) = &pkt.payload_variant {
+    // Check if the packet is on the telemetry channel before decoding a payload
+    if pkt.channel == 0
+        && let Some(payload) = &pkt.payload_variant
+    {
         match payload {
             mesh_packet::PayloadVariant::Decoded(data) => {
                 match data.portnum() {
