@@ -2,5 +2,5 @@
 pub(crate) mod config;
 /// Set logger for CLI module
 pub(crate) mod log;
-/// Common types for the crate
-pub(crate) mod types;
+/// Local state of the program (necessary evil due to requests for features)
+pub(crate) mod state;

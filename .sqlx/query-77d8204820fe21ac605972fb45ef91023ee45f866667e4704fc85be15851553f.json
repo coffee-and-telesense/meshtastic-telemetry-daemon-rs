@@ -1,0 +1,30 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\nUPDATE AirQualityMetrics\nSET\n  node_id = $2,\n  time = $3,\n  pm10standard = $4,\n  pm25standard = $5,\n  pm100standard = $6,\n  pm10environmental = $7,\n  pm25environmental = $8,\n  pm100environmental = $9,\n  particles03um = $10,\n  particles05um = $11,\n  particles10um = $12,\n  particles25um = $13,\n  particles50um = $14,\n  particles100um = $15,\n  co2 = $16,\n  sensor_type = $17\nWHERE\n  msg_id = $1\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Oid",
+        "Oid",
+        "Timestamp",
+        "Oid",
+        "Oid",
+        "Oid",
+        "Oid",
+        "Oid",
+        "Oid",
+        "Oid",
+        "Oid",
+        "Oid",
+        "Oid",
+        "Oid",
+        "Oid",
+        "Oid",
+        "Int4"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "77d8204820fe21ac605972fb45ef91023ee45f866667e4704fc85be15851553f"
+}
