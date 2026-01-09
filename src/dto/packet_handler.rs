@@ -75,15 +75,20 @@ pub async fn process_packet(
                         .insert(node_info.num, user);
                 }
             }
-            #[cfg(not(feature = "trace"))]
-            _ => (),
-            #[cfg(feature = "trace")]
             from_radio::PayloadVariant::MyInfo(my_node_info) => {
+                #[cfg(feature = "trace")]
                 log_msg(
                     format!("Received MyInfo packet: {my_node_info:?}").as_str(),
                     log::Level::Info,
                 );
+                // Indicate the serial connection for the local state from this packet
+                state
+                    .lock()
+                    .expect("Failed to acquire lock for GatewayState in process_packet()")
+                    .set_serial_number(my_node_info.my_node_num);
             }
+            #[cfg(not(feature = "trace"))]
+            _ => (),
             #[cfg(feature = "trace")]
             from_radio::PayloadVariant::Config(config) => {
                 log_msg(
