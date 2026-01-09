@@ -107,7 +107,17 @@ async fn rt_main(settings: Settings<'static>) -> Result<(), anyhow::Error> {
         process_packet(&from_radio, &state, &postgres_db).await;
         #[cfg(feature = "debug")]
         {
+            // log performance metrics
             log_perf();
+            // log state messages
+            log_msg(
+                state
+                    .lock()
+                    .expect("Failed to acquire lock for GatewayState in main()")
+                    .format_rx_counts()
+                    .as_ref(),
+                log::Level::Info,
+            );
         }
     }
 

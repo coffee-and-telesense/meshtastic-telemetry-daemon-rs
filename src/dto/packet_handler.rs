@@ -67,6 +67,13 @@ pub async fn process_packet(
                         }
                     }
                 }
+                // insert into GatewayState
+                if let Some(user) = &node_info.user {
+                    state
+                        .lock()
+                        .expect("Failed to acquire lock for GatewayState in process_packet()")
+                        .insert(node_info.num, user);
+                }
             }
             #[cfg(not(feature = "trace"))]
             _ => (),
@@ -210,6 +217,11 @@ async fn decode_payload(
     state: &Arc<Mutex<GatewayState<'_>>>,
     pool: &Pool<Postgres>,
 ) {
+    // Count received packets in debug builds for period reporting in logs
+    state
+        .lock()
+        .expect("Failed to acquire lock for GatewayState in decode_payload()")
+        .increment_rx_count(pkt.from);
     // Check if the packet is on the telemetry channel before decoding a payload
     if pkt.channel == 0
         && let Some(payload) = &pkt.payload_variant
@@ -224,6 +236,12 @@ async fn decode_payload(
                     },
                     PortNum::NodeinfoApp => match NodeInfo::decode(data.payload.as_slice()) {
                         Ok(ni) => {
+                            // insert into GatewayState
+                            #[cfg(feature = "debug")]
+                            if let Some(user) = &ni.user {
+                                state.lock().expect("Failed to acquire lock for GatewayState in decode_payload()").insert(ni.num, user);
+                            }
+                            // insert into db
                             let row: Devicemetric =
                                 ni.to_row(Oid(pkt.id), Oid(pkt.from), timestamp(pkt.rx_time));
                             match row.insert(pool).await {
