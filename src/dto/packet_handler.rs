@@ -55,32 +55,30 @@ pub async fn process_packet(
                 decode_payload(mesh_packet, state, pool).await;
             }
             from_radio::PayloadVariant::NodeInfo(node_info) => {
-                // set user arg to something non null for the type conversion
-                let mut ni = node_info.to_owned();
-                if ni.user.is_none() {
-                    ni.user = state
-                        .lock()
-                        .expect("Failed to acquire lock for GatewayState in process_packet()")
-                        .retrieve_user(node_info.num);
-                }
-                // none of the arguments are used, so do dummy args
-                let row: Nodeinfo = (&ni).to_row(Oid(0), Oid(ni.num), timestamp(0));
-                match row.insert(pool).await {
-                    Ok(_) => log_msg("Inserted 1 row into NodeInfo table", log::Level::Info),
-                    Err(_) => {
-                        // Try updating the row
-                        match row.update(pool).await {
-                            Ok(_) => log_msg("Updated 1 row in NodeInfo table", log::Level::Info),
-                            Err(e) => log_msg(format!("{e}").as_str(), log::Level::Error),
+                // only insert if user is some
+                if node_info.user.is_some() {
+                    // none of the arguments are used, so do dummy args
+                    let row: Nodeinfo =
+                        (&node_info).to_row(Oid(0), Oid(node_info.num), timestamp(0));
+                    match row.insert(pool).await {
+                        Ok(_) => log_msg("Inserted 1 row into NodeInfo table", log::Level::Info),
+                        Err(_) => {
+                            // Try updating the row
+                            match row.update(pool).await {
+                                Ok(_) => {
+                                    log_msg("Updated 1 row in NodeInfo table", log::Level::Info)
+                                }
+                                Err(e) => log_msg(format!("{e}").as_str(), log::Level::Error),
+                            }
                         }
                     }
-                }
-                // insert into GatewayState
-                if let Some(user) = &ni.user {
-                    state
-                        .lock()
-                        .expect("Failed to acquire lock for GatewayState in process_packet()")
-                        .insert(node_info.num, user);
+                    // insert into GatewayState
+                    if let Some(user) = &node_info.user {
+                        state
+                            .lock()
+                            .expect("Failed to acquire lock for GatewayState in process_packet()")
+                            .insert(node_info.num, user);
+                    }
                 }
             }
             from_radio::PayloadVariant::MyInfo(my_node_info) => {
