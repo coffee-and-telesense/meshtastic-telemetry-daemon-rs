@@ -58,9 +58,11 @@ async fn rt_main(settings: Settings<'static>) -> Result<(), anyhow::Error> {
     let state = Arc::new(Mutex::new(GatewayState::new()));
 
     // Create postgresql connection
-    let postgres_db = settings
-        .setup_postgres()
-        .with_context(|| "Failed to connect to postgresql database")?;
+    let postgres_db = Arc::new(
+        settings
+            .setup_postgres()
+            .with_context(|| "Failed to connect to postgresql database")?,
+    );
 
     // Connect to serial meshtastic
     let stream_api = StreamApi::new();
@@ -104,7 +106,14 @@ async fn rt_main(settings: Settings<'static>) -> Result<(), anyhow::Error> {
     while !term.load(Ordering::Relaxed)
         && let Some(from_radio) = decoded_listener.recv().await
     {
-        process_packet(&from_radio, &state, &postgres_db).await;
+        // Arc clones of state and postgres_db, then spawn a worker thread.
+        let s = state.clone();
+        let db = postgres_db.clone();
+
+        let join = tokio::spawn(async move {
+            process_packet(&from_radio, &s, &db).await;
+        });
+
         #[cfg(feature = "debug")]
         {
             // log performance metrics
