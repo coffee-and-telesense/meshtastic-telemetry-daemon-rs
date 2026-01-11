@@ -16,8 +16,8 @@ use meshtastic::protobufs::{
 use meshtastic::{
     Message,
     protobufs::{
-        FromRadio, MeshPacket, NeighborInfo, NodeInfo, PortNum, Position, Telemetry, from_radio,
-        mesh_packet, telemetry::Variant,
+        FromRadio, MeshPacket, NeighborInfo, NodeInfo, PortNum, Position, Telemetry, User,
+        from_radio, mesh_packet, telemetry::Variant,
     },
 };
 use sqlx::{Pool, Postgres, postgres::types::Oid};
@@ -55,8 +55,16 @@ pub async fn process_packet(
                 decode_payload(mesh_packet, state, pool).await;
             }
             from_radio::PayloadVariant::NodeInfo(node_info) => {
+                // set user arg to something non null for the type conversion
+                let mut ni = node_info.to_owned();
+                if ni.user.is_none() {
+                    ni.user = state
+                        .lock()
+                        .expect("Failed to acquire lock for GatewayState in process_packet()")
+                        .retrieve_user(node_info.num);
+                }
                 // none of the arguments are used, so do dummy args
-                let row: Nodeinfo = node_info.to_row(Oid(0), Oid(node_info.num), timestamp(0));
+                let row: Nodeinfo = (&ni).to_row(Oid(0), Oid(ni.num), timestamp(0));
                 match row.insert(pool).await {
                     Ok(_) => log_msg("Inserted 1 row into NodeInfo table", log::Level::Info),
                     Err(_) => {
@@ -68,7 +76,7 @@ pub async fn process_packet(
                     }
                 }
                 // insert into GatewayState
-                if let Some(user) = &node_info.user {
+                if let Some(user) = &ni.user {
                     state
                         .lock()
                         .expect("Failed to acquire lock for GatewayState in process_packet()")

@@ -114,17 +114,13 @@ async fn rt_main(settings: Settings<'static>) -> Result<(), anyhow::Error> {
     while !term.load(Ordering::Relaxed)
         && let Some(from_radio) = decoded_listener.recv().await
     {
-        let tx_new = tx.clone();
-        let join = tokio::spawn(async move {
-            match tx_new.send(Box::new(from_radio)).await {
-                Ok(()) => (),
-                Err(e) => log_msg(
-                    &format!("Error sending from_radio packet {e}"),
-                    log::Level::Warn,
-                ),
-            }
-        })
-        .await;
+        match tx.send(Box::new(from_radio)).await {
+            Ok(()) => (),
+            Err(e) => log_msg(
+                &format!("Error sending from_radio packet {e}"),
+                log::Level::Warn,
+            ),
+        }
 
         #[cfg(feature = "debug")]
         {
@@ -142,14 +138,15 @@ async fn rt_main(settings: Settings<'static>) -> Result<(), anyhow::Error> {
         }
     }
 
+    // Called when either the radio is disconnected or the daemon recieves
+    // a SIGTERM or SIGKILL signal from systemctl or by other means
+    let _stream_api = stream_api.disconnect().await?;
+
+    // Close the packet_handler worker now that the serial is disconnected
     match pkt_handler.await {
         Ok(()) => (),
         Err(e) => log_msg(&format!("Error joining pkt_handler {e}"), log::Level::Warn),
     }
-
-    // Called when either the radio is disconnected or the daemon recieves
-    // a SIGTERM or SIGKILL signal from systemctl or by other means
-    let _stream_api = stream_api.disconnect().await?;
 
     Ok(())
 }

@@ -135,6 +135,22 @@ impl<'a> GatewayState<'a> {
         self.serial_node = num;
     }
 
+    pub fn retrieve_user(&mut self, node_id: u32) -> Option<User> {
+        if let Some(node) = self.nodes.get_mut(&node_id) {
+            return Some(User {
+                id: node.id.to_string(),
+                long_name: node.long_name.to_string(),
+                short_name: node.short_name.to_string(),
+                macaddr: vec![],
+                hw_model: node.hw_model,
+                is_licensed: false,
+                role: 0,
+                public_key: vec![],
+            });
+        }
+        None
+    }
+
     /// Insert a new node into the state
     ///
     /// Possibly updating our local state if any of the `Node` struct items have changed
