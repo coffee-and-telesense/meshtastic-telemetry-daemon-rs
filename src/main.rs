@@ -115,13 +115,16 @@ async fn rt_main(settings: Settings<'static>) -> Result<(), anyhow::Error> {
         && let Some(from_radio) = decoded_listener.recv().await
     {
         let tx_new = tx.clone();
-        match tx_new.send(Box::new(from_radio)).await {
-            Ok(()) => (),
-            Err(e) => log_msg(
-                &format!("Error sending from_radio packet {e}"),
-                log::Level::Warn,
-            ),
-        }
+        let join = tokio::spawn(async move {
+            match tx_new.send(Box::new(from_radio)).await {
+                Ok(()) => (),
+                Err(e) => log_msg(
+                    &format!("Error sending from_radio packet {e}"),
+                    log::Level::Warn,
+                ),
+            }
+        })
+        .await;
 
         #[cfg(feature = "debug")]
         {
