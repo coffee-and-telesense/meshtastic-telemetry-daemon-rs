@@ -69,14 +69,15 @@ alpine = ["syslog", "native-tls"]
 beaglebone = ["rustls", "debug"]
 
 [profile.dev]
-debug = 1
+debug = 1 # thin debug info
 strip = false
 
 # Separate profile for profiling code
 [profile.profiling]
-inherits = "release"
-debug = true
+inherits = "dev"
+debug = 2 # full debug info
 strip = false
+opt-level = 1
 
 # This release profile was found in discussions when compiling for mips platforms
 # But it probably works on x86 and ARM devices as well, we will see
