@@ -104,21 +104,23 @@ impl<'a> GatewayState<'a> {
     pub fn format_rx_counts(&self) -> Cow<'_, str> {
         let mut rv: String = format!("Counts:\n").to_owned();
         for (id, node) in &self.nodes {
-            rv.push_str(
-                format!(
-                    "{}{} ({}) {} - {} packets received\n",
-                    if *id == self.serial_node {
-                        "*serial\t"
-                    } else {
-                        "\t\t"
-                    },
-                    node.long_name,
-                    node.id,
-                    id,
-                    node.rx_count
-                )
-                .as_str(),
-            );
+            if node.rx_count > 0 {
+                rv.push_str(
+                    format!(
+                        "{}{} ({}) {} - {} packets received\n",
+                        if *id == self.serial_node {
+                            "*serial\t"
+                        } else {
+                            "\t\t"
+                        },
+                        node.long_name,
+                        node.id,
+                        id,
+                        node.rx_count
+                    )
+                    .as_str(),
+                );
+            }
         }
         Cow::Owned(rv)
     }
