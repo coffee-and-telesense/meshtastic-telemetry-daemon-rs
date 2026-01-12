@@ -38,6 +38,9 @@ pub(crate) mod util;
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 fn main() -> std::result::Result<(), anyhow::Error> {
+    #[cfg(feature = "trace")]
+    console_subscriber::init();
+
     #[cfg(debug_assertions)]
     let settings = Settings::new("example_config.toml");
     #[cfg(not(debug_assertions))]
