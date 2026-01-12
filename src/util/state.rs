@@ -1,4 +1,3 @@
-#[cfg(feature = "debug")]
 use log::{info, warn};
 use meshtastic::protobufs::User;
 use std::{borrow::Cow, collections::HashMap};

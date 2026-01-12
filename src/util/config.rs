@@ -1,5 +1,4 @@
 use anyhow::{Context, Result};
-#[cfg(feature = "debug")]
 use log::{error, warn};
 use meshtastic::utils::stream::available_serial_ports;
 use serde::Deserialize;

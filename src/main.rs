@@ -15,7 +15,9 @@ extern crate log;
 
 use crate::dto::packet_handler::process_packet;
 use crate::util::config::DEPLOYMENT_LOCATION;
-use crate::util::log::{log_msg, log_perf};
+use crate::util::log::log_msg;
+#[cfg(feature = "debug")]
+use crate::util::log::log_perf;
 use crate::util::{config::Settings, log::set_logger, state::GatewayState};
 use anyhow::{Context, Result};
 use meshtastic::api::{ConnectedStreamApi, StreamApi};
