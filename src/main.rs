@@ -15,7 +15,6 @@ extern crate log;
 
 use crate::dto::packet_handler::process_packet;
 use crate::util::config::DEPLOYMENT_LOCATION;
-use crate::util::log::log_msg;
 #[cfg(feature = "debug")]
 use crate::util::log::log_perf;
 use crate::util::{config::Settings, log::set_logger, state::GatewayState};
@@ -40,6 +39,8 @@ const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 #[tokio::main(flavor = "multi_thread")]
 async fn main() -> Result<(), anyhow::Error> {
+    use crate::log_msg;
+
     #[cfg(feature = "trace")]
     console_subscriber::init();
 
@@ -86,10 +87,7 @@ async fn main() -> Result<(), anyhow::Error> {
         });
 
     // Output the version of the daemon to the logger
-    log_msg(
-        format!("Daemon version: {VERSION}").as_str(),
-        log::Level::Info,
-    );
+    log_msg!(log::Level::Info, "Daemon version: {VERSION}");
 
     // Spawn the task for handling packets
     let term = Arc::new(AtomicBool::new(false));
@@ -99,23 +97,20 @@ async fn main() -> Result<(), anyhow::Error> {
     .await
     {
         Ok(()) => (),
-        Err(e) => log_msg(
-            &format!("Error joining packet_handler() in main(): {e}"),
+        Err(e) => log_msg!(
             log::Level::Error,
+            "Error joining packet_handler() in main(): {e}"
         ),
     }
 
     // Called when either the radio is disconnected or the daemon recieves
     // a SIGTERM or SIGKILL signal from systemctl or by other means
     match stream_api.disconnect().await {
-        Ok(a) => log_msg(
-            &format!("StreamApi disconnected without error: {a:?}"),
+        Ok(a) => log_msg!(
             log::Level::Warn,
+            "StreamApi disconnected without error: {a:?}",
         ),
-        Err(e) => log_msg(
-            &format!("StreamApi disconnected with error: {e}"),
-            log::Level::Error,
-        ),
+        Err(e) => log_msg!(log::Level::Error, "StreamApi disconnected with error: {e}"),
     }
 
     Ok(())
@@ -128,14 +123,8 @@ async fn packet_handler(
     decoded_listener: &mut UnboundedReceiver<Box<FromRadio>>,
 ) {
     match signal_hook::flag::register(signal_hook::consts::SIGTERM, Arc::clone(term)) {
-        Ok(a) => log_msg(
-            &format!("Successfully registered SIGTERM: {a:?}"),
-            log::Level::Info,
-        ),
-        Err(e) => log_msg(
-            &format!("Failed to register SIGTERM: {e}"),
-            log::Level::Warn,
-        ),
+        Ok(a) => log_msg!(log::Level::Info, "Successfully registered SIGTERM: {a:?}"),
+        Err(e) => log_msg!(log::Level::Warn, "Failed to register SIGTERM: {e}"),
     }
 
     // This loop can be broken with ctrl+c, or by disconnecting
@@ -151,10 +140,9 @@ async fn packet_handler(
             // log performance metrics
             log_perf();
             // log state messages
-            log_msg(
-                state.lock().await.format_rx_counts().as_ref(),
-                log::Level::Info,
-            );
+            let lock = state.lock().await;
+            let st = lock.format_rx_counts();
+            log_msg!(log::Level::Info, "{st}");
         }
     }
 }

@@ -6,7 +6,8 @@ use crate::{
         },
         types::{DbOps, ToRow, timestamp},
     },
-    util::{log::log_msg, state::GatewayState},
+    log_msg,
+    util::state::GatewayState,
 };
 #[cfg(feature = "trace")]
 use meshtastic::protobufs::{
@@ -59,14 +60,14 @@ pub async fn process_packet(
                     let row: Nodeinfo =
                         (&node_info).to_row(Oid(0), Oid(node_info.num), timestamp(0));
                     match row.insert(pool).await {
-                        Ok(_) => log_msg("Inserted 1 row into NodeInfo table", log::Level::Info),
+                        Ok(_) => log_msg!(log::Level::Info, "Inserted 1 row into NodeInfo table"),
                         Err(_) => {
                             // Try updating the row
                             match row.update(pool).await {
                                 Ok(_) => {
-                                    log_msg("Updated 1 row in NodeInfo table", log::Level::Info)
+                                    log_msg!(log::Level::Info, "Updated 1 row in NodeInfo table")
                                 }
-                                Err(e) => log_msg(format!("{e}").as_str(), log::Level::Error),
+                                Err(e) => log_msg!(log::Level::Error, "{e}"),
                             }
                         }
                     }
@@ -79,10 +80,7 @@ pub async fn process_packet(
             }
             from_radio::PayloadVariant::MyInfo(my_node_info) => {
                 #[cfg(feature = "trace")]
-                log_msg(
-                    format!("Received MyInfo packet: {my_node_info:?}").as_str(),
-                    log::Level::Info,
-                );
+                log_msg!(log::Level::Info, "Received MyInfo packet: {my_node_info:?}");
                 // Indicate the serial connection for the local state from this packet
                 state
                     .lock()
@@ -93,97 +91,78 @@ pub async fn process_packet(
             _ => (),
             #[cfg(feature = "trace")]
             from_radio::PayloadVariant::Config(config) => {
-                log_msg(
-                    format!("Received config packet: {config:?}").as_str(),
-                    log::Level::Info,
-                );
+                log_msg!(log::Level::Info, "Received config packet: {config:?}");
             }
             #[cfg(feature = "trace")]
             from_radio::PayloadVariant::LogRecord(log_record) => {
-                log_msg(
-                    format!("Received log_record packet: {log_record:?}").as_str(),
+                log_msg!(
                     log::Level::Info,
+                    "Received log_record packet: {log_record:?}"
                 );
             }
             #[cfg(feature = "trace")]
             from_radio::PayloadVariant::ConfigCompleteId(id) => {
-                log_msg(
-                    format!("Received config {id} complete packet over serial").as_str(),
+                log_msg!(
                     log::Level::Info,
+                    "Received config {id} complete packet over serial"
                 );
             }
             #[cfg(feature = "trace")]
             from_radio::PayloadVariant::Rebooted(rbt) => {
-                log_msg(
-                    format!("Received rebooted packet: {rbt}").as_str(),
-                    log::Level::Info,
-                );
+                log_msg!(log::Level::Info, "Received rebooted packet: {rbt}");
             }
             #[cfg(feature = "trace")]
             from_radio::PayloadVariant::ModuleConfig(module_config) => {
-                log_msg(
-                    format!("Received module_config packet: {module_config:?}").as_str(),
+                log_msg!(
                     log::Level::Info,
+                    "Received module_config packet: {module_config:?}"
                 );
             }
             #[cfg(feature = "trace")]
             from_radio::PayloadVariant::Channel(channel) => {
-                log_msg(
-                    format!("Received channel packet: {channel:?}").as_str(),
-                    log::Level::Info,
-                );
+                log_msg!(log::Level::Info, "Received channel packet: {channel:?}");
             }
             #[cfg(feature = "trace")]
             from_radio::PayloadVariant::QueueStatus(queue_status) => {
-                log_msg(
-                    format!("Received queue_status packet: {queue_status:?}").as_str(),
+                log_msg!(
                     log::Level::Info,
+                    "Received queue_status packet: {queue_status:?}"
                 );
             }
             #[cfg(feature = "trace")]
             from_radio::PayloadVariant::XmodemPacket(xmodem) => {
-                log_msg(
-                    format!("Received xmodem packet: {xmodem:?}").as_str(),
-                    log::Level::Info,
-                );
+                log_msg!(log::Level::Info, "Received xmodem packet: {xmodem:?}");
             }
             #[cfg(feature = "trace")]
             from_radio::PayloadVariant::Metadata(device_metadata) => {
-                log_msg(
-                    format!("Received device_metadata packet: {device_metadata:?}").as_str(),
+                log_msg!(
                     log::Level::Info,
+                    "Received device_metadata packet: {device_metadata:?}"
                 );
             }
             #[cfg(feature = "trace")]
             from_radio::PayloadVariant::MqttClientProxyMessage(mqtt_client_proxy_message) => {
-                log_msg(
-                    format!(
-                        "Received mqtt_client_proxy_message packet: {mqtt_client_proxy_message:?}"
-                    )
-                    .as_str(),
+                log_msg!(
                     log::Level::Info,
+                    "Received mqtt_client_proxy_message packet: {mqtt_client_proxy_message:?}"
                 );
             }
             #[cfg(feature = "trace")]
             from_radio::PayloadVariant::FileInfo(file_info) => {
-                log_msg(
-                    format!("Received file_info packet: {file_info:?}").as_str(),
-                    log::Level::Info,
-                );
+                log_msg!(log::Level::Info, "Received file_info packet: {file_info:?}");
             }
             #[cfg(feature = "trace")]
             from_radio::PayloadVariant::ClientNotification(client_notification) => {
-                log_msg(
-                    format!("Received client_notification packet: {client_notification:?}")
-                        .as_str(),
+                log_msg!(
                     log::Level::Info,
+                    "Received client_notification packet: {client_notification:?}"
                 );
             }
             #[cfg(feature = "trace")]
             from_radio::PayloadVariant::DeviceuiConfig(device_ui_config) => {
-                log_msg(
-                    format!("Received device_ui_config packet: {device_ui_config:?}").as_str(),
+                log_msg!(
                     log::Level::Info,
+                    "Received device_ui_config packet: {device_ui_config:?}"
                 );
             }
         }
@@ -201,10 +180,7 @@ pub async fn process_packet(
 #[cfg(feature = "trace")]
 #[inline]
 fn decode_and_trace<P: Debug>(ptype: &str, payload: P) {
-    log_msg(
-        format!("Received {ptype} packet: {payload:?}").as_str(),
-        log::Level::Info,
-    );
+    log_msg!(log::Level::Info, "Received {ptype} packet: {payload:?}");
 }
 
 /// Decode payloads
@@ -237,7 +213,7 @@ async fn decode_payload(
                     // We care about these four payload types for sure!
                     PortNum::PositionApp => match Position::decode(data.payload.as_slice()) {
                         Ok(p) => {}
-                        Err(e) => log_msg(format!("{e}").as_str(), log::Level::Warn),
+                        Err(e) => log_msg!(log::Level::Warn, "{e}"),
                     },
                     PortNum::NodeinfoApp => match NodeInfo::decode(data.payload.as_slice()) {
                         Ok(ni) => {
@@ -250,29 +226,29 @@ async fn decode_payload(
                             let row: Devicemetric =
                                 ni.to_row(Oid(pkt.id), Oid(pkt.from), timestamp(pkt.rx_time));
                             match row.insert(pool).await {
-                                Ok(_) => log_msg(
-                                    "Inserted 1 row into DeviceMetrics table",
+                                Ok(_) => log_msg!(
                                     log::Level::Info,
+                                    "Inserted 1 row into DeviceMetrics table"
                                 ),
                                 Err(_) => {
                                     // Try updating the row
                                     match row.update(pool).await {
-                                        Ok(_) => log_msg(
-                                            "Updated 1 row in NodeInfo table",
+                                        Ok(_) => log_msg!(
                                             log::Level::Info,
+                                            "Updated 1 row in NodeInfo table"
                                         ),
                                         Err(e) => {
-                                            log_msg(format!("{e}").as_str(), log::Level::Error);
+                                            log_msg!(log::Level::Error, "{e}");
                                         }
                                     }
                                 }
                             }
                         }
-                        Err(e) => log_msg(format!("{e}").as_str(), log::Level::Warn),
+                        Err(e) => log_msg!(log::Level::Warn, "{e}"),
                     },
                     PortNum::TelemetryApp => match Telemetry::decode(data.payload.as_slice()) {
                         Ok(telemetry) => decode_telemetry(pkt, telemetry, pool).await,
-                        Err(e) => log_msg(format!("{e}").as_str(), log::Level::Warn),
+                        Err(e) => log_msg!(log::Level::Warn, "{e}"),
                     },
                     PortNum::NeighborinfoApp => match NeighborInfo::decode(data.payload.as_slice())
                     {
@@ -280,17 +256,17 @@ async fn decode_payload(
                             let row: Neighborinfo =
                                 ni.to_row(Oid(pkt.id), Oid(pkt.from), timestamp(pkt.rx_time));
                             match row.insert(pool).await {
-                                Ok(_) => log_msg(
-                                    "Inserted 1 row into NeighborInfo table",
+                                Ok(_) => log_msg!(
                                     log::Level::Info,
+                                    "Inserted 1 row into NeighborInfo table"
                                 ),
-                                Err(e) => log_msg(format!("{e}").as_str(), log::Level::Error),
+                                Err(e) => log_msg!(log::Level::Error, "{e}"),
                             }
                         }
-                        Err(e) => log_msg(format!("{e}").as_str(), log::Level::Warn),
+                        Err(e) => log_msg!(log::Level::Warn, "{e}"),
                     },
                     #[cfg(not(feature = "trace"))]
-                    _ => log_msg("Received untracked payload", log::Level::Info),
+                    _ => log_msg!(log::Level::Info, "Received untracked payload"),
                     // The others are nice for tracing during development
                     #[cfg(feature = "trace")]
                     PortNum::UnknownApp => {
@@ -299,20 +275,14 @@ async fn decode_payload(
                     #[cfg(feature = "trace")]
                     PortNum::TextMessageApp => match String::decode(data.payload.as_slice()) {
                         Ok(payload) => decode_and_trace("TextMessageApp", payload),
-                        Err(e) => log_msg(
-                            format!("Error decoding TextMessageApp: {e}").as_str(),
-                            log::Level::Warn,
-                        ),
+                        Err(e) => log_msg!(log::Level::Warn, "Error decoding TextMessageApp: {e}"),
                     },
                     #[cfg(feature = "trace")]
                     PortNum::RemoteHardwareApp => {
                         match HardwareMessage::decode(data.payload.as_slice()) {
                             Ok(payload) => decode_and_trace("RemoteHardwareApp", payload),
                             Err(e) => {
-                                log_msg(
-                                    format!("Error decoding RemoteHardwareApp: {e}").as_str(),
-                                    log::Level::Warn,
-                                );
+                                log_msg!(log::Level::Warn, "Error decoding RemoteHardwareApp: {e}");
                             }
                         }
                     }
@@ -320,20 +290,14 @@ async fn decode_payload(
                     PortNum::RoutingApp => match Routing::decode(data.payload.as_slice()) {
                         Ok(payload) => decode_and_trace("RoutingApp", payload),
                         Err(e) => {
-                            log_msg(
-                                format!("Error decoding RoutingApp: {e}").as_str(),
-                                log::Level::Warn,
-                            );
+                            log_msg!(log::Level::Warn, "Error decoding RoutingApp: {e}");
                         }
                     },
                     #[cfg(feature = "trace")]
                     PortNum::AdminApp => match AdminMessage::decode(data.payload.as_slice()) {
                         Ok(payload) => decode_and_trace("AdminApp", payload),
                         Err(e) => {
-                            log_msg(
-                                format!("Error decoding AdminApp: {e}").as_str(),
-                                log::Level::Warn,
-                            );
+                            log_msg!(log::Level::Warn, "Error decoding AdminApp: {e}");
                         }
                     },
                     #[cfg(feature = "trace")]
@@ -341,10 +305,9 @@ async fn decode_payload(
                         match Compressed::decode(data.payload.as_slice()) {
                             Ok(payload) => decode_and_trace("TextMessageCompressedApp", payload),
                             Err(e) => {
-                                log_msg(
-                                    format!("Error decoding TextMessageCompressedApp: {e}")
-                                        .as_str(),
+                                log_msg!(
                                     log::Level::Warn,
+                                    "Error decoding TextMessageCompressedApp: {e}"
                                 );
                             }
                         }
@@ -353,10 +316,7 @@ async fn decode_payload(
                     PortNum::WaypointApp => match Waypoint::decode(data.payload.as_slice()) {
                         Ok(payload) => decode_and_trace("WaypointApp", payload),
                         Err(e) => {
-                            log_msg(
-                                format!("Error decoding WaypointApp: {e}").as_str(),
-                                log::Level::Warn,
-                            );
+                            log_msg!(log::Level::Warn, "Error decoding WaypointApp: {e}");
                         }
                     },
                     #[cfg(feature = "trace")]
@@ -367,30 +327,21 @@ async fn decode_payload(
                     PortNum::DetectionSensorApp => match String::decode(data.payload.as_slice()) {
                         Ok(payload) => decode_and_trace("DetectionSensorApp", payload),
                         Err(e) => {
-                            log_msg(
-                                format!("Error decoding DetectionSensorApp: {e}").as_str(),
-                                log::Level::Warn,
-                            );
+                            log_msg!(log::Level::Warn, "Error decoding DetectionSensorApp: {e}");
                         }
                     },
                     #[cfg(feature = "trace")]
                     PortNum::AlertApp => match String::decode(data.payload.as_slice()) {
                         Ok(payload) => decode_and_trace("AlertApp", payload),
                         Err(e) => {
-                            log_msg(
-                                format!("Error decoding AlertApp: {e}").as_str(),
-                                log::Level::Warn,
-                            );
+                            log_msg!(log::Level::Warn, "Error decoding AlertApp: {e}");
                         }
                     },
                     #[cfg(feature = "trace")]
                     PortNum::ReplyApp => match String::decode(data.payload.as_slice()) {
                         Ok(payload) => decode_and_trace("ReplyApp", payload),
                         Err(e) => {
-                            log_msg(
-                                format!("Error decoding ReplyApp: {e}").as_str(),
-                                log::Level::Warn,
-                            );
+                            log_msg!(log::Level::Warn, "Error decoding ReplyApp: {e}");
                         }
                     },
                     #[cfg(feature = "trace")]
@@ -401,10 +352,7 @@ async fn decode_payload(
                     PortNum::PaxcounterApp => match Paxcount::decode(data.payload.as_slice()) {
                         Ok(payload) => decode_and_trace("PaxcounterApp", payload),
                         Err(e) => {
-                            log_msg(
-                                format!("Error decoding PaxcounterApp: {e}").as_str(),
-                                log::Level::Warn,
-                            );
+                            log_msg!(log::Level::Warn, "Error decoding PaxcounterApp: {e}");
                         }
                     },
                     #[cfg(feature = "trace")]
@@ -416,10 +364,7 @@ async fn decode_payload(
                         match StoreAndForward::decode(data.payload.as_slice()) {
                             Ok(payload) => decode_and_trace("StoreForwardApp", payload),
                             Err(e) => {
-                                log_msg(
-                                    format!("Error decoding StoreForwardApp: {e}").as_str(),
-                                    log::Level::Warn,
-                                );
+                                log_msg!(log::Level::Warn, "Error decoding StoreForwardApp: {e}");
                             }
                         }
                     }
@@ -427,10 +372,7 @@ async fn decode_payload(
                     PortNum::RangeTestApp => match String::decode(data.payload.as_slice()) {
                         Ok(payload) => decode_and_trace("RangeTestApp", payload),
                         Err(e) => {
-                            log_msg(
-                                format!("Error decoding RangeTestApp: {e}").as_str(),
-                                log::Level::Warn,
-                            );
+                            log_msg!(log::Level::Warn, "Error decoding RangeTestApp: {e}");
                         }
                     },
                     #[cfg(feature = "trace")]
@@ -446,10 +388,7 @@ async fn decode_payload(
                         match RouteDiscovery::decode(data.payload.as_slice()) {
                             Ok(payload) => decode_and_trace("TracerouteApp", payload),
                             Err(e) => {
-                                log_msg(
-                                    format!("Error decoding TracerouteApp: {e}").as_str(),
-                                    log::Level::Warn,
-                                );
+                                log_msg!(log::Level::Warn, "Error decoding TracerouteApp: {e}");
                             }
                         }
                     }
@@ -457,20 +396,14 @@ async fn decode_payload(
                     PortNum::AtakPlugin => match TakPacket::decode(data.payload.as_slice()) {
                         Ok(payload) => decode_and_trace("AtakPlugin", payload),
                         Err(e) => {
-                            log_msg(
-                                format!("Error decoding AtakPlugin: {e}").as_str(),
-                                log::Level::Warn,
-                            );
+                            log_msg!(log::Level::Warn, "Error decoding AtakPlugin: {e}");
                         }
                     },
                     #[cfg(feature = "trace")]
                     PortNum::MapReportApp => match MapReport::decode(data.payload.as_slice()) {
                         Ok(payload) => decode_and_trace("MapReportApp", payload),
                         Err(e) => {
-                            log_msg(
-                                format!("Error decoding MapReportApp: {e}").as_str(),
-                                log::Level::Warn,
-                            );
+                            log_msg!(log::Level::Warn, "Error decoding MapReportApp: {e}");
                         }
                     },
                     #[cfg(feature = "trace")]
@@ -478,10 +411,7 @@ async fn decode_payload(
                         match PowerStressMessage::decode(data.payload.as_slice()) {
                             Ok(payload) => decode_and_trace("PowerstressApp", payload),
                             Err(e) => {
-                                log_msg(
-                                    format!("Error decoding PowerstressApp: {e}").as_str(),
-                                    log::Level::Warn,
-                                );
+                                log_msg!(log::Level::Warn, "Error decoding PowerstressApp: {e}");
                             }
                         }
                     }
@@ -493,10 +423,7 @@ async fn decode_payload(
                     PortNum::AtakForwarder => match TakPacket::decode(data.payload.as_slice()) {
                         Ok(payload) => decode_and_trace("AtakForwarder", payload),
                         Err(e) => {
-                            log_msg(
-                                format!("Error decoding AtakForwarder: {e}").as_str(),
-                                log::Level::Warn,
-                            );
+                            log_msg!(log::Level::Warn, "Error decoding AtakForwarder: {e}");
                         }
                     },
                     #[cfg(feature = "trace")]
@@ -509,10 +436,7 @@ async fn decode_payload(
             _ => (),
             #[cfg(feature = "trace")]
             mesh_packet::PayloadVariant::Encrypted(items) => {
-                log_msg(
-                    format!("Received encrypted packet: {items:?}").as_str(),
-                    log::Level::Info,
-                );
+                log_msg!(log::Level::Info, "Received encrypted packet: {items:?}");
             }
         }
     }
@@ -525,62 +449,62 @@ async fn decode_telemetry(pkt: &MeshPacket, tm: Telemetry, pool: &Pool<Postgres>
                 let row: Devicemetric =
                     device_metrics.to_row(Oid(pkt.id), Oid(pkt.from), timestamp(tm.time));
                 match row.insert(pool).await {
-                    Ok(_) => log_msg("Inserted 1 row into DeviceMetrics table", log::Level::Info),
-                    Err(e) => log_msg(format!("{e}").as_str(), log::Level::Error),
+                    Ok(_) => log_msg!(log::Level::Info, "Inserted 1 row into DeviceMetrics table"),
+                    Err(e) => log_msg!(log::Level::Error, "{e}"),
                 }
             }
             Variant::EnvironmentMetrics(environment_metrics) => {
                 let row: Environmentmetric =
                     environment_metrics.to_row(Oid(pkt.id), Oid(pkt.from), timestamp(tm.time));
                 match row.insert(pool).await {
-                    Ok(_) => log_msg(
-                        "Inserted 1 row into EnvironmentMetrics table",
+                    Ok(_) => log_msg!(
                         log::Level::Info,
+                        "Inserted 1 row into EnvironmentMetrics table"
                     ),
-                    Err(e) => log_msg(format!("{e}").as_str(), log::Level::Error),
+                    Err(e) => log_msg!(log::Level::Error, "{e}"),
                 }
             }
             Variant::AirQualityMetrics(air_quality_metrics) => {
                 let row: Airqualitymetric =
                     air_quality_metrics.to_row(Oid(pkt.id), Oid(pkt.from), timestamp(tm.time));
                 match row.insert(pool).await {
-                    Ok(_) => log_msg(
-                        "Inserted 1 row into AirQualityMetrics table",
+                    Ok(_) => log_msg!(
                         log::Level::Info,
+                        "Inserted 1 row into AirQualityMetrics table"
                     ),
-                    Err(e) => log_msg(format!("{e}").as_str(), log::Level::Error),
+                    Err(e) => log_msg!(log::Level::Error, "{e}"),
                 }
             }
             Variant::LocalStats(local_stats) => {
                 let row: Localstat =
                     local_stats.to_row(Oid(pkt.id), Oid(pkt.from), timestamp(tm.time));
                 match row.insert(pool).await {
-                    Ok(_) => log_msg("Inserted 1 row into LocalStats table", log::Level::Info),
-                    Err(e) => log_msg(format!("{e}").as_str(), log::Level::Error),
+                    Ok(_) => log_msg!(log::Level::Info, "Inserted 1 row into LocalStats table"),
+                    Err(e) => log_msg!(log::Level::Error, "{e}"),
                 }
             }
             Variant::ErrorMetrics(error_metrics) => {
                 let row: Errormetric =
                     error_metrics.to_row(Oid(pkt.id), Oid(pkt.from), timestamp(tm.time));
                 match row.insert(pool).await {
-                    Ok(_) => log_msg("Inserted 1 row into ErrorMetrics table", log::Level::Info),
-                    Err(e) => log_msg(format!("{e}").as_str(), log::Level::Error),
+                    Ok(_) => log_msg!(log::Level::Info, "Inserted 1 row into ErrorMetrics table"),
+                    Err(e) => log_msg!(log::Level::Error, "{e}"),
                 }
             }
             #[cfg(not(feature = "trace"))]
             _ => {}
             #[cfg(feature = "trace")]
             Variant::PowerMetrics(power_metrics) => {
-                log_msg(
-                    format!("Received PowerMetrics packet: {power_metrics:?}").as_str(),
+                log_msg!(
                     log::Level::Info,
+                    "Received PowerMetrics packet: {power_metrics:?}"
                 );
             }
             #[cfg(feature = "trace")]
             Variant::HealthMetrics(health_metrics) => {
-                log_msg(
-                    format!("Received HealthMetrics packet: {health_metrics:?}").as_str(),
+                log_msg!(
                     log::Level::Info,
+                    "Received HealthMetrics packet: {health_metrics:?}"
                 );
             }
         }
