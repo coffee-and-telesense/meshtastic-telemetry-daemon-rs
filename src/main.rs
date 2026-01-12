@@ -20,15 +20,15 @@ use crate::util::log::log_msg;
 use crate::util::log::log_perf;
 use crate::util::{config::Settings, log::set_logger, state::GatewayState};
 use anyhow::{Context, Result};
-use meshtastic::api::{ConnectedStreamApi, StreamApi};
+use meshtastic::api::StreamApi;
 use meshtastic::protobufs::FromRadio;
 use meshtastic::utils;
 #[cfg(feature = "print-packets")]
 use serde_json::to_string_pretty;
 use sqlx::{Pool, Postgres};
+use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::{Arc, Mutex};
-use tokio::sync::mpsc::UnboundedReceiver;
+use tokio::sync::{Mutex, mpsc::UnboundedReceiver};
 
 /// Handle data transfer objects
 pub(crate) mod dto;
@@ -94,7 +94,7 @@ async fn main() -> Result<(), anyhow::Error> {
     // Spawn the task for handling packets
     let term = Arc::new(AtomicBool::new(false));
     match tokio::spawn(async move {
-        packet_handler(&state, &postgres_db, &term, &mut decoded_listener).await
+        packet_handler(&state, &postgres_db, &term, &mut decoded_listener).await;
     })
     .await
     {
@@ -127,7 +127,7 @@ async fn packet_handler(
     term: &Arc<AtomicBool>,
     decoded_listener: &mut UnboundedReceiver<Box<FromRadio>>,
 ) {
-    match signal_hook::flag::register(signal_hook::consts::SIGTERM, Arc::clone(&term)) {
+    match signal_hook::flag::register(signal_hook::consts::SIGTERM, Arc::clone(term)) {
         Ok(a) => log_msg(
             &format!("Successfully registered SIGTERM: {a:?}"),
             log::Level::Info,
@@ -144,7 +144,7 @@ async fn packet_handler(
     while !term.load(Ordering::Relaxed)
         && let Some(from_radio) = decoded_listener.recv().await
     {
-        process_packet(&from_radio, &state, &db).await;
+        process_packet(&from_radio, state, db).await;
 
         #[cfg(feature = "debug")]
         {
@@ -152,11 +152,7 @@ async fn packet_handler(
             log_perf();
             // log state messages
             log_msg(
-                state
-                    .lock()
-                    .expect("Failed to acquire lock for GatewayState in main()")
-                    .format_rx_counts()
-                    .as_ref(),
+                state.lock().await.format_rx_counts().as_ref(),
                 log::Level::Info,
             );
         }

@@ -21,10 +21,8 @@ use meshtastic::{
     },
 };
 use sqlx::{Pool, Postgres, postgres::types::Oid};
-use std::{
-    fmt::Debug,
-    sync::{Arc, Mutex},
-};
+use std::{fmt::Debug, sync::Arc};
+use tokio::sync::Mutex;
 
 /// Process Packets
 ///
@@ -75,10 +73,7 @@ pub async fn process_packet(
                     // insert into GatewayState
                     #[cfg(feature = "debug")]
                     if let Some(user) = &node_info.user {
-                        state
-                            .lock()
-                            .expect("Failed to acquire lock for GatewayState in process_packet()")
-                            .insert(node_info.num, user);
+                        state.lock().await.insert(node_info.num, user);
                     }
                 }
             }
@@ -91,7 +86,7 @@ pub async fn process_packet(
                 // Indicate the serial connection for the local state from this packet
                 state
                     .lock()
-                    .expect("Failed to acquire lock for GatewayState in process_packet()")
+                    .await
                     .set_serial_number(my_node_info.my_node_num);
             }
             #[cfg(not(feature = "trace"))]
@@ -231,10 +226,7 @@ async fn decode_payload(
 ) {
     // Count received packets in debug builds for period reporting in logs
     #[cfg(feature = "debug")]
-    state
-        .lock()
-        .expect("Failed to acquire lock for GatewayState in decode_payload()")
-        .increment_rx_count(pkt.from);
+    state.lock().await.increment_rx_count(pkt.from);
     // Check if the packet is on the telemetry channel before decoding a payload
     if pkt.channel == 0
         && let Some(payload) = &pkt.payload_variant
@@ -252,7 +244,7 @@ async fn decode_payload(
                             // insert into GatewayState
                             #[cfg(feature = "debug")]
                             if let Some(user) = &ni.user {
-                                state.lock().expect("Failed to acquire lock for GatewayState in decode_payload()").insert(ni.num, user);
+                                state.lock().await.insert(ni.num, user);
                             }
                             // insert into db
                             let row: Devicemetric =
