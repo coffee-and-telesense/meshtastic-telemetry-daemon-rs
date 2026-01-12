@@ -61,10 +61,13 @@ tokio = { version = "1.43", features = [
 default = ["debug", "native-tls", "trace"]
 
 # stdout/logging config:
-debug = ["dep:colog", "anyhow/backtrace"]
-print-packets = ["meshtastic/serde"]
+colog = ["dep:colog"]
 syslog = ["dep:syslog"]
-trace = ["dep:console-subscriber", "tokio/tracing"]
+
+# Debugging features
+debug = ["anyhow/backtrace", "colog"] # print state and backtraces
+print-packets = [] # pretty print packets
+trace = ["dep:console-subscriber", "tokio/tracing"] # print tracing and include tokio-console support
 
 # TLS config:
 native-tls = ["sqlx/runtime-tokio-native-tls"]
@@ -72,25 +75,28 @@ rustls = ["sqlx/runtime-tokio-rustls"]
 
 # Specific shorthand targets
 alpine = ["syslog", "native-tls"]
-beaglebone = ["rustls", "debug"]
+beaglebone = ["rustls", "colog"]
 
 [profile.dev]
-debug = 1     # thin debug info
+debug = true
+panic = "unwind"
 strip = false
 
 # Separate profile for profiling code
 [profile.profiling]
 inherits = "dev"
-debug = 2        # full debug info
+codegen-units = 1
+debug = true
+opt-level = 's' # use loop vectorization instead of not with 'z'?
+panic = "unwind"
 strip = false
-opt-level = 1
 
 # This release profile was found in discussions when compiling for mips platforms
 # But it probably works on x86 and ARM devices as well, we will see
 [profile.release]
-opt-level = 'z'
-lto = true
 codegen-units = 1
-strip = true
 debug = false
+lto = true
+opt-level = 's' # use loop vectorization instead of not with 'z'?
 panic = "abort"
+strip = true
