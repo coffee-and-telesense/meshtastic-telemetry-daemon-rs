@@ -110,7 +110,7 @@ async fn packet_handler(
     state: Arc<Mutex<GatewayState<'_>>>,
     db: Arc<Pool<Postgres>>,
     term: Arc<AtomicBool>,
-    mut decoded_listener: UnboundedReceiver<FromRadio>,
+    mut decoded_listener: UnboundedReceiver<Box<FromRadio>>,
     stream_api: ConnectedStreamApi,
 ) {
     match signal_hook::flag::register(signal_hook::consts::SIGTERM, Arc::clone(&term)) {
