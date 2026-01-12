@@ -83,9 +83,6 @@ async fn main() -> Result<(), anyhow::Error> {
             )
         });
 
-    // Create a mpsc channel for passing FromRadio data
-    let (tx, rx) = mpsc::channel(settings.async_runtime.mpsc_buffer_size.into());
-
     // Output the version of the daemon to the logger
     log_msg(
         format!("Daemon version: {VERSION}").as_str(),
@@ -95,23 +92,17 @@ async fn main() -> Result<(), anyhow::Error> {
     let term = Arc::new(AtomicBool::new(false));
     signal_hook::flag::register(signal_hook::consts::SIGTERM, Arc::clone(&term))?;
 
-    // Spawn the task for handling packets
-    let s = state.clone();
-    let pkt_handler = tokio::spawn(async move { packet_handler(rx, &s, &postgres_db).await });
-
     // This loop can be broken with ctrl+c, or by disconnecting
     // the attached serial port, or by sending a SIGTERM signal
     // through systemctl or other means
     while !term.load(Ordering::Relaxed)
         && let Some(from_radio) = decoded_listener.recv().await
     {
-        match tx.send(Box::new(from_radio)).await {
-            Ok(()) => (),
-            Err(e) => log_msg(
-                &format!("Error sending from_radio packet {e}"),
-                log::Level::Warn,
-            ),
-        }
+        let s = state.clone();
+        let db = postgres_db.clone();
+        let join = tokio::spawn(async move {
+            process_packet(&from_radio, &s, &db).await;
+        });
 
         #[cfg(feature = "debug")]
         {
@@ -127,29 +118,18 @@ async fn main() -> Result<(), anyhow::Error> {
                 log::Level::Info,
             );
         }
+
+        match join.await {
+            Ok(()) => (),
+            Err(e) => log_msg(&format!("Error joining tasks {e}"), log::Level::Warn),
+        }
     }
 
     // Called when either the radio is disconnected or the daemon recieves
     // a SIGTERM or SIGKILL signal from systemctl or by other means
     let _stream_api = stream_api.disconnect().await?;
 
-    // Close the packet_handler worker now that the serial is disconnected
-    match pkt_handler.await {
-        Ok(()) => (),
-        Err(e) => log_msg(&format!("Error joining pkt_handler {e}"), log::Level::Warn),
-    }
-
     Ok(())
-}
-
-async fn packet_handler(
-    mut rx: Receiver<Box<FromRadio>>,
-    state: &Arc<Mutex<GatewayState<'_>>>,
-    db: &Arc<Pool<Postgres>>,
-) {
-    while let Some(from_radio) = rx.recv().await {
-        process_packet(&from_radio, state, db).await;
-    }
 }
 
 #[cfg(all(feature = "debug", feature = "syslog"))]
