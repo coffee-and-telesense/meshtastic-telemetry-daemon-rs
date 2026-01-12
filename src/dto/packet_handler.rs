@@ -73,6 +73,7 @@ pub async fn process_packet(
                         }
                     }
                     // insert into GatewayState
+                    #[cfg(feature = "debug")]
                     if let Some(user) = &node_info.user {
                         state
                             .lock()
@@ -229,6 +230,7 @@ async fn decode_payload(
     pool: &Pool<Postgres>,
 ) {
     // Count received packets in debug builds for period reporting in logs
+    #[cfg(feature = "debug")]
     state
         .lock()
         .expect("Failed to acquire lock for GatewayState in decode_payload()")
