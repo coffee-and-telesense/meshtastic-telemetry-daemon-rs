@@ -33,6 +33,8 @@ meshtastic = { git = "https://github.com/gatlinnewhouse/meshtastic-rust.git", br
   "tokio",
   "serde",
 ] }
+# Profiling rustc demangler (not sure if needed but trying again)
+rustc-demangle = { version = "0.1", optional = true }
 # Serialize/deserialize, add deriving trait
 serde = { version = "1.0", default-features = false, features = ["derive"] }
 # Serialize/deserialze json, mainly print debugging
@@ -58,7 +60,7 @@ default = ["debug", "native-tls", "trace"]
 debug = ["dep:colog", "anyhow/std", "anyhow/backtrace"]
 print-packets = ["meshtastic/serde"]
 syslog = ["dep:syslog"]
-trace = ["dep:console-subscriber", "tokio/tracing"]
+trace = ["dep:console-subscriber", "dep:rustc-demangle", "tokio/tracing"]
 
 # TLS config:
 native-tls = ["sqlx/runtime-tokio-native-tls"]
