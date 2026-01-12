@@ -67,7 +67,10 @@ syslog = ["dep:syslog"]
 # Debugging features
 debug = ["anyhow/backtrace", "colog"] # print state and backtraces
 print-packets = [] # pretty print packets
-trace = ["dep:console-subscriber", "tokio/tracing"] # print tracing and include tokio-console support
+trace = [
+  "dep:console-subscriber",
+  "tokio/tracing",
+] # print tracing and include tokio-console support
 
 # TLS config:
 native-tls = ["sqlx/runtime-tokio-native-tls"]
@@ -87,7 +90,7 @@ strip = false
 inherits = "dev"
 codegen-units = 1
 debug = true
-opt-level = 's' # use loop vectorization instead of not with 'z'?
+opt-level = 's'   # use loop vectorization instead of not with 'z'?
 panic = "unwind"
 strip = false
 
@@ -97,6 +100,6 @@ strip = false
 codegen-units = 1
 debug = false
 lto = true
-opt-level = 's' # use loop vectorization instead of not with 'z'?
+opt-level = 's'   # use loop vectorization instead of not with 'z'?
 panic = "abort"
 strip = true
