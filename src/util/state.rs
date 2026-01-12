@@ -137,16 +137,12 @@ impl<'a> GatewayState<'a> {
 
     pub fn retrieve_user(&mut self, node_id: u32) -> Option<User> {
         if let Some(node) = self.nodes.get_mut(&node_id) {
-            return Some(User {
-                id: node.id.to_string(),
-                long_name: node.long_name.to_string(),
-                short_name: node.short_name.to_string(),
-                macaddr: vec![],
-                hw_model: node.hw_model,
-                is_licensed: false,
-                role: 0,
-                public_key: vec![],
-            });
+            let mut user = User::default();
+            user.id = node.id.to_string();
+            user.long_name = node.long_name.to_string();
+            user.short_name = node.short_name.to_string();
+            user.hw_model = node.hw_model;
+            return Some(user);
         }
         None
     }
