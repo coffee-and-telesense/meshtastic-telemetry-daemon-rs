@@ -38,7 +38,7 @@ rustc-demangle = { version = "0.1", optional = true }
 # Serialize/deserialize, add deriving trait
 serde = { version = "1.0", default-features = false, features = ["derive"] }
 # Serialize/deserialze json, mainly print debugging
-serde_json = { version = "1.0", default-features = false, features = ["alloc"] }
+serde_json = { version = "1.0", default-features = false, features = ["std"] }
 # Handle system signals correctly
 signal-hook = { version = "0.4", default-features = false }
 # Postgres connection
