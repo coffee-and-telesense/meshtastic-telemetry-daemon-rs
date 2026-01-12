@@ -16,8 +16,8 @@ use meshtastic::protobufs::{
 use meshtastic::{
     Message,
     protobufs::{
-        FromRadio, MeshPacket, NeighborInfo, NodeInfo, PortNum, Position, Telemetry, User,
-        from_radio, mesh_packet, telemetry::Variant,
+        FromRadio, MeshPacket, NeighborInfo, NodeInfo, PortNum, Position, Telemetry, from_radio,
+        mesh_packet, telemetry::Variant,
     },
 };
 use sqlx::{Pool, Postgres, postgres::types::Oid};

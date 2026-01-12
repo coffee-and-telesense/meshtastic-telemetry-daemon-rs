@@ -19,14 +19,11 @@ use crate::util::log::{log_msg, log_perf};
 use crate::util::{config::Settings, log::set_logger, state::GatewayState};
 use anyhow::{Context, Result};
 use meshtastic::api::StreamApi;
-use meshtastic::protobufs::FromRadio;
 use meshtastic::utils;
 #[cfg(feature = "print-packets")]
 use serde_json::to_string_pretty;
-use sqlx::{Pool, Postgres};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
-use tokio::sync::mpsc::{self, Receiver};
 
 /// Handle data transfer objects
 pub(crate) mod dto;
