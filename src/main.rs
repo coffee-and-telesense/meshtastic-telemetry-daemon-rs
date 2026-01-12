@@ -92,7 +92,7 @@ async fn main() -> Result<(), anyhow::Error> {
     // Spawn the task for handling packets
     let term = Arc::new(AtomicBool::new(false));
     match tokio::spawn(async move {
-        packet_handler(state, postgres_db, term, decoded_listener, stream_api).await
+        packet_handler(&state, &postgres_db, &term, &mut decoded_listener).await
     })
     .await
     {
@@ -103,15 +103,27 @@ async fn main() -> Result<(), anyhow::Error> {
         ),
     }
 
+    // Called when either the radio is disconnected or the daemon recieves
+    // a SIGTERM or SIGKILL signal from systemctl or by other means
+    match stream_api.disconnect().await {
+        Ok(a) => log_msg(
+            &format!("StreamApi disconnected without error: {a:?}"),
+            log::Level::Warn,
+        ),
+        Err(e) => log_msg(
+            &format!("StreamApi disconnected with error: {e}"),
+            log::Level::Error,
+        ),
+    }
+
     Ok(())
 }
 
 async fn packet_handler(
-    state: Arc<Mutex<GatewayState<'_>>>,
-    db: Arc<Pool<Postgres>>,
-    term: Arc<AtomicBool>,
-    mut decoded_listener: UnboundedReceiver<Box<FromRadio>>,
-    stream_api: ConnectedStreamApi,
+    state: &Arc<Mutex<GatewayState<'_>>>,
+    db: &Arc<Pool<Postgres>>,
+    term: &Arc<AtomicBool>,
+    decoded_listener: &mut UnboundedReceiver<Box<FromRadio>>,
 ) {
     match signal_hook::flag::register(signal_hook::consts::SIGTERM, Arc::clone(&term)) {
         Ok(a) => log_msg(
@@ -146,19 +158,6 @@ async fn packet_handler(
                 log::Level::Info,
             );
         }
-    }
-
-    // Called when either the radio is disconnected or the daemon recieves
-    // a SIGTERM or SIGKILL signal from systemctl or by other means
-    match stream_api.disconnect().await {
-        Ok(a) => log_msg(
-            &format!("StreamApi disconnected without error: {a:?}"),
-            log::Level::Warn,
-        ),
-        Err(e) => log_msg(
-            &format!("StreamApi disconnected with error: {e}"),
-            log::Level::Error,
-        ),
     }
 }
 
