@@ -27,17 +27,23 @@ derive-new = { version = "0.7", default-features = false }
 # Logger
 log = { version = "0.4", default-features = false }
 # My fork of the meshtastic protocol library with updated protobufs---no serde
-meshtastic = { git = "https://github.com/gatlinnewhouse/meshtastic-rust.git", branch = "stable-science", default-features = false, features = ["tokio", "serde"] }
+meshtastic = { git = "https://github.com/gatlinnewhouse/meshtastic-rust.git", branch = "stable-science", default-features = false, features = [
+  "tokio",
+  "serde",
+] }
 # Serialize/deserialize, add deriving trait
 serde = { version = "1.0", default-features = false, features = ["derive"] }
 # Serialize/deserialze json, mainly print debugging
-serde_json = { version = "1.0", default-features = false, features = [
-  "alloc",
-] }
+serde_json = { version = "1.0", default-features = false, features = ["alloc"] }
 # Handle system signals correctly
 signal-hook = { version = "0.4", default-features = false }
 # Postgres connection
-sqlx = { version = "0.8", default-features = false, features = ["postgres", "chrono", "macros", "json"] }
+sqlx = { version = "0.8", default-features = false, features = [
+  "postgres",
+  "chrono",
+  "macros",
+  "json",
+] }
 # Release logger
 syslog = { version = "7.0", optional = true }
 # Async runtime with tokio::main macro
@@ -62,6 +68,12 @@ beaglebone = ["rustls", "debug"]
 
 [profile.dev]
 debug = 1
+strip = false
+
+# Separate profile for profiling code
+[profile.profiling]
+inherits = "release"
+debug = true
 strip = false
 
 # This release profile was found in discussions when compiling for mips platforms
