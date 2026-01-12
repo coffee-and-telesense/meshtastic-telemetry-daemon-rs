@@ -26,7 +26,6 @@ use serde_json::to_string_pretty;
 use sqlx::{Pool, Postgres};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
-use tokio::runtime::Builder;
 use tokio::sync::mpsc::{self, Receiver};
 
 /// Handle data transfer objects
@@ -37,7 +36,8 @@ pub(crate) mod util;
 /// Version number of the daemon
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 
-fn main() -> std::result::Result<(), anyhow::Error> {
+#[tokio::main(flavor = "multi_thread")]
+async fn main() -> Result<(), anyhow::Error> {
     #[cfg(feature = "trace")]
     console_subscriber::init();
 
@@ -48,18 +48,6 @@ fn main() -> std::result::Result<(), anyhow::Error> {
 
     set_logger();
 
-    Builder::new_multi_thread()
-        .enable_all()
-        .thread_name("mesh-telem")
-        .worker_threads(settings.async_runtime.worker_threads as usize)
-        .max_blocking_threads(settings.async_runtime.max_blocking_threads as usize)
-        .thread_stack_size(settings.async_runtime.thread_stack_size as usize)
-        .build()
-        .with_context(|| "Failed to build tokio multithreaded runtime")?
-        .block_on(async { rt_main(settings).await })
-}
-
-async fn rt_main(settings: Settings<'static>) -> Result<(), anyhow::Error> {
     // Create the gateway's state object
     let state = Arc::new(Mutex::new(GatewayState::new()));
 
