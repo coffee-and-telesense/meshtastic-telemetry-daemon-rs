@@ -18,12 +18,15 @@ use crate::util::config::DEPLOYMENT_LOCATION;
 use crate::util::log::{log_msg, log_perf};
 use crate::util::{config::Settings, log::set_logger, state::GatewayState};
 use anyhow::{Context, Result};
-use meshtastic::api::StreamApi;
+use meshtastic::api::{ConnectedStreamApi, StreamApi};
+use meshtastic::protobufs::FromRadio;
 use meshtastic::utils;
 #[cfg(feature = "print-packets")]
 use serde_json::to_string_pretty;
+use sqlx::{Pool, Postgres};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
+use tokio::sync::mpsc::UnboundedReceiver;
 
 /// Handle data transfer objects
 pub(crate) mod dto;
@@ -86,8 +89,40 @@ async fn main() -> Result<(), anyhow::Error> {
         log::Level::Info,
     );
 
+    // Spawn the task for handling packets
     let term = Arc::new(AtomicBool::new(false));
-    signal_hook::flag::register(signal_hook::consts::SIGTERM, Arc::clone(&term))?;
+    match tokio::spawn(async move {
+        packet_handler(state, postgres_db, term, decoded_listener, stream_api).await
+    })
+    .await
+    {
+        Ok(()) => (),
+        Err(e) => log_msg(
+            &format!("Error joining packet_handler() in main(): {e}"),
+            log::Level::Error,
+        ),
+    }
+
+    Ok(())
+}
+
+async fn packet_handler(
+    state: Arc<Mutex<GatewayState<'_>>>,
+    db: Arc<Pool<Postgres>>,
+    term: Arc<AtomicBool>,
+    mut decoded_listener: UnboundedReceiver<FromRadio>,
+    stream_api: ConnectedStreamApi,
+) {
+    match signal_hook::flag::register(signal_hook::consts::SIGTERM, Arc::clone(&term)) {
+        Ok(a) => log_msg(
+            &format!("Successfully registered SIGTERM: {a:?}"),
+            log::Level::Info,
+        ),
+        Err(e) => log_msg(
+            &format!("Failed to register SIGTERM: {e}"),
+            log::Level::Warn,
+        ),
+    }
 
     // This loop can be broken with ctrl+c, or by disconnecting
     // the attached serial port, or by sending a SIGTERM signal
@@ -95,11 +130,7 @@ async fn main() -> Result<(), anyhow::Error> {
     while !term.load(Ordering::Relaxed)
         && let Some(from_radio) = decoded_listener.recv().await
     {
-        let s = state.clone();
-        let db = postgres_db.clone();
-        let join = tokio::spawn(async move {
-            process_packet(&from_radio, &s, &db).await;
-        });
+        process_packet(&from_radio, &state, &db).await;
 
         #[cfg(feature = "debug")]
         {
@@ -115,18 +146,20 @@ async fn main() -> Result<(), anyhow::Error> {
                 log::Level::Info,
             );
         }
-
-        match join.await {
-            Ok(()) => (),
-            Err(e) => log_msg(&format!("Error joining tasks {e}"), log::Level::Warn),
-        }
     }
 
     // Called when either the radio is disconnected or the daemon recieves
     // a SIGTERM or SIGKILL signal from systemctl or by other means
-    let _stream_api = stream_api.disconnect().await?;
-
-    Ok(())
+    match stream_api.disconnect().await {
+        Ok(a) => log_msg(
+            &format!("StreamApi disconnected without error: {a:?}"),
+            log::Level::Warn,
+        ),
+        Err(e) => log_msg(
+            &format!("StreamApi disconnected with error: {e}"),
+            log::Level::Error,
+        ),
+    }
 }
 
 #[cfg(all(feature = "debug", feature = "syslog"))]
