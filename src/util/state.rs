@@ -102,9 +102,6 @@ impl<'a> GatewayState<'a> {
     /// * `Cow<'_, str>` - String of the node counts to print
     #[cfg(feature = "debug")]
     pub fn format_rx_counts(&self) -> Cow<'_, str> {
-        use chrono::Local;
-
-        let now = Local::now();
         let mut rv: String = format!("Counts:\n").to_owned();
         for (id, node) in &self.nodes {
             rv.push_str(
