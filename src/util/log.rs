@@ -17,7 +17,7 @@ use syslog::{BasicLogger, Facility, Formatter3164};
 /// # Returns
 /// None
 pub(crate) fn set_logger() {
-    #[cfg(feature = "debug")]
+    #[cfg(feature = "colog")]
     {
         log::set_max_level(LevelFilter::Trace);
         colog::init();

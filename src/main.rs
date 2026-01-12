@@ -163,5 +163,5 @@ async fn packet_handler(
     }
 }
 
-#[cfg(all(feature = "debug", feature = "syslog"))]
-compile_error!("feature \"debug\" and feature \"syslog\" cannot be enabled at the same time");
+#[cfg(all(feature = "colog", feature = "syslog"))]
+compile_error!("feature \"colog\" and feature \"syslog\" cannot be enabled at the same time");
