@@ -105,7 +105,7 @@ impl<'a> GatewayState<'a> {
         use chrono::Local;
 
         let now = Local::now();
-        let mut rv: String = format!("{} - Counts:\n", now.format("%Y-%m-%d %H:%M:%S")).to_owned();
+        let mut rv: String = format!("Counts:\n").to_owned();
         for (id, node) in &self.nodes {
             rv.push_str(
                 format!(
