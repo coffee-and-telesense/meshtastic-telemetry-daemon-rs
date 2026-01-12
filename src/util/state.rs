@@ -101,7 +101,7 @@ impl<'a> GatewayState<'a> {
     /// * `Cow<'_, str>` - String of the node counts to print
     #[cfg(feature = "debug")]
     pub fn format_rx_counts(&self) -> Cow<'_, str> {
-        let mut rv: String = format!("Counts:\n").to_owned();
+        let mut rv = "Counts:\n".to_string();
         for (id, node) in &self.nodes {
             if node.rx_count > 0 {
                 rv.push_str(
