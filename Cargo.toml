@@ -64,6 +64,7 @@ syslog = ["dep:syslog"]
 
 # Debugging features
 debug = ["anyhow/std", "anyhow/backtrace", "colog"] # print state and backtraces
+log_perf = [] # print async runtime stats behind feature flag
 print-packets = [] # pretty print packets
 trace = [
   "dep:console-subscriber",
