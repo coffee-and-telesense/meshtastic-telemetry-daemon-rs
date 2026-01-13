@@ -5,13 +5,13 @@ use log::LevelFilter;
 use std::{
     cell::RefCell,
     fmt::{self, Display, Formatter},
+    sync::Once,
 };
 #[cfg(feature = "syslog")]
 use syslog::{BasicLogger, Facility, Formatter3164};
-use tokio::sync::OnceCell;
 
 /// The global boolean indicating if the logger is set or not
-static LOGGER_SET: OnceCell<bool> = OnceCell::const_new_with(false);
+static INIT_LOGGER: Once = Once::new();
 
 /// Set logger for CLI
 ///
@@ -25,16 +25,8 @@ static LOGGER_SET: OnceCell<bool> = OnceCell::const_new_with(false);
 /// # Returns
 /// None
 pub(crate) fn set_logger() {
-    use crate::log_msg;
-
     // Check if global logger is set, if not set the global logger
-    if !LOGGER_SET.get().expect("Could not get status of logger") {
-        // Set the global bool to true
-        match LOGGER_SET.set(true) {
-            Ok(()) => log_msg!(log::Level::Info, "Set logger"),
-            Err(e) => log_msg!(log::Level::Error, "Failed to set logger {e}"),
-        }
-
+    INIT_LOGGER.call_once(|| {
         // Initialize the log depending on feature used
         #[cfg(feature = "colog")]
         {
@@ -49,7 +41,7 @@ pub(crate) fn set_logger() {
             let formatter = Formatter3164 {
                 facility: Facility::LOG_USER, //TODO: this could probably be something else, check libc
                 hostname: None,
-                process: "mesh_telem".into(),
+                process: String::from("mesh_telem"),
                 pid: 0,
             };
             match syslog::unix(formatter)
@@ -70,12 +62,12 @@ pub(crate) fn set_logger() {
                 }
             }
         }
-    }
+    });
 }
 
 thread_local! {
     /// Tokio worker safe buffer for storing the timestamp cached string
-    static TS_CACHE: RefCell<(i64, String)> = RefCell::new((0, String::new()));
+    static TS_CACHE: RefCell<(i64, String)> = RefCell::new((0, String::with_capacity(32)));
 }
 
 /// Timestamp cached string
@@ -88,11 +80,12 @@ impl Display for CachedTs {
         let sec = now.timestamp();
 
         TS_CACHE.with(|cell| {
+            use std::fmt::Write;
+
             let mut cache = cell.borrow_mut();
             if cache.0 != sec {
                 cache.0 = sec;
                 cache.1.clear();
-                use std::fmt::Write;
                 write!(cache.1, "{} - ", now.format("%Y-%m-%d %H:%M:%S"))?;
             }
             f.write_str(&cache.1)
@@ -101,7 +94,7 @@ impl Display for CachedTs {
 }
 
 /// Performance metrics with regular printing for debugging
-#[cfg(feature = "debug")]
+#[cfg(feature = "log_perf")]
 #[inline]
 pub(crate) fn log_perf() {
     use crate::log_msg;
@@ -112,7 +105,7 @@ pub(crate) fn log_perf() {
     let nat = metrics.num_alive_tasks();
     let gqd = metrics.global_queue_depth();
     log_msg!(
-        log::Level::Debug,
+        log::Level::Info,
         "RUNTIME PERF: {nw} workers used, {nat} alive tasks, {gqd} global queue depth"
     );
 }
