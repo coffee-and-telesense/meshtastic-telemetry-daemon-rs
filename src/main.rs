@@ -15,7 +15,7 @@ extern crate log;
 
 use crate::dto::packet_handler::process_packet;
 use crate::util::config::DEPLOYMENT_LOCATION;
-#[cfg(feature = "debug")]
+#[cfg(feature = "log_perf")]
 use crate::util::log::log_perf;
 use crate::util::{config::Settings, log::set_logger, state::GatewayState};
 use anyhow::{Context, Result};
@@ -77,7 +77,7 @@ async fn main() -> Result<(), anyhow::Error> {
 
     // Set the global deployment location string
     DEPLOYMENT_LOCATION
-        .set(settings.deployment.location.to_string())
+        .set(Box::leak(settings.deployment.location.to_string().into_boxed_str()))
         .unwrap_or_else(|e| {
             panic!(
                 "{}:\n\tUnable to initialize global DEPLOYMENT_LOCATION from configuration's value: {}\n ",
@@ -138,6 +138,7 @@ async fn packet_handler(
         #[cfg(feature = "debug")]
         {
             // log performance metrics
+            #[cfg(feature = "log_perf")]
             log_perf();
             // log state messages
             let lock = state.lock().await;

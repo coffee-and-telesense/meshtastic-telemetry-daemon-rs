@@ -263,7 +263,7 @@ impl ToRow<Nodeinfo> for &NodeInfo {
             user.long_name,
             user.short_name,
             user.hw_model,
-            deployment_location,
+            deployment_location.to_string(),
         )
     }
 }

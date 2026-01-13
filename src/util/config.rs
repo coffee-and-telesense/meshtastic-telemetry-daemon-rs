@@ -9,7 +9,7 @@ use std::io::{self, BufRead};
 use tokio::sync::OnceCell;
 
 /// Deployment location constant to initialize with config value
-pub(crate) static DEPLOYMENT_LOCATION: OnceCell<String> = OnceCell::const_new();
+pub(crate) static DEPLOYMENT_LOCATION: OnceCell<&'static str> = OnceCell::const_new();
 
 /// Struct reprenting a postgres connection's settings
 #[derive(Debug, Deserialize)]
@@ -168,7 +168,7 @@ impl<'a> Settings<'a> {
                 .expect("Failed to find next line")
                 .with_context(|| "Could not read from stdin")
             {
-                Ok(sp) => Cow::Owned(sp.as_str().to_owned()),
+                Ok(sp) => Cow::Owned(sp),
                 Err(e) => {
                     eprintln!("No serial port provided by user");
                     panic!("{e}");
