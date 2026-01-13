@@ -20,14 +20,11 @@ use crate::util::log::log_perf;
 use crate::util::{config::Settings, log::set_logger, state::GatewayState};
 use anyhow::{Context, Result};
 use meshtastic::api::StreamApi;
-use meshtastic::protobufs::FromRadio;
 use meshtastic::utils;
 #[cfg(feature = "print-packets")]
 use serde_json::to_string_pretty;
-use sqlx::{Pool, Postgres};
 use std::sync::Arc;
-use std::sync::atomic::{AtomicBool, Ordering};
-use tokio::sync::{Mutex, mpsc::UnboundedReceiver};
+use tokio::sync::Mutex;
 
 /// Handle data transfer objects
 pub(crate) mod dto;
@@ -89,18 +86,30 @@ async fn main() -> Result<(), anyhow::Error> {
     // Output the version of the daemon to the logger
     log_msg!(log::Level::Info, "Daemon version: {VERSION}");
 
-    // Spawn the task for handling packets
-    let term = Arc::new(AtomicBool::new(false));
-    match tokio::spawn(async move {
-        packet_handler(&state, &postgres_db, &term, &mut decoded_listener).await;
-    })
-    .await
-    {
-        Ok(()) => (),
-        Err(e) => log_msg!(
-            log::Level::Error,
-            "Error joining packet_handler() in main(): {e}"
-        ),
+    // This loop can be broken with ctrl+c, or by disconnecting
+    // the attached serial port, or by sending a SIGTERM signal
+    // through systemctl or other means
+    loop {
+        tokio::select! {
+            _ = tokio::signal::ctrl_c() => {
+                log_msg!(log::Level::Warn, "Received SIGINT");
+                break;
+            }
+            Some(from_radio) = decoded_listener.recv() => {
+                process_packet(&from_radio, &state, &postgres_db).await;
+
+                #[cfg(feature = "debug")]
+                {
+                    // log performance metrics
+                    #[cfg(feature = "log_perf")]
+                    log_perf();
+                    // log state messages
+                    let lock = state.lock().await;
+                    let st = lock.format_rx_counts();
+                    log_msg!(log::Level::Info, "{st}");
+                }
+            }
+        }
     }
 
     // Called when either the radio is disconnected or the daemon recieves
@@ -114,38 +123,6 @@ async fn main() -> Result<(), anyhow::Error> {
     }
 
     Ok(())
-}
-
-async fn packet_handler(
-    state: &Arc<Mutex<GatewayState<'_>>>,
-    db: &Arc<Pool<Postgres>>,
-    term: &Arc<AtomicBool>,
-    decoded_listener: &mut UnboundedReceiver<Box<FromRadio>>,
-) {
-    match signal_hook::flag::register(signal_hook::consts::SIGTERM, Arc::clone(term)) {
-        Ok(a) => log_msg!(log::Level::Info, "Successfully registered SIGTERM: {a:?}"),
-        Err(e) => log_msg!(log::Level::Warn, "Failed to register SIGTERM: {e}"),
-    }
-
-    // This loop can be broken with ctrl+c, or by disconnecting
-    // the attached serial port, or by sending a SIGTERM signal
-    // through systemctl or other means
-    while !term.load(Ordering::Relaxed)
-        && let Some(from_radio) = decoded_listener.recv().await
-    {
-        process_packet(&from_radio, state, db).await;
-
-        #[cfg(feature = "debug")]
-        {
-            // log performance metrics
-            #[cfg(feature = "log_perf")]
-            log_perf();
-            // log state messages
-            let lock = state.lock().await;
-            let st = lock.format_rx_counts();
-            log_msg!(log::Level::Info, "{st}");
-        }
-    }
 }
 
 #[cfg(all(feature = "colog", feature = "syslog"))]
