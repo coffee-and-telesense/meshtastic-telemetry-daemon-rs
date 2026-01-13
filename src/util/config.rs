@@ -32,33 +32,30 @@ struct PostgresConnection<'a> {
 }
 
 impl PostgresConnection<'_> {
-    /// Build a postgresql connection string
-    ///
-    /// Formats entries from the config file into:
-    /// `postgres://user:password@host:port/database_name`
-    ///
-    /// # Arguments
-    /// * `cfg` - The Config struct reference
-    ///
-    /// # Returns
-    /// * `String` - A postgresql connection string
-    fn build_db_connection_string(&self) -> String {
-        // Parse config with error handling
-        format!(
-            "postgres://{}:{}@{}:{}/{}",
-            self.user, self.password, self.host, self.port, self.dbname
-        )
-    }
     /// Setup a Postgresql connection pool
     ///
     /// # Returns
     /// * `Result<PgPool>` - An `anyhow` result with a connection pool to the postgresql
     ///   database
+    ///
+    /// # Panics
+    /// Will panic if the database connection string is longer than 128 characters long
     fn setup(&self) -> Result<PgPool> {
+        use std::fmt::Write;
+
+        // Write the database connection string into a String with a given capacity
+        let mut s = String::with_capacity(128);
+        write!(
+            s,
+            "postgres://{}:{}@{}:{}/{}",
+            self.user, self.password, self.host, self.port, self.dbname
+        )
+        .expect("Unable to write postgres connection string from config variables");
+
         PgPoolOptions::new()
             .max_connections(self.max_connections)
             .min_connections(self.min_connections)
-            .connect_lazy(self.build_db_connection_string().as_str())
+            .connect_lazy(s.as_str())
             .map_err(anyhow::Error::from)
     }
 }
