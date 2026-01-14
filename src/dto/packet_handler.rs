@@ -212,8 +212,9 @@ async fn decode_payload(
                     // We care about these four payload types for sure!
                     PortNum::PositionApp => match Position::decode(data.payload.as_slice()) {
                         Ok(p) => {
+                            //TODO: do I need timestamp ms adjustment?
                             let row: Devicemetric =
-                                p.to_row(Oid(pkt.id), Oid(pkt.from), timestamp(pkt.rx_time));
+                                p.to_row(Oid(pkt.id), Oid(pkt.from), timestamp(p.timestamp));
                             match row.insert(pool).await {
                                 Ok(_) => log_msg!(
                                     log::Level::Info,
