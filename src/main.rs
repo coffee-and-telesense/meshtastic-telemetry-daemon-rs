@@ -92,18 +92,23 @@ async fn main() -> Result<(), anyhow::Error> {
                 log_msg!(log::Level::Warn, "Received SIGINT");
                 break;
             }
-            Some(from_radio) = decoded_listener.recv() => {
-                process_packet(&from_radio, &state, &postgres_db).await;
+            msg = decoded_listener.recv() => {
+                if let Some(from_radio) = msg {
+                    process_packet(&from_radio, &state, &postgres_db).await;
 
-                #[cfg(feature = "debug")]
-                {
-                    // log performance metrics
-                    #[cfg(feature = "log_perf")]
-                    log_perf();
-                    // log state messages
-                    let lock = state.lock().await;
-                    let st = lock.format_rx_counts();
-                    log_msg!(log::Level::Info, "{st}");
+                    #[cfg(feature = "debug")]
+                    {
+                        // log performance metrics
+                        #[cfg(feature = "log_perf")]
+                        log_perf();
+                        // log state messages
+                        let lock = state.lock().await;
+                        let st = lock.format_rx_counts();
+                        log_msg!(log::Level::Info, "{st}");
+                    }
+                } else {
+                    log_msg!(log::Level::Error, "Serial connection closed");
+                    break;
                 }
             }
         }
