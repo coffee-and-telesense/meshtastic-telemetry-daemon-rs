@@ -57,8 +57,7 @@ pub async fn process_packet(
                 // only insert if user is some
                 if node_info.user.is_some() {
                     // none of the arguments are used, so do dummy args
-                    let row: Nodeinfo =
-                        node_info.to_row(Oid(0), Oid(node_info.num), timestamp(0));
+                    let row: Nodeinfo = node_info.to_row(Oid(0), Oid(node_info.num), timestamp(0));
                     match row.insert(pool).await {
                         Ok(_) => log_msg!(log::Level::Info, "Inserted 1 row into NodeInfo table"),
                         Err(_) => {
@@ -212,7 +211,17 @@ async fn decode_payload(
                 match data.portnum() {
                     // We care about these four payload types for sure!
                     PortNum::PositionApp => match Position::decode(data.payload.as_slice()) {
-                        Ok(_p) => {}
+                        Ok(p) => {
+                            let row: Devicemetric =
+                                p.to_row(Oid(pkt.id), Oid(pkt.from), timestamp(pkt.rx_time));
+                            match row.insert(pool).await {
+                                Ok(_) => log_msg!(
+                                    log::Level::Info,
+                                    "Inserted 1 row into DeviceMetrics table"
+                                ),
+                                Err(e) => log_msg!(log::Level::Error, "{e}"),
+                            }
+                        }
                         Err(e) => log_msg!(log::Level::Warn, "{e}"),
                     },
                     PortNum::NodeinfoApp => match NodeInfo::decode(data.payload.as_slice()) {

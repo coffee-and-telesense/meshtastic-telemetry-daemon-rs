@@ -9,7 +9,7 @@ use anyhow::{Error, Result};
 use chrono::{NaiveDateTime, Utc};
 use meshtastic::protobufs::{
     AirQualityMetrics, DeviceMetrics, EnvironmentMetrics, ErrorMetrics, LocalStats, Neighbor,
-    NeighborInfo, NodeInfo,
+    NeighborInfo, NodeInfo, Position,
 };
 use serde::Serialize;
 use serde_json::{Value, json};
@@ -128,6 +128,28 @@ impl ToRow<Devicemetric> for NodeInfo {
             user.as_ref().map(|u| u.long_name.clone()),
             user.as_ref().map(|u| u.short_name.clone()),
             user.as_ref().map(|u| u.hw_model),
+        )
+    }
+}
+
+impl ToRow<Devicemetric> for Position {
+    fn to_row(self, msg_id: Oid, node_id: Oid, time: NaiveDateTime) -> Devicemetric
+    where
+        Self: std::marker::Sized,
+    {
+        Devicemetric::new(
+            msg_id,
+            node_id,
+            time,
+            None,
+            None,
+            None,
+            None,
+            self.latitude_i,
+            self.longitude_i,
+            None,
+            None,
+            None,
         )
     }
 }
