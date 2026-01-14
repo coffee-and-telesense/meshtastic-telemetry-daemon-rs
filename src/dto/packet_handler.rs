@@ -1,9 +1,7 @@
 use crate::{
     dto::{
-        models::{
-            Airqualitymetric, Devicemetric, Environmentmetric, Errormetric, Localstat,
-            Neighborinfo, Nodeinfo,
-        },
+        dbops::{airqualitymetrics, devicemetrics},
+        models::{Devicemetric, Environmentmetric, Errormetric, Localstat, Neighborinfo, Nodeinfo},
         types::{DbOps, ToRow, timestamp},
     },
     log_msg,
@@ -211,18 +209,13 @@ async fn decode_payload(
                 match data.portnum() {
                     // We care about these four payload types for sure!
                     PortNum::PositionApp => match Position::decode(data.payload.as_slice()) {
-                        Ok(p) => {
-                            //TODO: do I need timestamp ms adjustment?
-                            let row: Devicemetric =
-                                p.to_row(Oid(pkt.id), Oid(pkt.from), timestamp(p.timestamp));
-                            match row.insert(pool).await {
-                                Ok(_) => log_msg!(
-                                    log::Level::Info,
-                                    "Inserted 1 row into DeviceMetrics table"
-                                ),
-                                Err(e) => log_msg!(log::Level::Error, "{e}"),
-                            }
-                        }
+                        Ok(pos) => match devicemetrics::insert_pos(pkt, &pos, pool).await {
+                            Ok(_) => log_msg!(
+                                log::Level::Info,
+                                "Inserted 1 row into DeviceMetrics table"
+                            ),
+                            Err(e) => log_msg!(log::Level::Error, "{e}"),
+                        },
                         Err(e) => log_msg!(log::Level::Warn, "{e}"),
                     },
                     PortNum::NodeinfoApp => match NodeInfo::decode(data.payload.as_slice()) {
@@ -456,9 +449,7 @@ async fn decode_telemetry(pkt: &MeshPacket, tm: Telemetry, pool: &Pool<Postgres>
     if let Some(data) = tm.variant {
         match data {
             Variant::DeviceMetrics(device_metrics) => {
-                let row: Devicemetric =
-                    device_metrics.to_row(Oid(pkt.id), Oid(pkt.from), timestamp(tm.time));
-                match row.insert(pool).await {
+                match devicemetrics::insert_dm(pkt, &tm, &device_metrics, pool).await {
                     Ok(_) => log_msg!(log::Level::Info, "Inserted 1 row into DeviceMetrics table"),
                     Err(e) => log_msg!(log::Level::Error, "{e}"),
                 }
@@ -475,9 +466,7 @@ async fn decode_telemetry(pkt: &MeshPacket, tm: Telemetry, pool: &Pool<Postgres>
                 }
             }
             Variant::AirQualityMetrics(air_quality_metrics) => {
-                let row: Airqualitymetric =
-                    air_quality_metrics.to_row(Oid(pkt.id), Oid(pkt.from), timestamp(tm.time));
-                match row.insert(pool).await {
+                match airqualitymetrics::insert(pkt, &tm, &air_quality_metrics, pool).await {
                     Ok(_) => log_msg!(
                         log::Level::Info,
                         "Inserted 1 row into AirQualityMetrics table"
