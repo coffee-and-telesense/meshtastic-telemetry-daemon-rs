@@ -41,10 +41,7 @@ async fn main() -> Result<(), anyhow::Error> {
     #[cfg(feature = "trace")]
     console_subscriber::init();
 
-    #[cfg(debug_assertions)]
-    let settings = Settings::new("example_config.toml");
-    #[cfg(not(debug_assertions))]
-    let settings = Settings::new("/etc/meshtastic_telem.toml");
+    let settings = Settings::new();
 
     set_logger();
 

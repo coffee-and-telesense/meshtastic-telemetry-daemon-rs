@@ -1,15 +1,21 @@
 use anyhow::{Context, Result};
 use log::{error, warn};
 use meshtastic::utils::stream::available_serial_ports;
+use microxdg::XdgApp;
 use serde::Deserialize;
-use sqlx::PgPool;
-use sqlx::postgres::PgPoolOptions;
-use std::borrow::Cow;
-use std::io::{self, BufRead};
+use sqlx::{PgPool, postgres::PgPoolOptions};
+use std::{
+    borrow::Cow,
+    fs,
+    io::{self, BufRead},
+};
 use tokio::sync::OnceCell;
 
 /// Deployment location constant to initialize with config value
 pub(crate) static DEPLOYMENT_LOCATION: OnceCell<&'static str> = OnceCell::const_new();
+
+/// Example config file to write in case one cannot be found
+static EXAMPLE_CONFIG: &[u8] = include_bytes!("example_config.toml");
 
 /// Struct reprenting a postgres connection's settings
 #[derive(Debug, Deserialize)]
@@ -111,19 +117,67 @@ pub struct Settings<'a> {
 impl<'a> Settings<'a> {
     /// Read config file and create settings structure
     ///
-    /// # Arguments
-    /// * `p` - Path to the config file
-    ///
     /// # Returns
     /// * `Settings` - `Settings` struct with keys and values
     ///
     /// # Panics
-    /// Will panic if the configuration file cannot be read
-    pub(crate) fn new(p: &str) -> Self {
+    /// Will panic if the configuration file or directory cannot be read or created
+    pub(crate) fn new() -> Self {
+        // Create the XDG app
+        let app = match XdgApp::new("meshtastic_telemetry")
+            .with_context(|| "Unable to initialize meshtastic_telemetry XDG Application")
+        {
+            Ok(x) => x,
+            Err(e) => panic!("{e}"),
+        };
+
+        // Check the config directory, if it does not exist then create it
+        let config_dir = match app
+            .app_config()
+            .with_context(|| "Unable to find meshtastic_telemetry XDG configuration directory")
+        {
+            Ok(c) => c,
+            Err(e) => panic!("{e}"),
+        };
+        match config_dir.try_exists() {
+            Ok(b) => {
+                if !b {
+                    match fs::create_dir(config_dir.as_path()) {
+                        Ok(()) => (),
+                        Err(e) => panic!("{e}"),
+                    }
+                }
+            }
+            Err(e) => panic!("{e}"),
+        }
+
+        // Check the config directory for a config.toml file, if it does not exist then create it
+        let config_file = match app.app_config_file("config.toml").with_context(|| {
+            format!(
+                "Failed to find meshtastic_telemetry config.toml in {}",
+                config_dir.display()
+            )
+        }) {
+            Ok(c) => c,
+            Err(e) => panic!("{e}"),
+        };
+        match config_file.try_exists() {
+            Ok(b) => {
+                if !b {
+                    match fs::write(config_file.clone(), EXAMPLE_CONFIG) {
+                        Ok(()) => (),
+                        Err(e) => panic!("{e}"),
+                    }
+                }
+            }
+            Err(e) => panic!("{e}"),
+        }
+
+        // Read the configuration
         match config::Config::builder()
-            .add_source(config::File::with_name(p))
+            .add_source(config::File::from(config_file))
             .build()
-            .with_context(|| format!("Failed to read config file from {p}"))
+            .with_context(|| "Failed to read config file")
         {
             Ok(rv) => rv.try_deserialize().expect("Error deserializing config"),
             Err(e) => {

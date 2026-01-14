@@ -35,6 +35,8 @@ meshtastic = { git = "https://github.com/gatlinnewhouse/meshtastic-rust.git", br
   "tokio",
   "serde",
 ] }
+# Config directory handling
+microxdg = { version = "0.2" }
 # Serialize/deserialize, add deriving trait
 serde = { version = "1.0", default-features = false, features = ["derive"] }
 # Serialize/deserialze json, mainly print debugging
