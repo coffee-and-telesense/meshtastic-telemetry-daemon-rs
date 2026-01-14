@@ -17,6 +17,9 @@ pub(crate) static DEPLOYMENT_LOCATION: OnceCell<&'static str> = OnceCell::const_
 /// Example config file to write in case one cannot be found
 static EXAMPLE_CONFIG: &[u8] = include_bytes!("example_config.toml");
 
+/// XDG app specification for use (possibly caching or saving state)
+static APP: OnceCell<XdgApp> = OnceCell::const_new();
+
 /// Struct reprenting a postgres connection's settings
 #[derive(Debug, Deserialize)]
 #[allow(unused)]
@@ -123,16 +126,23 @@ impl<'a> Settings<'a> {
     /// # Panics
     /// Will panic if the configuration file or directory cannot be read or created
     pub(crate) fn new() -> Self {
-        // Create the XDG app
-        let app = match XdgApp::new("meshtastic_telemetry")
-            .with_context(|| "Unable to initialize meshtastic_telemetry XDG Application")
-        {
-            Ok(x) => x,
+        // Create the XDG app while also setting a global static APP
+        match APP.set(
+            match XdgApp::new("meshtastic_telemetry")
+                .with_context(|| "Unable to initialize meshtastic_telemetry XDG Application")
+            {
+                Ok(x) => x,
+                Err(e) => panic!("{e}"),
+            },
+        ) {
+            Ok(()) => (),
             Err(e) => panic!("{e}"),
-        };
+        }
 
         // Check the config directory, if it does not exist then create it
-        let config_dir = match app
+        let config_dir = match APP
+            .get()
+            .expect("")
             .app_config()
             .with_context(|| "Unable to find meshtastic_telemetry XDG configuration directory")
         {
@@ -152,12 +162,16 @@ impl<'a> Settings<'a> {
         }
 
         // Check the config directory for a config.toml file, if it does not exist then create it
-        let config_file = match app.app_config_file("config.toml").with_context(|| {
-            format!(
-                "Failed to find meshtastic_telemetry config.toml in {}",
-                config_dir.display()
-            )
-        }) {
+        let config_file = match APP
+            .get()
+            .expect("")
+            .app_config_file("config.toml")
+            .with_context(|| {
+                format!(
+                    "Failed to find meshtastic_telemetry config.toml in {}",
+                    config_dir.display()
+                )
+            }) {
             Ok(c) => c,
             Err(e) => panic!("{e}"),
         };
