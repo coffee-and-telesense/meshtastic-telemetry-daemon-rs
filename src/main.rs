@@ -103,8 +103,9 @@ async fn main() -> Result<(), anyhow::Error> {
                         log_perf();
                         // log state messages
                         let lock = state.lock().await;
-                        let st = lock.format_rx_counts();
-                        log_msg!(log::Level::Info, "{st}");
+                        if lock.any_recvd() {
+                            log_msg!(log::Level::Info, "{lock}");
+                        }
                     }
                 } else {
                     log_msg!(log::Level::Error, "Serial connection closed");

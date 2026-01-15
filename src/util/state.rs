@@ -1,6 +1,6 @@
 use log::{info, warn};
 use meshtastic::protobufs::User;
-use std::{borrow::Cow, collections::HashMap};
+use std::{borrow::Cow, collections::HashMap, fmt::Display};
 
 /// Local node type storing only the information we care about from nodeinfo table
 pub struct Node<'a> {
@@ -46,6 +46,26 @@ impl Default for GatewayState<'_> {
     }
 }
 
+impl Display for GatewayState<'_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str("Counts:\n")?;
+        for (id, node) in &self.nodes {
+            if *id == self.serial_node {
+                f.write_str("*serial\t")?;
+            } else {
+                f.write_str("\t\t")?;
+            }
+            writeln!(
+                f,
+                "{} ({}) {} - {} packets received",
+                node.long_name, node.id, id, node.rx_count
+            )?;
+        }
+
+        Ok(())
+    }
+}
+
 impl<'a> GatewayState<'a> {
     /// New `GatewayState` struct
     ///
@@ -59,6 +79,23 @@ impl<'a> GatewayState<'a> {
             biggest_fake: 0,
             serial_node: 0, // Set to 0 by default on new
         }
+    }
+
+    /// Return `true` if any node in the local state contains an `rx_count` > 0
+    ///
+    /// # Arguments
+    /// * `&self` - The `GatewayState` reference
+    ///
+    /// # Returns
+    /// * `bool` - `true` if any node has an `rx_count` > 0, otherwise false
+    #[inline]
+    pub fn any_recvd(&self) -> bool {
+        for node in self.nodes.values() {
+            if node.rx_count > 1 {
+                return true;
+            }
+        }
+        false
     }
 
     /// Lookup a node's fake message id
@@ -90,38 +127,6 @@ impl<'a> GatewayState<'a> {
         if let Some(f) = self.nodes.get_mut(&node_id) {
             f.rx_count += 1;
         }
-    }
-
-    /// Format a message of the received packet counts
-    ///
-    /// # Arguments
-    /// * `self` - Operates on the `GatewayState` struct
-    ///
-    /// # Returns
-    /// * `Cow<'_, str>` - String of the node counts to print
-    #[cfg(feature = "debug")]
-    pub fn format_rx_counts(&self) -> Cow<'_, str> {
-        let mut rv = "Counts:\n".to_string();
-        for (id, node) in &self.nodes {
-            if node.rx_count > 0 {
-                rv.push_str(
-                    format!(
-                        "{}{} ({}) {} - {} packets received\n",
-                        if *id == self.serial_node {
-                            "*serial\t"
-                        } else {
-                            "\t\t"
-                        },
-                        node.long_name,
-                        node.id,
-                        id,
-                        node.rx_count
-                    )
-                    .as_str(),
-                );
-            }
-        }
-        Cow::Owned(rv)
     }
 
     /// Modify the `serial_node` connection
