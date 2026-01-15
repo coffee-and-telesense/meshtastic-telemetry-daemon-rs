@@ -1,4 +1,4 @@
-use crate::dto::types::timestamp;
+use crate::util::timestamp;
 use anyhow::Context;
 use meshtastic::protobufs::{LocalStats, MeshPacket, Telemetry};
 use sqlx::postgres::types::Oid;

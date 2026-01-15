@@ -4,5 +4,3 @@ pub(crate) mod dbops;
 // pub(crate) mod models;
 /// Packet handling functions for packets received over a serial connection to a Meshtastic node
 pub(crate) mod packet_handler;
-/// Type associated functions and traits
-pub(crate) mod types;
