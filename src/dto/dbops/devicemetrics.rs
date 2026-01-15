@@ -1,8 +1,6 @@
 use crate::dto::types::timestamp;
 use anyhow::Context;
-use meshtastic::protobufs::{
-    DeviceMetrics, FromRadio, MeshPacket, NodeInfo, Position, Telemetry, User,
-};
+use meshtastic::protobufs::{DeviceMetrics, FromRadio, MeshPacket, NodeInfo, Position, Telemetry};
 use sqlx::postgres::types::Oid;
 
 /// Insert a row into the `DeviceMetrics` table with device metrics data

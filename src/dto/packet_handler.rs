@@ -1,8 +1,7 @@
 use crate::{
-    dto::{
-        dbops::{airqualitymetrics, devicemetrics, errormetrics, localstats},
-        models::{Devicemetric, Environmentmetric, Errormetric, Localstat, Neighborinfo, Nodeinfo},
-        types::{DbOps, ToRow, timestamp},
+    dto::dbops::{
+        airqualitymetrics, devicemetrics, environmentmetrics, errormetrics, localstats,
+        neighborinfo, nodeinfo,
     },
     log_msg,
     util::state::GatewayState,
@@ -19,7 +18,7 @@ use meshtastic::{
         mesh_packet, telemetry::Variant,
     },
 };
-use sqlx::{Pool, Postgres, postgres::types::Oid};
+use sqlx::{Pool, Postgres};
 use std::{fmt::Debug, sync::Arc};
 use tokio::sync::Mutex;
 
@@ -54,18 +53,27 @@ pub async fn process_packet(
             from_radio::PayloadVariant::NodeInfo(node_info) => {
                 // only insert if user is some
                 if node_info.user.is_some() {
-                    // none of the arguments are used, so do dummy args
                     match devicemetrics::insert_fr_ni(pkt, node_info, pool).await {
-                        Ok(_) => log_msg!(log::Level::Info, "Inserted 1 row into NodeInfo table"),
+                        Ok(_) => {
+                            log_msg!(log::Level::Info, "Inserted 1 row into DeviceMetrics table");
+                        }
                         Err(_) => {
                             // Try updating the row
                             match devicemetrics::update_fr_ni(pkt, node_info, pool).await {
-                                Ok(_) => {
-                                    log_msg!(log::Level::Info, "Updated 1 row in NodeInfo table");
-                                }
+                                Ok(_) => log_msg!(
+                                    log::Level::Info,
+                                    "Updated 1 row in DeviceMetrics table"
+                                ),
                                 Err(e) => log_msg!(log::Level::Error, "{e}"),
                             }
                         }
+                    }
+                    match nodeinfo::insert(node_info, pool).await {
+                        Ok(_) => log_msg!(log::Level::Info, "Inserted 1 row into NodeInfo table"),
+                        Err(_) => match nodeinfo::update(node_info, pool).await {
+                            Ok(_) => log_msg!(log::Level::Info, "Updated 1 row in NodeInfo table"),
+                            Err(e) => log_msg!(log::Level::Error, "{e}"),
+                        },
                     }
                     // insert into GatewayState
                     #[cfg(feature = "debug")]
@@ -243,6 +251,21 @@ async fn decode_payload(
                                     }
                                 }
                             }
+                            match nodeinfo::insert(&ni, pool).await {
+                                Ok(_) => {
+                                    log_msg!(
+                                        log::Level::Info,
+                                        "Inserted 1 row into NodeInfo table"
+                                    );
+                                }
+                                Err(_) => match nodeinfo::update(&ni, pool).await {
+                                    Ok(_) => log_msg!(
+                                        log::Level::Info,
+                                        "Updated 1 row in NodeInfo table"
+                                    ),
+                                    Err(e) => log_msg!(log::Level::Error, "{e}"),
+                                },
+                            }
                         }
                         Err(e) => log_msg!(log::Level::Warn, "{e}"),
                     },
@@ -252,17 +275,15 @@ async fn decode_payload(
                     },
                     PortNum::NeighborinfoApp => match NeighborInfo::decode(data.payload.as_slice())
                     {
-                        Ok(ni) => {
-                            let row: Neighborinfo =
-                                ni.to_row(Oid(pkt.id), Oid(pkt.from), timestamp(pkt.rx_time));
-                            match row.insert(pool).await {
-                                Ok(_) => log_msg!(
+                        Ok(ni) => match neighborinfo::insert(pkt, &ni, pool).await {
+                            Ok(_) => {
+                                log_msg!(
                                     log::Level::Info,
                                     "Inserted 1 row into NeighborInfo table"
-                                ),
-                                Err(e) => log_msg!(log::Level::Error, "{e}"),
+                                );
                             }
-                        }
+                            Err(e) => log_msg!(log::Level::Error, "{e}"),
+                        },
                         Err(e) => log_msg!(log::Level::Warn, "{e}"),
                     },
                     #[cfg(not(feature = "trace"))]
@@ -452,9 +473,7 @@ async fn decode_telemetry(pkt: &MeshPacket, tm: Telemetry, pool: &Pool<Postgres>
                 }
             }
             Variant::EnvironmentMetrics(environment_metrics) => {
-                let row: Environmentmetric =
-                    environment_metrics.to_row(Oid(pkt.id), Oid(pkt.from), timestamp(tm.time));
-                match row.insert(pool).await {
+                match environmentmetrics::insert(pkt, &tm, &environment_metrics, pool).await {
                     Ok(_) => log_msg!(
                         log::Level::Info,
                         "Inserted 1 row into EnvironmentMetrics table"
