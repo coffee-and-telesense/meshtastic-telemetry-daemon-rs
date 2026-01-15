@@ -12,8 +12,6 @@ pub struct Node<'a> {
     hw_model: i32,
     /// Node id, the string hash `!dasf31`
     id: Cow<'a, str>,
-    /// Fake message id used in devicemetrics for this serial packet
-    fake_msg_id: u8,
     /// Number of received packets
     rx_count: usize,
 }
@@ -26,8 +24,6 @@ pub type NodeFakePkts<'a> = HashMap<u32, Node<'a>>;
 pub struct GatewayState<'a> {
     /// Our hashmap of known nodes
     nodes: NodeFakePkts<'a>,
-    /// The biggest fake message id up to a `u8::MAX` of 255
-    biggest_fake: u8,
     /// Connected node number
     serial_node: u32,
 }
@@ -40,7 +36,6 @@ impl Default for GatewayState<'_> {
     fn default() -> Self {
         GatewayState {
             nodes: NodeFakePkts::new(),
-            biggest_fake: 0,
             serial_node: 0, // Set to 0 by default on init
         }
     }
@@ -76,7 +71,6 @@ impl<'a> GatewayState<'a> {
         // Stub this function for now, but in the future:
         GatewayState {
             nodes: NodeFakePkts::new(),
-            biggest_fake: 0,
             serial_node: 0, // Set to 0 by default on new
         }
     }
@@ -98,22 +92,6 @@ impl<'a> GatewayState<'a> {
         false
     }
 
-    /// Lookup a node's fake message id
-    ///
-    /// # Arguments
-    /// * `self` - Operates on the `GatewayState` struct
-    /// * `node_id` - The `u32` id in the `from` field of packets
-    ///
-    /// # Returns
-    /// * `Option<u8>` - The fake message id if it exists or None
-    #[must_use]
-    pub fn find_fake_id(&self, node_id: u32) -> Option<u8> {
-        if let Some(f) = self.nodes.get(&node_id) {
-            return Some(f.fake_msg_id);
-        }
-        None
-    }
-
     /// Increment the `rx_count` for a local state seen node (debug builds only)
     ///
     /// # Arguments
@@ -123,6 +101,7 @@ impl<'a> GatewayState<'a> {
     /// # Side effects/state changes
     /// * Increments the `rx_count` entry of the corresponding `node_id`
     #[cfg(feature = "debug")]
+    #[inline]
     pub fn increment_rx_count(&mut self, node_id: u32) {
         if let Some(f) = self.nodes.get_mut(&node_id) {
             f.rx_count += 1;
@@ -134,20 +113,9 @@ impl<'a> GatewayState<'a> {
     /// # Arguments
     /// * `self` - Mutable self reference
     /// * `num` - The number of the serial node
+    #[inline]
     pub fn set_serial_number(&mut self, num: u32) {
         self.serial_node = num;
-    }
-
-    pub fn retrieve_user(&mut self, node_id: u32) -> Option<User> {
-        if let Some(node) = self.nodes.get_mut(&node_id) {
-            let mut user = User::default();
-            user.id = node.id.to_string();
-            user.long_name = node.long_name.to_string();
-            user.short_name = node.short_name.to_string();
-            user.hw_model = node.hw_model;
-            return Some(user);
-        }
-        None
     }
 
     /// Insert a new node into the state
@@ -170,10 +138,8 @@ impl<'a> GatewayState<'a> {
                 short_name: Cow::Owned(user.short_name.as_str().to_owned()),
                 hw_model: user.hw_model,
                 id: Cow::Owned(user.id.as_str().to_owned()),
-                fake_msg_id: self.biggest_fake,
                 rx_count: 0, // Initialize to 0 to not count any from nodedb?
             };
-            self.biggest_fake += 1;
             e.insert(v);
             return true;
         } else if let Some(n) = self.nodes.get_mut(&node_id)
@@ -187,11 +153,6 @@ impl<'a> GatewayState<'a> {
             n.long_name = Cow::Owned(user.long_name.as_str().to_owned());
             n.short_name = Cow::Owned(user.short_name.as_str().to_owned());
             n.hw_model = user.hw_model;
-            // Increase the biggest_fake to reflect eventual change in db
-            self.biggest_fake += 1;
-            // Set the updated entry to use this new biggest_fake
-            n.fake_msg_id = self.biggest_fake;
-            self.biggest_fake += 1;
             return true;
         }
         false
