@@ -157,8 +157,8 @@ VALUES
         ni.device_metrics.and_then(|d| d.air_util_tx),
         ni.position.and_then(|l| l.latitude_i),
         ni.position.and_then(|l| l.longitude_i),
-        ni.user.as_ref().map(|u| u.long_name.clone()),
-        ni.user.as_ref().map(|u| u.short_name.clone()),
+        ni.user.as_ref().map(|u| u.long_name.as_str()),
+        ni.user.as_ref().map(|u| u.short_name.as_str()),
         ni.user.as_ref().map(|u| u.hw_model),
     )
     .execute(pool)
@@ -208,8 +208,8 @@ WHERE
         ni.device_metrics.and_then(|d| d.air_util_tx),
         ni.position.and_then(|l| l.latitude_i),
         ni.position.and_then(|l| l.longitude_i),
-        ni.user.as_ref().map(|u| u.long_name.clone()),
-        ni.user.as_ref().map(|u| u.short_name.clone()),
+        ni.user.as_ref().map(|u| u.long_name.as_str()),
+        ni.user.as_ref().map(|u| u.short_name.as_str()),
         ni.user.as_ref().map(|u| u.hw_model),
     )
     .execute(pool)
@@ -274,8 +274,8 @@ VALUES
         ni.device_metrics.and_then(|d| d.air_util_tx),
         ni.position.and_then(|l| l.latitude_i),
         ni.position.and_then(|l| l.longitude_i),
-        ni.user.as_ref().map(|u| u.long_name.clone()),
-        ni.user.as_ref().map(|u| u.short_name.clone()),
+        ni.user.as_ref().map(|u| u.long_name.as_str()),
+        ni.user.as_ref().map(|u| u.short_name.as_str()),
         ni.user.as_ref().map(|u| u.hw_model),
     )
     .execute(pool)
@@ -325,8 +325,8 @@ WHERE
         ni.device_metrics.and_then(|d| d.air_util_tx),
         ni.position.and_then(|l| l.latitude_i),
         ni.position.and_then(|l| l.longitude_i),
-        ni.user.as_ref().map(|u| u.long_name.clone()),
-        ni.user.as_ref().map(|u| u.short_name.clone()),
+        ni.user.as_ref().map(|u| u.long_name.as_str()),
+        ni.user.as_ref().map(|u| u.short_name.as_str()),
         ni.user.as_ref().map(|u| u.hw_model),
     )
     .execute(pool)

@@ -178,7 +178,7 @@ impl<'a> Settings<'a> {
         match config_file.try_exists() {
             Ok(b) => {
                 if !b {
-                    match fs::write(config_file.clone(), EXAMPLE_CONFIG) {
+                    match fs::write(config_file.as_path(), EXAMPLE_CONFIG) {
                         Ok(()) => (),
                         Err(e) => panic!("{e}"),
                     }
@@ -211,7 +211,7 @@ impl<'a> Settings<'a> {
     /// # Panics
     /// This panics if a serial port is not provided by the user in the case that the config file does
     /// not provide a serial port path
-    pub(crate) fn get_serial_port(&self) -> Cow<'a, str> {
+    pub(crate) fn get_serial_port(&'a self) -> Cow<'a, str> {
         if self.serial.port.is_empty() {
             warn!("Prompting user for serial port instead");
             match available_serial_ports()
@@ -240,7 +240,7 @@ impl<'a> Settings<'a> {
                 }
             }
         } else {
-            self.serial.port.clone()
+            Cow::Borrowed(&self.serial.port)
         }
     }
 

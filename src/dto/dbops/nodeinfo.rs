@@ -45,8 +45,8 @@ VALUES
   )
             ",
         Oid(ni.num),
-        ni.user.as_ref().map(|u| u.long_name.clone()),
-        ni.user.as_ref().map(|u| u.short_name.clone()),
+        ni.user.as_ref().map(|u| u.long_name.as_str()),
+        ni.user.as_ref().map(|u| u.short_name.as_str()),
         ni.user.as_ref().map(|u| u.hw_model),
         loc,
     )
@@ -90,8 +90,8 @@ WHERE
   node_id = $1
         ",
         Oid(ni.num),
-        ni.user.as_ref().map(|u| u.long_name.clone()),
-        ni.user.as_ref().map(|u| u.short_name.clone()),
+        ni.user.as_ref().map(|u| u.long_name.as_str()),
+        ni.user.as_ref().map(|u| u.short_name.as_str()),
         ni.user.as_ref().map(|u| u.hw_model),
         loc,
     )
