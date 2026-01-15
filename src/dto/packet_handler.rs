@@ -227,11 +227,6 @@ async fn decode_payload(
                     },
                     PortNum::NodeinfoApp => match NodeInfo::decode(data.payload.as_slice()) {
                         Ok(ni) => {
-                            // insert into GatewayState
-                            #[cfg(feature = "debug")]
-                            if let Some(user) = &ni.user {
-                                state.lock().await.insert(ni.num, user);
-                            }
                             // insert into db
                             match devicemetrics::insert_mp_ni(pkt, &ni, pool).await {
                                 Ok(_) => log_msg!(
@@ -265,6 +260,11 @@ async fn decode_payload(
                                     ),
                                     Err(e) => log_msg!(log::Level::Error, "{e}"),
                                 },
+                            }
+                            // insert into GatewayState
+                            #[cfg(feature = "debug")]
+                            if let Some(user) = &ni.user {
+                                state.lock().await.insert(ni.num, user);
                             }
                         }
                         Err(e) => log_msg!(log::Level::Warn, "{e}"),
