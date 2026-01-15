@@ -1,6 +1,6 @@
 use crate::{
     dto::{
-        dbops::{airqualitymetrics, devicemetrics},
+        dbops::{airqualitymetrics, devicemetrics, errormetrics, localstats},
         models::{Devicemetric, Environmentmetric, Errormetric, Localstat, Neighborinfo, Nodeinfo},
         types::{DbOps, ToRow, timestamp},
     },
@@ -472,17 +472,13 @@ async fn decode_telemetry(pkt: &MeshPacket, tm: Telemetry, pool: &Pool<Postgres>
                 }
             }
             Variant::LocalStats(local_stats) => {
-                let row: Localstat =
-                    local_stats.to_row(Oid(pkt.id), Oid(pkt.from), timestamp(tm.time));
-                match row.insert(pool).await {
+                match localstats::insert(pkt, &tm, &local_stats, pool).await {
                     Ok(_) => log_msg!(log::Level::Info, "Inserted 1 row into LocalStats table"),
                     Err(e) => log_msg!(log::Level::Error, "{e}"),
                 }
             }
             Variant::ErrorMetrics(error_metrics) => {
-                let row: Errormetric =
-                    error_metrics.to_row(Oid(pkt.id), Oid(pkt.from), timestamp(tm.time));
-                match row.insert(pool).await {
+                match errormetrics::insert(pkt, &tm, &error_metrics, pool).await {
                     Ok(_) => log_msg!(log::Level::Info, "Inserted 1 row into ErrorMetrics table"),
                     Err(e) => log_msg!(log::Level::Error, "{e}"),
                 }
