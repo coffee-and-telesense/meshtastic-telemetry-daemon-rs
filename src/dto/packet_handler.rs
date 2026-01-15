@@ -55,12 +55,11 @@ pub async fn process_packet(
                 // only insert if user is some
                 if node_info.user.is_some() {
                     // none of the arguments are used, so do dummy args
-                    let row: Nodeinfo = node_info.to_row(Oid(0), Oid(node_info.num), timestamp(0));
-                    match row.insert(pool).await {
+                    match devicemetrics::insert_fr_ni(pkt, node_info, pool).await {
                         Ok(_) => log_msg!(log::Level::Info, "Inserted 1 row into NodeInfo table"),
                         Err(_) => {
                             // Try updating the row
-                            match row.update(pool).await {
+                            match devicemetrics::update_fr_ni(pkt, node_info, pool).await {
                                 Ok(_) => {
                                     log_msg!(log::Level::Info, "Updated 1 row in NodeInfo table");
                                 }
@@ -226,16 +225,14 @@ async fn decode_payload(
                                 state.lock().await.insert(ni.num, user);
                             }
                             // insert into db
-                            let row: Devicemetric =
-                                ni.to_row(Oid(pkt.id), Oid(pkt.from), timestamp(pkt.rx_time));
-                            match row.insert(pool).await {
+                            match devicemetrics::insert_mp_ni(pkt, &ni, pool).await {
                                 Ok(_) => log_msg!(
                                     log::Level::Info,
                                     "Inserted 1 row into DeviceMetrics table"
                                 ),
                                 Err(_) => {
                                     // Try updating the row
-                                    match row.update(pool).await {
+                                    match devicemetrics::update_mp_ni(pkt, &ni, pool).await {
                                         Ok(_) => log_msg!(
                                             log::Level::Info,
                                             "Updated 1 row in NodeInfo table"
