@@ -1,0 +1,18 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\nINSERT INTO\n  DeviceMetrics (\n    msg_id,\n    node_id,\n    time,\n    latitude,\n    longitude\n)\nVALUES\n  (\n    $1,\n    $2,\n    $3,\n    $4,\n    $5\n  )\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Oid",
+        "Oid",
+        "Timestamp",
+        "Int4",
+        "Int4"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "4b7bdcbc43e912372c9b07517b553a7bea222724a51e94aa84303bc18fdeae5f"
+}

@@ -1,0 +1,27 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\nINSERT INTO\n  LocalStats (\n    msg_id,\n    node_id,\n    time,\n    uptime_seconds,\n    channel_util,\n    air_util_tx,\n    num_packets_tx,\n    num_packets_rx,\n    num_packets_rx_bad,\n    num_online_nodes,\n    num_total_nodes,\n    num_rx_dupe,\n    num_tx_relay,\n    num_tx_relay_canceled\n)\nVALUES\n  (\n    $1,\n    $2,\n    $3,\n    $4,\n    $5,\n    $6,\n    $7,\n    $8,\n    $9,\n    $10,\n    $11,\n    $12,\n    $13,\n    $14\n  )\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Oid",
+        "Oid",
+        "Timestamp",
+        "Oid",
+        "Float4",
+        "Float4",
+        "Oid",
+        "Oid",
+        "Oid",
+        "Oid",
+        "Oid",
+        "Oid",
+        "Oid",
+        "Oid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "da91196a2309461605add32bf0674996b87b4131596832a38ba2e85298f2d0f8"
+}
