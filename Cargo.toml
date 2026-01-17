@@ -31,9 +31,8 @@ derive-new = { version = "0.7", default-features = false }
 # Logger
 log = { version = "0.4", default-features = false }
 # My fork of the meshtastic protocol library with updated protobufs---no serde
-meshtastic = { git = "https://github.com/gatlinnewhouse/meshtastic-rust.git", branch = "stable-science", default-features = false, features = [
+meshtastic = { git = "https://github.com/gatlinnewhouse/meshtastic-rust.git", branch = "stable-science-bytes", default-features = false, features = [
   "tokio",
-  "serde",
 ] }
 # Config directory handling
 microxdg = { version = "0.2" }

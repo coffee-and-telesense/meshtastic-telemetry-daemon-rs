@@ -1,8 +1,19 @@
 use crate::util::timestamp;
 use anyhow::Context;
-use meshtastic::protobufs::{MeshPacket, Neighbor, NeighborInfo};
+use meshtastic::protobufs::{MeshPacket, NeighborInfo};
+use serde::Serialize;
 use serde_json::{Value, json};
 use sqlx::postgres::types::Oid;
+
+#[derive(Serialize)]
+struct Neighbor {
+    node_id: u32,
+    snr: f32,
+    last_rx_time: u32,
+    node_broadcast_interval_secs: u32,
+    num_packets_rx: u32,
+    rssi: i32,
+}
 
 /// Insert a row into the `NeighborInfo` table
 ///

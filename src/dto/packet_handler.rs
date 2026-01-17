@@ -215,7 +215,7 @@ async fn decode_payload(
             mesh_packet::PayloadVariant::Decoded(data) => {
                 match data.portnum() {
                     // We care about these four payload types for sure!
-                    PortNum::PositionApp => match Position::decode(data.payload.as_slice()) {
+                    PortNum::PositionApp => match Position::decode(data.payload.clone()) {
                         Ok(pos) => match devicemetrics::insert_pos(pkt, &pos, pool).await {
                             Ok(_) => log_msg!(
                                 log::Level::Info,
@@ -225,7 +225,7 @@ async fn decode_payload(
                         },
                         Err(e) => log_msg!(log::Level::Warn, "{e}"),
                     },
-                    PortNum::NodeinfoApp => match NodeInfo::decode(data.payload.as_slice()) {
+                    PortNum::NodeinfoApp => match NodeInfo::decode(data.payload.clone()) {
                         Ok(ni) => {
                             // insert into db
                             match devicemetrics::insert_mp_ni(pkt, &ni, pool).await {
@@ -269,12 +269,11 @@ async fn decode_payload(
                         }
                         Err(e) => log_msg!(log::Level::Warn, "{e}"),
                     },
-                    PortNum::TelemetryApp => match Telemetry::decode(data.payload.as_slice()) {
+                    PortNum::TelemetryApp => match Telemetry::decode(data.payload.clone()) {
                         Ok(telemetry) => decode_telemetry(pkt, telemetry, pool).await,
                         Err(e) => log_msg!(log::Level::Warn, "{e}"),
                     },
-                    PortNum::NeighborinfoApp => match NeighborInfo::decode(data.payload.as_slice())
-                    {
+                    PortNum::NeighborinfoApp => match NeighborInfo::decode(data.payload.clone()) {
                         Ok(ni) => match neighborinfo::insert(pkt, &ni, pool).await {
                             Ok(_) => {
                                 log_msg!(
@@ -291,16 +290,16 @@ async fn decode_payload(
                     // The others are nice for tracing during development
                     #[cfg(feature = "trace")]
                     PortNum::UnknownApp => {
-                        decode_and_trace("UnknownApp", data.payload.as_slice());
+                        decode_and_trace("UnknownApp", data.payload.clone());
                     }
                     #[cfg(feature = "trace")]
-                    PortNum::TextMessageApp => match String::decode(data.payload.as_slice()) {
+                    PortNum::TextMessageApp => match String::decode(data.payload.clone()) {
                         Ok(payload) => decode_and_trace("TextMessageApp", payload),
                         Err(e) => log_msg!(log::Level::Warn, "Error decoding TextMessageApp: {e}"),
                     },
                     #[cfg(feature = "trace")]
                     PortNum::RemoteHardwareApp => {
-                        match HardwareMessage::decode(data.payload.as_slice()) {
+                        match HardwareMessage::decode(data.payload.clone()) {
                             Ok(payload) => decode_and_trace("RemoteHardwareApp", payload),
                             Err(e) => {
                                 log_msg!(log::Level::Warn, "Error decoding RemoteHardwareApp: {e}");
@@ -308,14 +307,14 @@ async fn decode_payload(
                         }
                     }
                     #[cfg(feature = "trace")]
-                    PortNum::RoutingApp => match Routing::decode(data.payload.as_slice()) {
+                    PortNum::RoutingApp => match Routing::decode(data.payload.clone()) {
                         Ok(payload) => decode_and_trace("RoutingApp", payload),
                         Err(e) => {
                             log_msg!(log::Level::Warn, "Error decoding RoutingApp: {e}");
                         }
                     },
                     #[cfg(feature = "trace")]
-                    PortNum::AdminApp => match AdminMessage::decode(data.payload.as_slice()) {
+                    PortNum::AdminApp => match AdminMessage::decode(data.payload.clone()) {
                         Ok(payload) => decode_and_trace("AdminApp", payload),
                         Err(e) => {
                             log_msg!(log::Level::Warn, "Error decoding AdminApp: {e}");
@@ -323,7 +322,7 @@ async fn decode_payload(
                     },
                     #[cfg(feature = "trace")]
                     PortNum::TextMessageCompressedApp => {
-                        match Compressed::decode(data.payload.as_slice()) {
+                        match Compressed::decode(data.payload.clone()) {
                             Ok(payload) => decode_and_trace("TextMessageCompressedApp", payload),
                             Err(e) => {
                                 log_msg!(
@@ -334,7 +333,7 @@ async fn decode_payload(
                         }
                     }
                     #[cfg(feature = "trace")]
-                    PortNum::WaypointApp => match Waypoint::decode(data.payload.as_slice()) {
+                    PortNum::WaypointApp => match Waypoint::decode(data.payload.clone()) {
                         Ok(payload) => decode_and_trace("WaypointApp", payload),
                         Err(e) => {
                             log_msg!(log::Level::Warn, "Error decoding WaypointApp: {e}");
@@ -342,24 +341,24 @@ async fn decode_payload(
                     },
                     #[cfg(feature = "trace")]
                     PortNum::AudioApp => {
-                        decode_and_trace("AudioApp", data.payload.as_slice());
+                        decode_and_trace("AudioApp", data.payload.clone());
                     }
                     #[cfg(feature = "trace")]
-                    PortNum::DetectionSensorApp => match String::decode(data.payload.as_slice()) {
+                    PortNum::DetectionSensorApp => match String::decode(data.payload.clone()) {
                         Ok(payload) => decode_and_trace("DetectionSensorApp", payload),
                         Err(e) => {
                             log_msg!(log::Level::Warn, "Error decoding DetectionSensorApp: {e}");
                         }
                     },
                     #[cfg(feature = "trace")]
-                    PortNum::AlertApp => match String::decode(data.payload.as_slice()) {
+                    PortNum::AlertApp => match String::decode(data.payload.clone()) {
                         Ok(payload) => decode_and_trace("AlertApp", payload),
                         Err(e) => {
                             log_msg!(log::Level::Warn, "Error decoding AlertApp: {e}");
                         }
                     },
                     #[cfg(feature = "trace")]
-                    PortNum::ReplyApp => match String::decode(data.payload.as_slice()) {
+                    PortNum::ReplyApp => match String::decode(data.payload.clone()) {
                         Ok(payload) => decode_and_trace("ReplyApp", payload),
                         Err(e) => {
                             log_msg!(log::Level::Warn, "Error decoding ReplyApp: {e}");
@@ -367,10 +366,10 @@ async fn decode_payload(
                     },
                     #[cfg(feature = "trace")]
                     PortNum::IpTunnelApp => {
-                        decode_and_trace("IpTunnelApp", data.payload.as_slice());
+                        decode_and_trace("IpTunnelApp", data.payload.clone());
                     }
                     #[cfg(feature = "trace")]
-                    PortNum::PaxcounterApp => match Paxcount::decode(data.payload.as_slice()) {
+                    PortNum::PaxcounterApp => match Paxcount::decode(data.payload.clone()) {
                         Ok(payload) => decode_and_trace("PaxcounterApp", payload),
                         Err(e) => {
                             log_msg!(log::Level::Warn, "Error decoding PaxcounterApp: {e}");
@@ -378,11 +377,11 @@ async fn decode_payload(
                     },
                     #[cfg(feature = "trace")]
                     PortNum::SerialApp => {
-                        decode_and_trace("SerialApp", data.payload.as_slice());
+                        decode_and_trace("SerialApp", data.payload.clone());
                     }
                     #[cfg(feature = "trace")]
                     PortNum::StoreForwardApp => {
-                        match StoreAndForward::decode(data.payload.as_slice()) {
+                        match StoreAndForward::decode(data.payload.clone()) {
                             Ok(payload) => decode_and_trace("StoreForwardApp", payload),
                             Err(e) => {
                                 log_msg!(log::Level::Warn, "Error decoding StoreForwardApp: {e}");
@@ -390,7 +389,7 @@ async fn decode_payload(
                         }
                     }
                     #[cfg(feature = "trace")]
-                    PortNum::RangeTestApp => match String::decode(data.payload.as_slice()) {
+                    PortNum::RangeTestApp => match String::decode(data.payload.clone()) {
                         Ok(payload) => decode_and_trace("RangeTestApp", payload),
                         Err(e) => {
                             log_msg!(log::Level::Warn, "Error decoding RangeTestApp: {e}");
@@ -398,30 +397,28 @@ async fn decode_payload(
                     },
                     #[cfg(feature = "trace")]
                     PortNum::ZpsApp => {
-                        decode_and_trace("ZpsApp", data.payload.as_slice());
+                        decode_and_trace("ZpsApp", data.payload.clone());
                     }
                     #[cfg(feature = "trace")]
                     PortNum::SimulatorApp => {
-                        decode_and_trace("SimulatorApp", data.payload.as_slice());
+                        decode_and_trace("SimulatorApp", data.payload.clone());
                     }
                     #[cfg(feature = "trace")]
-                    PortNum::TracerouteApp => {
-                        match RouteDiscovery::decode(data.payload.as_slice()) {
-                            Ok(payload) => decode_and_trace("TracerouteApp", payload),
-                            Err(e) => {
-                                log_msg!(log::Level::Warn, "Error decoding TracerouteApp: {e}");
-                            }
+                    PortNum::TracerouteApp => match RouteDiscovery::decode(data.payload.clone()) {
+                        Ok(payload) => decode_and_trace("TracerouteApp", payload),
+                        Err(e) => {
+                            log_msg!(log::Level::Warn, "Error decoding TracerouteApp: {e}");
                         }
-                    }
+                    },
                     #[cfg(feature = "trace")]
-                    PortNum::AtakPlugin => match TakPacket::decode(data.payload.as_slice()) {
+                    PortNum::AtakPlugin => match TakPacket::decode(data.payload.clone()) {
                         Ok(payload) => decode_and_trace("AtakPlugin", payload),
                         Err(e) => {
                             log_msg!(log::Level::Warn, "Error decoding AtakPlugin: {e}");
                         }
                     },
                     #[cfg(feature = "trace")]
-                    PortNum::MapReportApp => match MapReport::decode(data.payload.as_slice()) {
+                    PortNum::MapReportApp => match MapReport::decode(data.payload.clone()) {
                         Ok(payload) => decode_and_trace("MapReportApp", payload),
                         Err(e) => {
                             log_msg!(log::Level::Warn, "Error decoding MapReportApp: {e}");
@@ -429,7 +426,7 @@ async fn decode_payload(
                     },
                     #[cfg(feature = "trace")]
                     PortNum::PowerstressApp => {
-                        match PowerStressMessage::decode(data.payload.as_slice()) {
+                        match PowerStressMessage::decode(data.payload.clone()) {
                             Ok(payload) => decode_and_trace("PowerstressApp", payload),
                             Err(e) => {
                                 log_msg!(log::Level::Warn, "Error decoding PowerstressApp: {e}");
@@ -438,10 +435,10 @@ async fn decode_payload(
                     }
                     #[cfg(feature = "trace")]
                     PortNum::PrivateApp => {
-                        decode_and_trace("PrivateApp", data.payload.as_slice());
+                        decode_and_trace("PrivateApp", data.payload.clone());
                     }
                     #[cfg(feature = "trace")]
-                    PortNum::AtakForwarder => match TakPacket::decode(data.payload.as_slice()) {
+                    PortNum::AtakForwarder => match TakPacket::decode(data.payload.clone()) {
                         Ok(payload) => decode_and_trace("AtakForwarder", payload),
                         Err(e) => {
                             log_msg!(log::Level::Warn, "Error decoding AtakForwarder: {e}");
@@ -449,7 +446,7 @@ async fn decode_payload(
                     },
                     #[cfg(feature = "trace")]
                     PortNum::Max => {
-                        decode_and_trace("Max", data.payload.as_slice());
+                        decode_and_trace("Max", data.payload.clone());
                     }
                 }
             }
