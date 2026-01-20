@@ -464,12 +464,16 @@ async fn decode_telemetry(pkt: &MeshPacket, tm: Telemetry, pool: &Pool<Postgres>
     if let Some(data) = tm.variant {
         match data {
             Variant::DeviceMetrics(device_metrics) => {
+                #[cfg(feature = "trace")]
+                decode_and_trace("Telemetry/DeviceMetrics", device_metrics);
                 match devicemetrics::insert_dm(pkt, &tm, &device_metrics, pool).await {
                     Ok(_) => log_msg!(log::Level::Info, "Inserted 1 row into DeviceMetrics table"),
                     Err(e) => log_msg!(log::Level::Error, "{e}"),
                 }
             }
             Variant::EnvironmentMetrics(environment_metrics) => {
+                #[cfg(feature = "trace")]
+                decode_and_trace("Telemetry/EnvironmentMetrics", environment_metrics);
                 match environmentmetrics::insert(pkt, &tm, &environment_metrics, pool).await {
                     Ok(_) => log_msg!(
                         log::Level::Info,
@@ -479,6 +483,8 @@ async fn decode_telemetry(pkt: &MeshPacket, tm: Telemetry, pool: &Pool<Postgres>
                 }
             }
             Variant::AirQualityMetrics(air_quality_metrics) => {
+                #[cfg(feature = "trace")]
+                decode_and_trace("Telemetry/AirQualityMetrics", air_quality_metrics);
                 match airqualitymetrics::insert(pkt, &tm, &air_quality_metrics, pool).await {
                     Ok(_) => log_msg!(
                         log::Level::Info,
@@ -488,18 +494,24 @@ async fn decode_telemetry(pkt: &MeshPacket, tm: Telemetry, pool: &Pool<Postgres>
                 }
             }
             Variant::LocalStats(local_stats) => {
+                #[cfg(feature = "trace")]
+                decode_and_trace("Telemetry/LocalStats", local_stats);
                 match localstats::insert(pkt, &tm, &local_stats, pool).await {
                     Ok(_) => log_msg!(log::Level::Info, "Inserted 1 row into LocalStats table"),
                     Err(e) => log_msg!(log::Level::Error, "{e}"),
                 }
             }
             Variant::ErrorMetrics(error_metrics) => {
+                #[cfg(feature = "trace")]
+                decode_and_trace("Telemetry/ErrorMetrics", error_metrics);
                 match errormetrics::insert(pkt, &tm, &error_metrics, pool).await {
                     Ok(_) => log_msg!(log::Level::Info, "Inserted 1 row into ErrorMetrics table"),
                     Err(e) => log_msg!(log::Level::Error, "{e}"),
                 }
             }
             Variant::PowerMetrics(power_metrics) => {
+                #[cfg(feature = "trace")]
+                decode_and_trace("Telemetry/PowerMetrics", power_metrics);
                 match powermetrics::insert(pkt, &tm, &power_metrics, pool).await {
                     Ok(_) => log_msg!(log::Level::Info, "Inserted 1 row into PowerMetrics table"),
                     Err(e) => log_msg!(log::Level::Error, "{e}"),
@@ -509,10 +521,7 @@ async fn decode_telemetry(pkt: &MeshPacket, tm: Telemetry, pool: &Pool<Postgres>
             _ => {}
             #[cfg(feature = "trace")]
             Variant::HealthMetrics(health_metrics) => {
-                log_msg!(
-                    log::Level::Info,
-                    "Received HealthMetrics packet: {health_metrics:?}"
-                );
+                decode_and_trace("Telemetry/HealthMetrics", health_metrics);
             }
         }
     }
