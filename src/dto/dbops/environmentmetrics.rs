@@ -26,7 +26,7 @@ INSERT INTO
     msg_id,
     node_id,
     TIME,
-    tempurature,
+    temperature,
     relative_humidity,
     barometric_pressure,
     gas_resistance,
@@ -37,7 +37,9 @@ INSERT INTO
     wind_lull,
     rainfall_1h,
     rainfall_24h,
-    sensor_type
+    sensor_type,
+    voltage,
+    current
   )
 VALUES
   (
@@ -55,7 +57,9 @@ VALUES
     $12,
     $13,
     $14,
-    $15
+    $15,
+    $16,
+    $17
   )
             ",
         Oid(pkt.id),
@@ -73,6 +77,8 @@ VALUES
         enm.rainfall_1h,
         enm.rainfall_24h,
         enm.sensor,
+        enm.voltage,
+        enm.current,
     )
     .execute(pool)
     .await

@@ -12,3 +12,5 @@ pub(crate) mod localstats;
 pub(crate) mod neighborinfo;
 /// `NodeInfo` database table operations
 pub(crate) mod nodeinfo;
+/// `PowerMetrics` database table operations
+pub(crate) mod powermetrics;

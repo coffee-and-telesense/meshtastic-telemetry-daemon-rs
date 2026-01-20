@@ -1,7 +1,7 @@
 use crate::{
     dto::dbops::{
         airqualitymetrics, devicemetrics, environmentmetrics, errormetrics, localstats,
-        neighborinfo, nodeinfo,
+        neighborinfo, nodeinfo, powermetrics,
     },
     log_msg,
     util::state::GatewayState,
@@ -499,15 +499,14 @@ async fn decode_telemetry(pkt: &MeshPacket, tm: Telemetry, pool: &Pool<Postgres>
                     Err(e) => log_msg!(log::Level::Error, "{e}"),
                 }
             }
+            Variant::PowerMetrics(power_metrics) => {
+                match powermetrics::insert(pkt, &tm, &power_metrics, pool).await {
+                    Ok(_) => log_msg!(log::Level::Info, "Inserted 1 row into PowerMetrics table"),
+                    Err(e) => log_msg!(log::Level::Error, "{e}"),
+                }
+            }
             #[cfg(not(feature = "trace"))]
             _ => {}
-            #[cfg(feature = "trace")]
-            Variant::PowerMetrics(power_metrics) => {
-                log_msg!(
-                    log::Level::Info,
-                    "Received PowerMetrics packet: {power_metrics:?}"
-                );
-            }
             #[cfg(feature = "trace")]
             Variant::HealthMetrics(health_metrics) => {
                 log_msg!(
