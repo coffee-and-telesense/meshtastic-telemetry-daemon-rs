@@ -57,7 +57,9 @@ pub async fn process_packet(
                         Ok(_) => {
                             log_msg!(log::Level::Info, "Inserted 1 row into DeviceMetrics table");
                         }
-                        Err(_) => {
+                        Err(e) => {
+                            log_msg!(log::Level::Error, "{e}");
+
                             // Try updating the row
                             match devicemetrics::update_fr_ni(pkt, node_info, pool).await {
                                 Ok(_) => log_msg!(
@@ -70,10 +72,17 @@ pub async fn process_packet(
                     }
                     match nodeinfo::insert(node_info, pool).await {
                         Ok(_) => log_msg!(log::Level::Info, "Inserted 1 row into NodeInfo table"),
-                        Err(_) => match nodeinfo::update(node_info, pool).await {
-                            Ok(_) => log_msg!(log::Level::Info, "Updated 1 row in NodeInfo table"),
-                            Err(e) => log_msg!(log::Level::Error, "{e}"),
-                        },
+                        Err(e) => {
+                            log_msg!(log::Level::Error, "{e}");
+
+                            // Try updating the row
+                            match nodeinfo::update(node_info, pool).await {
+                                Ok(_) => {
+                                    log_msg!(log::Level::Info, "Updated 1 row in NodeInfo table")
+                                }
+                                Err(e) => log_msg!(log::Level::Error, "{e}"),
+                            }
+                        }
                     }
                     // insert into GatewayState
                     #[cfg(feature = "debug")]
@@ -233,7 +242,9 @@ async fn decode_payload(
                                     log::Level::Info,
                                     "Inserted 1 row into DeviceMetrics table"
                                 ),
-                                Err(_) => {
+                                Err(e) => {
+                                    log_msg!(log::Level::Error, "{e}");
+
                                     // Try updating the row
                                     match devicemetrics::update_mp_ni(pkt, &ni, pool).await {
                                         Ok(_) => log_msg!(
@@ -253,13 +264,18 @@ async fn decode_payload(
                                         "Inserted 1 row into NodeInfo table"
                                     );
                                 }
-                                Err(_) => match nodeinfo::update(&ni, pool).await {
-                                    Ok(_) => log_msg!(
-                                        log::Level::Info,
-                                        "Updated 1 row in NodeInfo table"
-                                    ),
-                                    Err(e) => log_msg!(log::Level::Error, "{e}"),
-                                },
+                                Err(e) => {
+                                    log_msg!(log::Level::Error, "{e}");
+
+                                    // Try updating the row
+                                    match nodeinfo::update(&ni, pool).await {
+                                        Ok(_) => log_msg!(
+                                            log::Level::Info,
+                                            "Updated 1 row in NodeInfo table"
+                                        ),
+                                        Err(e) => log_msg!(log::Level::Error, "{e}"),
+                                    }
+                                }
                             }
                             // insert into GatewayState
                             #[cfg(feature = "debug")]
