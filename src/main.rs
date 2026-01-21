@@ -13,31 +13,19 @@ extern crate syslog;
 #[macro_use]
 extern crate log;
 
-#[cfg(feature = "postgres")]
-use crate::db::connection::update_metrics;
-use crate::dto::packet_handler;
-use crate::util::{
-    config::Settings,
-    log::set_logger,
-    types::{GatewayState, Pkt},
-};
+use crate::dto::packet_handler::process_packet;
+use crate::util::config::DEPLOYMENT_LOCATION;
+#[cfg(feature = "log_perf")]
+use crate::util::log::log_perf;
+use crate::util::{config::Settings, log::set_logger, state::GatewayState};
 use anyhow::{Context, Result};
-use chrono::Local;
-use db::connection::proactive_ninfo_insert;
-#[cfg(feature = "debug")]
-use log::{error, info, warn};
 use meshtastic::api::StreamApi;
 use meshtastic::utils;
 #[cfg(feature = "print-packets")]
 use serde_json::to_string_pretty;
-use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::{Arc, Mutex};
-use tokio::runtime::Builder;
-use tokio::sync::mpsc;
+use std::sync::Arc;
+use tokio::sync::Mutex;
 
-/// Database interaction module
-#[cfg(feature = "postgres")]
-pub(crate) mod db;
 /// Handle data transfer objects
 pub(crate) mod dto;
 /// Utilities module
@@ -46,41 +34,33 @@ pub(crate) mod util;
 /// Version number of the daemon
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 
-fn main() -> std::result::Result<(), anyhow::Error> {
-    #[cfg(debug_assertions)]
-    let settings = Settings::new("example_config.toml");
-    #[cfg(not(debug_assertions))]
-    let settings = Settings::new("/etc/meshtastic_telem.toml");
+#[tokio::main(flavor = "multi_thread")]
+async fn main() -> Result<(), anyhow::Error> {
+    use crate::log_msg;
+
+    #[cfg(feature = "trace")]
+    console_subscriber::init();
+
+    let settings = Settings::new();
 
     set_logger();
 
-    Builder::new_multi_thread()
-        .enable_all()
-        .thread_name("mesh-telem")
-        .worker_threads(settings.async_runtime.worker_threads as usize)
-        .max_blocking_threads(settings.async_runtime.max_blocking_threads as usize)
-        .thread_stack_size(settings.async_runtime.thread_stack_size as usize)
-        .build()
-        .unwrap()
-        .block_on(async { rt_main(settings).await })
-}
-
-async fn rt_main(settings: Settings) -> Result<(), anyhow::Error> {
     // Create the gateway's state object
     let state = Arc::new(Mutex::new(GatewayState::new()));
 
     // Create postgresql connection
-    #[cfg(feature = "postgres")]
-    let postgres_db = settings
-        .setup_postgres()
-        .await
-        .with_context(|| "Failed to connect to postgresql database")?;
+    let postgres_db = Arc::new(
+        settings
+            .setup_postgres()
+            .with_context(|| "Failed to connect to postgresql database")?,
+    );
 
     // Connect to serial meshtastic
     let stream_api = StreamApi::new();
     let entered_port = settings.get_serial_port();
-    let serial_stream = utils::stream::build_serial_stream(entered_port.clone(), None, None, None)
-        .with_context(|| format!("Failed to build serial stream for {entered_port}"))?;
+    let serial_stream =
+        utils::stream::build_serial_stream(entered_port.to_string(), None, None, None)
+            .with_context(|| format!("Failed to build serial stream for {entered_port}"))?;
     let (mut decoded_listener, stream_api) = stream_api.connect(serial_stream).await;
 
     let config_id = utils::generate_rand_id();
@@ -89,171 +69,61 @@ async fn rt_main(settings: Settings) -> Result<(), anyhow::Error> {
         .await
         .with_context(|| "Failed to configure serial stream")?;
 
-    let deployment_loc = settings.deployment.location;
-
-    let (tx, mut rx) = mpsc::channel(settings.async_runtime.mpsc_buffer_size.into());
+    // Set the global deployment location string
+    DEPLOYMENT_LOCATION
+        .set(Box::leak(settings.deployment.location.to_string().into_boxed_str()))
+        .unwrap_or_else(|e| {
+            panic!(
+                "{}:\n\tUnable to initialize global DEPLOYMENT_LOCATION from configuration's value: {}\n ",
+                e,
+                settings.deployment.location
+            )
+        });
 
     // Output the version of the daemon to the logger
-    log::info!("Daemon version: {VERSION}");
-
-    let term = Arc::new(AtomicBool::new(false));
-    signal_hook::flag::register(signal_hook::consts::SIGTERM, Arc::clone(&term))?;
+    log_msg!(log::Level::Info, "Daemon version: {VERSION}");
 
     // This loop can be broken with ctrl+c, or by disconnecting
     // the attached serial port, or by sending a SIGTERM signal
     // through systemctl or other means
-    while !term.load(Ordering::Relaxed)
-        && let Some(decoded) = decoded_listener.recv().await
-    {
-        let tx = tx.clone();
-        let s = state.clone();
-        let join = tokio::spawn(async move {
-            // Process packet will consume decoded on this iteration, but needs to be able to
-            // asynchronously pass back results, so in cases where multiple packets arrive
-            // simultaneously we can parallel process up to 4 and then send them back to here.
-            // Although the more elegant solution will be bridging the types with eval macros rules
-            // and eliminating vast swaths of the codebase. This will also let us elimnate this
-            // barrier between db inserts and packet receptions. But for now lets do a hacky
-            // solution just to test the borrow checker and my async skills as the problem may
-            // still exist within the more elegant solution.
-            tx.send(packet_handler::process_packet(&decoded, &s))
-                .await
-                .unwrap();
-        });
-        if let Some(pkt) = rx.recv().await.unwrap() {
-            match pkt {
-                Pkt::Mesh(ref mp) => {
-                    // Count received packets in debug builds for periodic reporting in logs
+    loop {
+        tokio::select! {
+            _ = tokio::signal::ctrl_c() => {
+                log_msg!(log::Level::Warn, "Received SIGINT");
+                break;
+            }
+            msg = decoded_listener.recv() => {
+                if let Some(from_radio) = msg {
+                    process_packet(&from_radio, &state, &postgres_db).await;
+
                     #[cfg(feature = "debug")]
-                    if let Ok(mut lock) = state.clone().lock() {
-                        lock.increment_rx_count(mp.from);
-                        info!("{}", lock.format_rx_counts());
-                    }
-                    // Performance metrics with regular printing
-                    #[cfg(feature = "perf")]
                     {
-                        use tokio::runtime::Handle;
-                        let metrics = Handle::current().metrics();
-                        let nw = metrics.num_workers();
-                        let nat = metrics.num_alive_tasks();
-                        let gqd = metrics.global_queue_depth();
-                        info!(
-                            "RUNTIME PERF: {} workers used, {} alive tasks, {} global queue depth",
-                            nw, nat, gqd
-                        );
-                    }
-                    // Print packets if enabled
-                    #[cfg(feature = "print-packets")]
-                    println!("{}", to_string_pretty(&mp).unwrap());
-                    // Before we insert into postgres, we should proactively check that the foreign
-                    // key constraint is satisfied and if not we then insert a new nodeinfo row
-                    if let Some(p) = &mp.payload {
-                        match p {
-                            util::types::Payload::NodeinfoApp(_u) => {
-                                info!("Received nodeinfo payload");
-                            }
-                            _ => {
-                                #[cfg(feature = "postgres")]
-                                match proactive_ninfo_insert(
-                                    mp,
-                                    &postgres_db,
-                                    &deployment_loc,
-                                    state.clone(),
-                                )
-                                .await
-                                .with_context(|| {
-                                    "Failed to update postgres database with proactive_node_info()"
-                                }) {
-                                    Ok(v) => {
-                                        if v != 0 {
-                                            let now = Local::now();
-                                            info!(
-                                                "{}Inserted {v} rows into NodeInfo table of postgres db proactively",
-                                                now.format("%Y-%m-%d %H:%M:%S - ")
-                                            );
-                                        }
-                                    }
-                                    Err(e) => {
-                                        let now = Local::now();
-                                        error!("{}{e:#}", now.format("%Y-%m-%d %H:%M:%S - "));
-                                    }
-                                }
-                            }
+                        // log performance metrics
+                        #[cfg(feature = "log_perf")]
+                        log_perf();
+                        // log state messages
+                        let lock = state.lock().await;
+                        if lock.any_recvd() {
+                            log_msg!(log::Level::Info, "{lock}");
                         }
                     }
-                    // Get tablename to inline into insert messages
-                    let tablename = mp.match_tablename();
-                    #[cfg(feature = "postgres")]
-                    match update_metrics(&postgres_db, &pkt, None, &deployment_loc)
-                        .await
-                        .with_context(|| {
-                            format!("Failed to update {tablename} table in postgres datatbase with packet from mesh")
-                        }) {
-                        Ok(v) => {
-                            let now = Local::now();
-                            info!(
-                                "{}Inserted {v} rows into {tablename} of postgres db",
-                                now.format("%Y-%m-%d %H:%M:%S - ")
-                            );
-                        }
-                        Err(e) => {
-                            let now = Local::now();
-                            error!("{}{e:#}", now.format("%Y-%m-%d %H:%M:%S - "));
-                        }
-                    }
-                }
-                Pkt::NInfo(ref ni) => {
-                    #[cfg(feature = "print-packets")]
-                    println!("{}", to_string_pretty(&ni).unwrap());
-                    let fake = state
-                        .lock()
-                        .expect("Failed to acquire lock for GatewayState in main()")
-                        .find_fake_id(ni.num)
-                        .expect("No fake_id returned");
-                    #[cfg(feature = "postgres")]
-                    match update_metrics(&postgres_db, &pkt, Some(fake.into()), &deployment_loc)
-                        .await
-                        .with_context(|| {
-                            "Failed to update postgres database with node info packet from serial"
-                        }) {
-                        Ok(v) => {
-                            let now = Local::now();
-                            info!(
-                                "{}Inserted {v} rows into NodeInfo table of postgres db",
-                                now.format("%Y-%m-%d %H:%M:%S - ")
-                            );
-                        }
-                        Err(e) => {
-                            // This is a lower priority error message since we favor node info data
-                            // from the Mesh rather than from the serial connection. Often times it
-                            // just means that we did not insert a row
-                            let now = Local::now();
-                            info!("{}{e:#}", now.format("%Y-%m-%d %H:%M:%S - "));
-                        }
-                    }
-                }
-                Pkt::MyNodeInfo(ref mi) => {
-                    #[cfg(feature = "print-packets")]
-                    println!("{}", to_string_pretty(&mi).unwrap());
-                    #[cfg(feature = "debug")]
-                    state
-                        .clone()
-                        .lock()
-                        .expect("Failed to acquire lock for GatewayState")
-                        .set_serial_number(mi.my_node_num);
+                } else {
+                    log_msg!(log::Level::Error, "Serial connection closed");
+                    break;
                 }
             }
-            // Thread has been used to process and send to DB, kill it
-            join.await?;
         }
     }
 
     // Called when either the radio is disconnected or the daemon recieves
     // a SIGTERM or SIGKILL signal from systemctl or by other means
-    let _stream_api = stream_api.disconnect().await?;
+    match stream_api.disconnect().await {
+        Ok(_) => log_msg!(log::Level::Warn, "StreamApi disconnected without error",),
+        Err(e) => log_msg!(log::Level::Error, "StreamApi disconnected with error: {e}"),
+    }
 
     Ok(())
 }
 
-#[cfg(all(feature = "debug", feature = "syslog"))]
-compile_error!("feature \"debug\" and feature \"syslog\" cannot be enabled at the same time");
+#[cfg(all(feature = "colog", feature = "syslog"))]
+compile_error!("feature \"colog\" and feature \"syslog\" cannot be enabled at the same time");
