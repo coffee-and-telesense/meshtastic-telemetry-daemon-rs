@@ -1,0 +1,22 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\nINSERT INTO\n  PowerMetrics (\n    msg_id,\n    node_id,\n    time,\n    ch1_voltage,\n    ch1_current,\n    ch2_voltage,\n    ch2_current,\n    ch3_voltage,\n    ch3_current\n  )\nVALUES\n  (\n    $1,\n    $2,\n    $3,\n    $4,\n    $5,\n    $6,\n    $7,\n    $8,\n    $9\n  )\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Oid",
+        "Oid",
+        "Timestamp",
+        "Float4",
+        "Float4",
+        "Float4",
+        "Float4",
+        "Float4",
+        "Float4"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "7a85a2b09bf4b824e28f809fea701adc74cb3a5e135ce2724cf56eb0da108f89"
+}
