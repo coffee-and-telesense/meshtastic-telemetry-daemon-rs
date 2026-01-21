@@ -75,7 +75,7 @@ native-tls = ["sqlx/runtime-tokio-native-tls"]
 rustls = ["sqlx/runtime-tokio-rustls"]
 
 # Specific shorthand targets
-alpine = ["syslog", "native-tls", "debug"]
+alpine = ["native-tls", "debug"]
 beaglebone = ["rustls", "colog", "debug"]
 
 [profile.dev]
