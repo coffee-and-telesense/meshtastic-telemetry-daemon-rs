@@ -94,7 +94,7 @@ jobs:
           files: |
             target/${{ matrix.platform.build_target }}/release/meshtastic-telemetry-daemon-rs
       - name: Publish artifacts and release
-        uses: houseabsolute/actions-rust-release@v0
+        uses: houseabsolute/actions-rust-release@v1
         with:
           executable-name: meshtastic-telemetry-daemon-rs
           target: ${{ matrix.platform.build_target }}
