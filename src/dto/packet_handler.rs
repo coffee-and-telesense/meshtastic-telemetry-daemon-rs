@@ -19,7 +19,9 @@ use meshtastic::{
     },
 };
 use sqlx::{Pool, Postgres};
-use std::{fmt::Debug, sync::Arc};
+#[cfg(feature = "trace")]
+use std::fmt::Debug;
+use std::sync::Arc;
 use tokio::sync::Mutex;
 
 /// Process Packets
@@ -57,9 +59,9 @@ pub async fn process_packet(
                         Ok(_) => {
                             log_msg!(log::Level::Info, "Inserted 1 row into DeviceMetrics table");
                         }
-                        Err(e) => {
+                        Err(_e) => {
                             #[cfg(feature = "trace")]
-                            log_msg!(log::Level::Error, "{e:?}");
+                            log_msg!(log::Level::Error, "{_e:?}");
 
                             // Try updating the row
                             match devicemetrics::update_fr_ni(pkt, node_info, pool).await {
@@ -76,9 +78,9 @@ pub async fn process_packet(
                     }
                     match nodeinfo::insert(node_info, pool).await {
                         Ok(_) => log_msg!(log::Level::Info, "Inserted 1 row into NodeInfo table"),
-                        Err(e) => {
+                        Err(_e) => {
                             #[cfg(feature = "trace")]
-                            log_msg!(log::Level::Error, "{e:?}");
+                            log_msg!(log::Level::Error, "{_e:?}");
 
                             // Try updating the row
                             match nodeinfo::update(node_info, pool).await {
@@ -256,9 +258,9 @@ async fn decode_payload(
                                     log::Level::Info,
                                     "Inserted 1 row into DeviceMetrics table"
                                 ),
-                                Err(e) => {
+                                Err(_e) => {
                                     #[cfg(feature = "trace")]
-                                    log_msg!(log::Level::Error, "{e:?}");
+                                    log_msg!(log::Level::Error, "{_e:?}");
 
                                     // Try updating the row
                                     match devicemetrics::update_mp_ni(pkt, &ni, pool).await {
@@ -280,9 +282,9 @@ async fn decode_payload(
                                         "Inserted 1 row into NodeInfo table"
                                     );
                                 }
-                                Err(e) => {
+                                Err(_e) => {
                                     #[cfg(feature = "trace")]
-                                    log_msg!(log::Level::Error, "{e:?}");
+                                    log_msg!(log::Level::Error, "{_e:?}");
 
                                     // Try updating the row
                                     match nodeinfo::update(&ni, pool).await {
