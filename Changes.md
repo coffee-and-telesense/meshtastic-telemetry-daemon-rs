@@ -1,5 +1,10 @@
 
 
+## [v0.2.1] - 2026-01-21
+### :wrench: Chores
+- [`6a08143`](https://github.com/coffee-and-telesense/meshtastic-telemetry-daemon-rs/commit/6a08143bbe5cfb85b4d910a6b50ac75c4de41fde) - **CI**: fix config.toml, bump cargo version *(commit by [@gatlinnewhouse](https://github.com/gatlinnewhouse))*
+
+
 ## [v0.2.0] - 2026-01-21
 ### :sparkles: New Features
 - [`0452bac`](https://github.com/coffee-and-telesense/meshtastic-telemetry-daemon-rs/commit/0452bac6b51295a4c99e088d550cbd56069b1590) - **granular metrics**: add granular metrics as requested *(commit by [@gatlinnewhouse](https://github.com/gatlinnewhouse))*
@@ -259,3 +264,4 @@
 [v0.1.11]: https://github.com/coffee-and-telesense/meshtastic-telemetry-daemon-rs/compare/v0.1.10...v0.1.11
 [v0.1.12]: https://github.com/coffee-and-telesense/meshtastic-telemetry-daemon-rs/compare/v0.1.11...v0.1.12
 [v0.2.0]: https://github.com/coffee-and-telesense/meshtastic-telemetry-daemon-rs/compare/v0.1.12...v0.2.0
+[v0.2.1]: https://github.com/coffee-and-telesense/meshtastic-telemetry-daemon-rs/compare/v0.2.0...v0.2.1
