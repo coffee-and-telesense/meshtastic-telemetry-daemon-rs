@@ -100,6 +100,6 @@ jobs:
           target: ${{ matrix.platform.build_target }}
           extra-files: |
             mesh-telem.service
-            example_config.toml
+            src/util/example_config.toml
             92-usb-input-no-powersave.rules
             install.sh
