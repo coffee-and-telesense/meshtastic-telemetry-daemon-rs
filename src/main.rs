@@ -118,7 +118,7 @@ async fn main() -> Result<(), anyhow::Error> {
     // Called when either the radio is disconnected or the daemon recieves
     // a SIGTERM or SIGKILL signal from systemctl or by other means
     match stream_api.disconnect().await {
-        Ok(a) => log_msg!(log::Level::Warn, "StreamApi disconnected without error",),
+        Ok(_) => log_msg!(log::Level::Warn, "StreamApi disconnected without error",),
         Err(e) => log_msg!(log::Level::Error, "StreamApi disconnected with error: {e}"),
     }
 
