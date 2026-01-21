@@ -1,5 +1,11 @@
 
 
+## [v0.2.2] - 2026-01-21
+### :wrench: Chores
+- [`67b33b0`](https://github.com/coffee-and-telesense/meshtastic-telemetry-daemon-rs/commit/67b33b089f089d0c307fd816c9606aa80cf7696f) - **cargo**: fix alpine feature *(commit by [@gatlinnewhouse](https://github.com/gatlinnewhouse))*
+- [`af0dfe3`](https://github.com/coffee-and-telesense/meshtastic-telemetry-daemon-rs/commit/af0dfe39673fc2c977e1c3ab3b5e30fac54b24a3) - **CI**: bump versions *(commit by [@gatlinnewhouse](https://github.com/gatlinnewhouse))*
+
+
 ## [v0.2.1] - 2026-01-21
 ### :wrench: Chores
 - [`6a08143`](https://github.com/coffee-and-telesense/meshtastic-telemetry-daemon-rs/commit/6a08143bbe5cfb85b4d910a6b50ac75c4de41fde) - **CI**: fix config.toml, bump cargo version *(commit by [@gatlinnewhouse](https://github.com/gatlinnewhouse))*
@@ -265,3 +271,4 @@
 [v0.1.12]: https://github.com/coffee-and-telesense/meshtastic-telemetry-daemon-rs/compare/v0.1.11...v0.1.12
 [v0.2.0]: https://github.com/coffee-and-telesense/meshtastic-telemetry-daemon-rs/compare/v0.1.12...v0.2.0
 [v0.2.1]: https://github.com/coffee-and-telesense/meshtastic-telemetry-daemon-rs/compare/v0.2.0...v0.2.1
+[v0.2.2]: https://github.com/coffee-and-telesense/meshtastic-telemetry-daemon-rs/compare/v0.2.1...v0.2.2
