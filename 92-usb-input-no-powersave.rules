@@ -1,3 +1,11 @@
-ACTION=="add", SUBSYSTEM=="input", TEST=="power/control", ATTR{power/control}="on"
-ACTION=="add", SUBSYSTEM=="usb", TEST=="power/autosuspend" ATTR{power/autosuspend}="-1"
-KERNEL=="ttyACM0", TAG+="systemd", ENV{SYSTEMD_WANTS}+="mesh-telem.service"
+# rename tty paths
+SUBSYSTEM=="tty", ATTRS{product}=="*433MHz*", SYMLINK+="tty433"
+SUBSYSTEM=="tty", ATTRS{product}=="*915MHz*", SYMLINK+="tty915"
+
+# disable power autosuspend
+SUBSYSTEM=="usb", ATTRS{product}=="*433MHz*", ATTR{power/control}="on", ATTR{power/autosuspend}="-1"
+SUBSYSTEM=="usb", ATTRS{product}=="*915MHz*", ATTR{power/control}="on", ATTR{power/autosuspend}="-1"
+
+# start systemd services?
+# SUBSYSTEM=="usb", ATTRS{product}=="*433MHz*", TAG+="systemd", ENV{SYSTEMD_WANTS}+="mesh-telem.service"
+# SUBSYSTEM=="usb", ATTRS{product}=="*915MHz*", TAG+="systemd", ENV{SYSTEMD_WANTS}+="mesh-telem.service"
