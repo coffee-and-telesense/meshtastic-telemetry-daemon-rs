@@ -1,5 +1,14 @@
 
 
+## [v0.3.0] - 2026-02-25
+### :wrench: Chores
+- [`83bb3b3`](https://github.com/coffee-and-telesense/meshtastic-telemetry-daemon-rs/commit/83bb3b379cc2b6da560170524a175619a7c7b037) - **udev**: update udev rules, need to test on Pis *(commit by [@gatlinnewhouse](https://github.com/gatlinnewhouse))*
+- [`9eeae0b`](https://github.com/coffee-and-telesense/meshtastic-telemetry-daemon-rs/commit/9eeae0bc1f00b34098d86ba66acd48bc461b2cb2) - **udev and systemd**: update udev rules and systemd rules *(commit by [@gatlinnewhouse](https://github.com/gatlinnewhouse))*
+- [`6714ce8`](https://github.com/coffee-and-telesense/meshtastic-telemetry-daemon-rs/commit/6714ce801ce4fb7abde9811e7def2c97bdb1eb45) - **install script**: update install script *(commit by [@gatlinnewhouse](https://github.com/gatlinnewhouse))*
+- [`0dbfc29`](https://github.com/coffee-and-telesense/meshtastic-telemetry-daemon-rs/commit/0dbfc29df8023b9ad124314b107e032b1d6418d6) - **CI**: update github workflow *(commit by [@gatlinnewhouse](https://github.com/gatlinnewhouse))*
+- [`cc56eba`](https://github.com/coffee-and-telesense/meshtastic-telemetry-daemon-rs/commit/cc56eba27e071488ca93c4435885d6518d0eba50) - **cargo**: update cargo toml version *(commit by [@gatlinnewhouse](https://github.com/gatlinnewhouse))*
+
+
 ## [v0.2.2] - 2026-01-21
 ### :wrench: Chores
 - [`67b33b0`](https://github.com/coffee-and-telesense/meshtastic-telemetry-daemon-rs/commit/67b33b089f089d0c307fd816c9606aa80cf7696f) - **cargo**: fix alpine feature *(commit by [@gatlinnewhouse](https://github.com/gatlinnewhouse))*
@@ -272,3 +281,4 @@
 [v0.2.0]: https://github.com/coffee-and-telesense/meshtastic-telemetry-daemon-rs/compare/v0.1.12...v0.2.0
 [v0.2.1]: https://github.com/coffee-and-telesense/meshtastic-telemetry-daemon-rs/compare/v0.2.0...v0.2.1
 [v0.2.2]: https://github.com/coffee-and-telesense/meshtastic-telemetry-daemon-rs/compare/v0.2.1...v0.2.2
+[v0.3.0]: https://github.com/coffee-and-telesense/meshtastic-telemetry-daemon-rs/compare/v0.2.2...v0.3.0
