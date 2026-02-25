@@ -50,44 +50,26 @@ pub async fn process_packet(pkt: &FromRadio, state: &Arc<GatewayState>, pool: &P
             from_radio::PayloadVariant::NodeInfo(node_info) => {
                 // only insert if user is some
                 if node_info.user.is_some() {
-                    match devicemetrics::insert_fr_dm(pkt, node_info, pool).await {
+                    let (dm_result, ni_result) = tokio::join!(
+                        devicemetrics::upsert_fr(pkt, node_info, pool),
+                        nodeinfo::upsert(node_info, pool),
+                    );
+                    match dm_result {
                         Ok(_) => {
-                            log_msg!(log::Level::Info, "Inserted 1 row into DeviceMetrics table");
+                            log_msg!(log::Level::Info, "Upserted 1 row into DeviceMetrics table")
                         }
-                        Err(_e) => {
-                            #[cfg(feature = "trace")]
-                            log_msg!(log::Level::Error, "{_e:?}");
-
-                            // Try updating the row
-                            match devicemetrics::update_fr_dm(pkt, node_info, pool).await {
-                                Ok(_) => log_msg!(
-                                    log::Level::Info,
-                                    "Updated 1 row in DeviceMetrics table"
-                                ),
-                                #[cfg(feature = "trace")]
-                                Err(e) => log_msg!(log::Level::Error, "{e:?}"),
-                                #[cfg(not(feature = "trace"))]
-                                Err(e) => log_msg!(log::Level::Error, "{e}"),
-                            }
-                        }
+                        #[cfg(feature = "trace")]
+                        Err(e) => log_msg!(log::Level::Error, "{e:?}"),
+                        #[cfg(not(feature = "trace"))]
+                        Err(e) => log_msg!(log::Level::Error, "{e}"),
                     }
-                    match nodeinfo::insert(node_info, pool).await {
-                        Ok(_) => log_msg!(log::Level::Info, "Inserted 1 row into NodeInfo table"),
-                        Err(_e) => {
-                            #[cfg(feature = "trace")]
-                            log_msg!(log::Level::Error, "{_e:?}");
 
-                            // Try updating the row
-                            match nodeinfo::update(node_info, pool).await {
-                                Ok(_) => {
-                                    log_msg!(log::Level::Info, "Updated 1 row in NodeInfo table")
-                                }
-                                #[cfg(feature = "trace")]
-                                Err(e) => log_msg!(log::Level::Error, "{e:?}"),
-                                #[cfg(not(feature = "trace"))]
-                                Err(e) => log_msg!(log::Level::Error, "{e}"),
-                            }
-                        }
+                    match ni_result {
+                        Ok(_) => log_msg!(log::Level::Info, "Upserted 1 row into NodeInfo table"),
+                        #[cfg(feature = "trace")]
+                        Err(e) => log_msg!(log::Level::Error, "{e:?}"),
+                        #[cfg(not(feature = "trace"))]
+                        Err(e) => log_msg!(log::Level::Error, "{e}"),
                     }
                     // insert into GatewayState
                     #[cfg(feature = "debug")]
@@ -244,53 +226,32 @@ async fn decode_payload(pkt: &MeshPacket, state: &Arc<GatewayState>, pool: &Pool
                     },
                     PortNum::NodeinfoApp => match NodeInfo::decode(data.payload.clone()) {
                         Ok(ni) => {
-                            // insert into db
-                            match devicemetrics::insert_mp_dm(pkt, &ni, pool).await {
+                            let (dm_result, ni_result) = tokio::join!(
+                                devicemetrics::upsert_mp(pkt, &ni, pool),
+                                nodeinfo::upsert(&ni, pool),
+                            );
+
+                            match dm_result {
                                 Ok(_) => log_msg!(
                                     log::Level::Info,
-                                    "Inserted 1 row into DeviceMetrics table"
+                                    "Upserted 1 row into DeviceMetrics table"
                                 ),
-                                Err(_e) => {
-                                    #[cfg(feature = "trace")]
-                                    log_msg!(log::Level::Error, "{_e:?}");
-
-                                    // Try updating the row
-                                    match devicemetrics::update_mp_dm(pkt, &ni, pool).await {
-                                        Ok(_) => log_msg!(
-                                            log::Level::Info,
-                                            "Updated 1 row in NodeInfo table"
-                                        ),
-                                        #[cfg(feature = "trace")]
-                                        Err(e) => log_msg!(log::Level::Error, "{e:?}"),
-                                        #[cfg(not(feature = "trace"))]
-                                        Err(e) => log_msg!(log::Level::Error, "{e}"),
-                                    }
-                                }
+                                #[cfg(feature = "trace")]
+                                Err(e) => log_msg!(log::Level::Error, "{e:?}"),
+                                #[cfg(not(feature = "trace"))]
+                                Err(e) => log_msg!(log::Level::Error, "{e}"),
                             }
-                            match nodeinfo::insert(&ni, pool).await {
+
+                            match ni_result {
                                 Ok(_) => {
-                                    log_msg!(
-                                        log::Level::Info,
-                                        "Inserted 1 row into NodeInfo table"
-                                    );
+                                    log_msg!(log::Level::Info, "Upserted 1 row into NodeInfo table")
                                 }
-                                Err(_e) => {
-                                    #[cfg(feature = "trace")]
-                                    log_msg!(log::Level::Error, "{_e:?}");
-
-                                    // Try updating the row
-                                    match nodeinfo::update(&ni, pool).await {
-                                        Ok(_) => log_msg!(
-                                            log::Level::Info,
-                                            "Updated 1 row in NodeInfo table"
-                                        ),
-                                        #[cfg(feature = "trace")]
-                                        Err(e) => log_msg!(log::Level::Error, "{e:?}"),
-                                        #[cfg(not(feature = "trace"))]
-                                        Err(e) => log_msg!(log::Level::Error, "{e}"),
-                                    }
-                                }
+                                #[cfg(feature = "trace")]
+                                Err(e) => log_msg!(log::Level::Error, "{e:?}"),
+                                #[cfg(not(feature = "trace"))]
+                                Err(e) => log_msg!(log::Level::Error, "{e}"),
                             }
+
                             // insert into GatewayState
                             #[cfg(feature = "debug")]
                             if let Some(user) = &ni.user {

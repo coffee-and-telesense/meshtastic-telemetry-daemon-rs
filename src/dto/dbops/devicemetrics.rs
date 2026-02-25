@@ -101,7 +101,7 @@ VALUES
     .with_context(|| "Failed to insert row into DeviceMetrics table")
 }
 
-/// Insert a row into the `DeviceMetrics` table with node info data from a mesh packet
+/// Upsert (insert or update) a row in the `DeviceMetrics` table with node info data from a mesh packet
 ///
 /// # Arguments
 /// * `pkt` - A `MeshPacket` reference
@@ -110,95 +110,32 @@ VALUES
 ///
 /// # Returns
 /// * `anyhow::Result<PgQueryResult, anyhow::Error>` - Anyhow result and error with debug info
-pub(crate) async fn insert_mp_dm(
+pub(crate) async fn upsert_mp(
     pkt: &MeshPacket,
     ni: &NodeInfo,
     pool: &sqlx::Pool<sqlx::Postgres>,
 ) -> anyhow::Result<sqlx::postgres::PgQueryResult, anyhow::Error> {
     sqlx::query!(
         "
-INSERT INTO
-  DeviceMetrics (
-    msg_id,
-    node_id,
-    time,
-    battery_levels,
-    voltage,
-    channelutil,
-    airutil,
-    latitude,
-    longitude,
-    longname,
-    shortname,
-    hwmodel
+INSERT INTO DeviceMetrics (
+    msg_id, node_id, time,
+    battery_levels, voltage, channelutil, airutil,
+    latitude, longitude, longname, shortname, hwmodel
 )
-VALUES
-  (
-    $1,
-    $2,
-    $3,
-    $4,
-    $5,
-    $6,
-    $7,
-    $8,
-    $9,
-    $10,
-    $11,
-    $12
-  )
-            ",
-        Oid(pkt.id),
-        Oid(pkt.from),
-        timestamp(pkt.rx_time),
-        ni.device_metrics.and_then(|d| d.battery_level.map(Oid)),
-        ni.device_metrics.and_then(|d| d.voltage),
-        ni.device_metrics.and_then(|d| d.channel_utilization),
-        ni.device_metrics.and_then(|d| d.air_util_tx),
-        ni.position.and_then(|l| l.latitude_i),
-        ni.position.and_then(|l| l.longitude_i),
-        ni.user.as_ref().map(|u| u.long_name.as_str()),
-        ni.user.as_ref().map(|u| u.short_name.as_str()),
-        ni.user.as_ref().map(|u| u.hw_model),
-    )
-    .execute(pool)
-    .await
-    .map_err(anyhow::Error::from)
-    .with_context(|| "Failed to insert row into DeviceMetrics table")
-}
-
-/// Update a row in the `DeviceMetrics` table with node info data from a mesh packet
-///
-/// # Arguments
-/// * `pkt` - A `MeshPacket` reference
-/// * `ni` - A `NodeInfo` reference
-/// * `pool` - A `Pool<Postgres>` reference
-///
-/// # Returns
-/// * `anyhow::Result<PgQueryResult, anyhow::Error>` - Anyhow result and error with debug info
-pub(crate) async fn update_mp_dm(
-    pkt: &MeshPacket,
-    ni: &NodeInfo,
-    pool: &sqlx::Pool<sqlx::Postgres>,
-) -> anyhow::Result<sqlx::postgres::PgQueryResult, anyhow::Error> {
-    sqlx::query!(
-        "
-UPDATE DeviceMetrics
-SET
-  node_id = $2,
-  time = $3,
-  battery_levels = $4,
-  voltage = $5,
-  channelutil = $6,
-  airutil = $7,
-  latitude = $8,
-  longitude = $9,
-  longname = $10,
-  shortname = $11,
-  hwmodel = $12
-WHERE
-  msg_id = $1
-            ",
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+ON CONFLICT (msg_id) DO UPDATE SET
+    node_id        = EXCLUDED.node_id,
+    time           = EXCLUDED.time,
+    battery_levels = EXCLUDED.battery_levels,
+    voltage        = EXCLUDED.voltage,
+    channelutil    = EXCLUDED.channelutil,
+    airutil        = EXCLUDED.airutil,
+    latitude       = EXCLUDED.latitude,
+    longitude      = EXCLUDED.longitude,
+    longname       = EXCLUDED.longname,
+    shortname      = EXCLUDED.shortname,
+    hwmodel        = EXCLUDED.hwmodel
+        ",
         Oid(pkt.id),
         Oid(pkt.from),
         timestamp(pkt.rx_time),
@@ -218,7 +155,7 @@ WHERE
     .with_context(|| "Failed to update row in DeviceMetrics table")
 }
 
-/// Insert a row into the `DeviceMetrics` table with node info data from the serial interface
+/// Upsert (insert or update) a row in the `DeviceMetrics` table with node info data from the serial interface
 ///
 /// # Arguments
 /// * `pkt` - A `FromRadio` reference
@@ -227,44 +164,32 @@ WHERE
 ///
 /// # Returns
 /// * `anyhow::Result<PgQueryResult, anyhow::Error>` - Anyhow result and error with debug info
-pub(crate) async fn insert_fr_dm(
+pub(crate) async fn upsert_fr(
     pkt: &FromRadio,
     ni: &NodeInfo,
     pool: &sqlx::Pool<sqlx::Postgres>,
 ) -> anyhow::Result<sqlx::postgres::PgQueryResult, anyhow::Error> {
     sqlx::query!(
         "
-INSERT INTO
-  DeviceMetrics (
-    msg_id,
-    node_id,
-    time,
-    battery_levels,
-    voltage,
-    channelutil,
-    airutil,
-    latitude,
-    longitude,
-    longname,
-    shortname,
-    hwmodel
+INSERT INTO DeviceMetrics (
+    msg_id, node_id, time,
+    battery_levels, voltage, channelutil, airutil,
+    latitude, longitude, longname, shortname, hwmodel
 )
-VALUES
-  (
-    $1,
-    $2,
-    $3,
-    $4,
-    $5,
-    $6,
-    $7,
-    $8,
-    $9,
-    $10,
-    $11,
-    $12
-  )
-            ",
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+ON CONFLICT (msg_id) DO UPDATE SET
+    node_id        = EXCLUDED.node_id,
+    time           = EXCLUDED.time,
+    battery_levels = EXCLUDED.battery_levels,
+    voltage        = EXCLUDED.voltage,
+    channelutil    = EXCLUDED.channelutil,
+    airutil        = EXCLUDED.airutil,
+    latitude       = EXCLUDED.latitude,
+    longitude      = EXCLUDED.longitude,
+    longname       = EXCLUDED.longname,
+    shortname      = EXCLUDED.shortname,
+    hwmodel        = EXCLUDED.hwmodel
+        ",
         Oid(pkt.id),
         Oid(ni.num),
         timestamp(0),
@@ -281,56 +206,5 @@ VALUES
     .execute(pool)
     .await
     .map_err(anyhow::Error::from)
-    .with_context(|| "Failed to insert row into DeviceMetrics table")
-}
-
-/// Update a row in the `DeviceMetrics` table with node info data from the serial interface
-///
-/// # Arguments
-/// * `pkt` - A `FromRadio` reference
-/// * `ni` - A `NodeInfo` reference
-/// * `pool` - A `Pool<Postgres>` reference
-///
-/// # Returns
-/// * `anyhow::Result<PgQueryResult, anyhow::Error>` - Anyhow result and error with debug info
-pub(crate) async fn update_fr_dm(
-    pkt: &FromRadio,
-    ni: &NodeInfo,
-    pool: &sqlx::Pool<sqlx::Postgres>,
-) -> anyhow::Result<sqlx::postgres::PgQueryResult, anyhow::Error> {
-    sqlx::query!(
-        "
-UPDATE DeviceMetrics
-SET
-  node_id = $2,
-  time = $3,
-  battery_levels = $4,
-  voltage = $5,
-  channelutil = $6,
-  airutil = $7,
-  latitude = $8,
-  longitude = $9,
-  longname = $10,
-  shortname = $11,
-  hwmodel = $12
-WHERE
-  msg_id = $1
-            ",
-        Oid(pkt.id),
-        Oid(ni.num),
-        timestamp(0),
-        ni.device_metrics.and_then(|d| d.battery_level.map(Oid)),
-        ni.device_metrics.and_then(|d| d.voltage),
-        ni.device_metrics.and_then(|d| d.channel_utilization),
-        ni.device_metrics.and_then(|d| d.air_util_tx),
-        ni.position.and_then(|l| l.latitude_i),
-        ni.position.and_then(|l| l.longitude_i),
-        ni.user.as_ref().map(|u| u.long_name.as_str()),
-        ni.user.as_ref().map(|u| u.short_name.as_str()),
-        ni.user.as_ref().map(|u| u.hw_model),
-    )
-    .execute(pool)
-    .await
-    .map_err(anyhow::Error::from)
-    .with_context(|| "Failed to update row in DeviceMetrics table")
+    .with_context(|| "Failed to upsert row in DeviceMetrics table")
 }

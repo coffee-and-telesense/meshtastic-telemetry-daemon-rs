@@ -1,0 +1,25 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\nINSERT INTO DeviceMetrics (\n    msg_id, node_id, time,\n    battery_levels, voltage, channelutil, airutil,\n    latitude, longitude, longname, shortname, hwmodel\n)\nVALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)\nON CONFLICT (msg_id) DO UPDATE SET\n    node_id        = EXCLUDED.node_id,\n    time           = EXCLUDED.time,\n    battery_levels = EXCLUDED.battery_levels,\n    voltage        = EXCLUDED.voltage,\n    channelutil    = EXCLUDED.channelutil,\n    airutil        = EXCLUDED.airutil,\n    latitude       = EXCLUDED.latitude,\n    longitude      = EXCLUDED.longitude,\n    longname       = EXCLUDED.longname,\n    shortname      = EXCLUDED.shortname,\n    hwmodel        = EXCLUDED.hwmodel\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Oid",
+        "Oid",
+        "Timestamp",
+        "Oid",
+        "Float4",
+        "Float4",
+        "Float4",
+        "Int4",
+        "Int4",
+        "Text",
+        "Text",
+        "Int4"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "2e244df8186bd9a52e35ced59ee91b4f03624941648aca19e15abc2c8055accc"
+}
