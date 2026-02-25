@@ -1,9 +1,19 @@
 use log::{info, warn};
 use meshtastic::protobufs::User;
-use std::{collections::HashMap, fmt::Display};
+use std::{
+    collections::{
+        HashMap,
+        hash_map::Entry::{Occupied, Vacant},
+    },
+    fmt::Display,
+    sync::{
+        Arc, RwLock,
+        atomic::{AtomicU32, AtomicUsize, Ordering::Relaxed},
+    },
+};
 
 /// Local node type storing only the information we care about from nodeinfo table
-pub struct Node {
+pub struct NodeMeta {
     /// Long name of the node
     long_name: String,
     /// Short name of the node
@@ -13,19 +23,32 @@ pub struct Node {
     /// Node id, the string hash `!dasf31`
     id: String,
     /// Number of received packets
-    rx_count: usize,
+    rx_count: Arc<AtomicUsize>,
 }
 
-/// Declare a type alias for our hashmap of `node_ids` to numbers
-pub type NodeFakePkts = HashMap<u32, Node>;
+/// Lightweight handle to a node's counter to eliminate lock holding in parts of the code
+#[derive(Clone)]
+pub struct RxCounter(Arc<AtomicUsize>);
+
+impl RxCounter {
+    #[inline]
+    pub fn increment(&self) {
+        self.0.fetch_add(1, Relaxed);
+    }
+
+    #[inline]
+    pub fn load(&self) -> usize {
+        self.0.load(Relaxed)
+    }
+}
 
 /// We need some state information for the serial vs mesh packet resolution of conflicts
 /// It is a necessary evil unfortunately.
 pub struct GatewayState {
     /// Our hashmap of known nodes
-    nodes: NodeFakePkts,
+    nodes: RwLock<HashMap<u32, NodeMeta>>,
     /// Connected node number
-    serial_node: u32,
+    serial_node: AtomicU32,
 }
 
 impl Default for GatewayState {
@@ -35,8 +58,8 @@ impl Default for GatewayState {
     /// * An empty `GatewayState` struct
     fn default() -> Self {
         GatewayState {
-            nodes: NodeFakePkts::new(),
-            serial_node: 0, // Set to 0 by default on init
+            nodes: RwLock::new(HashMap::new()),
+            serial_node: AtomicU32::new(0),
         }
     }
 }
@@ -44,8 +67,13 @@ impl Default for GatewayState {
 impl Display for GatewayState {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_str("Counts:\n")?;
-        for (id, node) in &self.nodes {
-            if *id == self.serial_node {
+        for (id, node) in self
+            .nodes
+            .read()
+            .expect("Unable to acquire read lock in Display impl")
+            .iter()
+        {
+            if *id == self.serial_node.load(Relaxed) {
                 f.write_str("*serial\t")?;
             } else {
                 f.write_str("\t\t")?;
@@ -53,10 +81,12 @@ impl Display for GatewayState {
             writeln!(
                 f,
                 "{} ({}) {} - {} packets received",
-                node.long_name, node.id, id, node.rx_count
+                node.long_name,
+                node.id,
+                id,
+                node.rx_count.load(Relaxed),
             )?;
         }
-
         Ok(())
     }
 }
@@ -70,9 +100,19 @@ impl GatewayState {
     pub fn new() -> GatewayState {
         // Stub this function for now, but in the future:
         GatewayState {
-            nodes: NodeFakePkts::new(),
-            serial_node: 0, // Set to 0 by default on new
+            nodes: RwLock::new(HashMap::new()),
+            serial_node: AtomicU32::new(0),
         }
+    }
+
+    /// Return a cloned RxCounter handle if the node is known.
+    /// Allowing the caller to call `increment()` without holding locks
+    pub fn get_counter(&self, node_id: u32) -> Option<RxCounter> {
+        self.nodes
+            .read()
+            .expect("Unable to acquire read lock in get_counter()")
+            .get(&node_id)
+            .map(|n| RxCounter(Arc::clone(&n.rx_count)))
     }
 
     /// Return `true` if any node in the local state contains an `rx_count` > 0
@@ -84,28 +124,11 @@ impl GatewayState {
     /// * `bool` - `true` if any node has an `rx_count` > 0, otherwise false
     #[inline]
     pub fn any_recvd(&self) -> bool {
-        for node in self.nodes.values() {
-            if node.rx_count > 1 {
-                return true;
-            }
-        }
-        false
-    }
-
-    /// Increment the `rx_count` for a local state seen node (debug builds only)
-    ///
-    /// # Arguments
-    /// * `self` - Operates on the `GatewayState` struct
-    /// * `node_id` - The `u32` id in the `from` field of packets
-    ///
-    /// # Side effects/state changes
-    /// * Increments the `rx_count` entry of the corresponding `node_id`
-    #[cfg(feature = "debug")]
-    #[inline]
-    pub fn increment_rx_count(&mut self, node_id: u32) {
-        if let Some(f) = self.nodes.get_mut(&node_id) {
-            f.rx_count += 1;
-        }
+        self.nodes
+            .read()
+            .expect("Unable to acquire read lock in any_recvd()")
+            .values()
+            .any(|n| n.rx_count.load(Relaxed) > 1)
     }
 
     /// Modify the `serial_node` connection
@@ -114,8 +137,8 @@ impl GatewayState {
     /// * `self` - Mutable self reference
     /// * `num` - The number of the serial node
     #[inline]
-    pub fn set_serial_number(&mut self, num: u32) {
-        self.serial_node = num;
+    pub fn set_serial_number(&self, num: u32) {
+        self.serial_node.store(num, Relaxed);
     }
 
     /// Insert a new node into the state
@@ -129,32 +152,46 @@ impl GatewayState {
     ///
     /// # Returns
     /// * `bool` - True if inserted/updated, false if not
-    pub fn insert(&mut self, node_id: u32, user: &User) -> bool {
-        // Insert a new node if it does not already exist in the state
-        if let std::collections::hash_map::Entry::Vacant(e) = self.nodes.entry(node_id) {
-            info!("Inserting new node to the local state");
-            let v = Node {
-                long_name: user.long_name.to_owned(),
-                short_name: user.short_name.to_owned(),
-                hw_model: user.hw_model,
-                id: user.id.to_owned(),
-                rx_count: 0, // Initialize to 0 to not count any from nodedb?
-            };
-            e.insert(v);
-            return true;
-        } else if let Some(n) = self.nodes.get_mut(&node_id)
-            && (n.long_name != user.long_name
-                || n.short_name != user.short_name
-                || n.hw_model != user.hw_model)
-            && n.id == user.id
+    pub fn insert(&self, node_id: u32, user: &User) -> bool {
+        // Read lock only for hot path
+        if let Some(n) = self
+            .nodes
+            .read()
+            .expect("Unable to acquire read lock in insert()")
+            .get(&node_id)
         {
-            warn!("Local state conflicts with nodeinfo received");
-            // Update our local db
-            n.long_name = user.long_name.to_owned();
-            n.short_name = user.short_name.to_owned();
-            n.hw_model = user.hw_model;
-            return true;
+            if n.long_name == user.long_name
+                && n.short_name == user.short_name
+                && n.hw_model == user.hw_model
+            {
+                return false;
+            }
         }
-        false
+
+        // Write lock only acquired if needed
+        match self
+            .nodes
+            .write()
+            .expect("Unable to acquire write lock in insert()")
+            .entry(node_id)
+        {
+            Vacant(e) => {
+                e.insert(NodeMeta {
+                    long_name: user.long_name.clone(),
+                    short_name: user.short_name.clone(),
+                    hw_model: user.hw_model,
+                    id: user.id.clone(),
+                    rx_count: Arc::new(AtomicUsize::new(0)),
+                });
+                true
+            }
+            Occupied(mut e) => {
+                let n = e.get_mut();
+                n.long_name = user.long_name.clone();
+                n.short_name = user.short_name.clone();
+                n.hw_model = user.hw_model;
+                true
+            }
+        }
     }
 }

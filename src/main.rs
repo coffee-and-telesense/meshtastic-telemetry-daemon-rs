@@ -46,7 +46,7 @@ async fn main() -> Result<(), anyhow::Error> {
     set_logger();
 
     // Create the gateway's state object
-    let state = Arc::new(Mutex::new(GatewayState::new()));
+    let state = Arc::new(GatewayState::new());
 
     // Create postgresql connection
     let postgres_db = Arc::new(
@@ -102,16 +102,8 @@ async fn main() -> Result<(), anyhow::Error> {
                         #[cfg(feature = "log_perf")]
                         log_perf();
                         // log state messages
-                        let display_str = {
-                        let lock = state.lock().await;
-                            if lock.any_recvd() {
-                                Some(lock.to_string())
-                            } else {
-                                None
-                            }
-                        };
-                        if let Some(s) = display_str {
-                            log_msg!(log::Level::Info, "{s}");
+                        if state.any_recvd() {
+                            log_msg!(log::Level::Info, "{state}");
                         }
                     }
                 } else {

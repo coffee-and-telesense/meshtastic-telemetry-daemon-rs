@@ -22,7 +22,6 @@ use sqlx::{Pool, Postgres};
 #[cfg(feature = "trace")]
 use std::fmt::Debug;
 use std::sync::Arc;
-use tokio::sync::Mutex;
 
 /// Process Packets
 ///
@@ -42,11 +41,7 @@ use tokio::sync::Mutex;
 /// # Panics
 /// This function will panic if it fails to acquire a lock on the `GatewayState`
 #[allow(clippy::too_many_lines)] // most of these lines are just logging calls
-pub async fn process_packet(
-    pkt: &FromRadio,
-    state: &Arc<Mutex<GatewayState>>,
-    pool: &Pool<Postgres>,
-) {
+pub async fn process_packet(pkt: &FromRadio, state: &Arc<GatewayState>, pool: &Pool<Postgres>) {
     if let Some(pv) = &pkt.payload_variant {
         match pv {
             from_radio::PayloadVariant::Packet(mesh_packet) => {
@@ -97,7 +92,7 @@ pub async fn process_packet(
                     // insert into GatewayState
                     #[cfg(feature = "debug")]
                     if let Some(user) = &node_info.user {
-                        state.lock().await.insert(node_info.num, user);
+                        state.insert(node_info.num, user);
                     }
                 }
             }
@@ -105,10 +100,7 @@ pub async fn process_packet(
                 #[cfg(feature = "trace")]
                 log_msg!(log::Level::Info, "Received MyInfo packet: {my_node_info:?}");
                 // Indicate the serial connection for the local state from this packet
-                state
-                    .lock()
-                    .await
-                    .set_serial_number(my_node_info.my_node_num);
+                state.set_serial_number(my_node_info.my_node_num);
             }
             #[cfg(not(feature = "trace"))]
             _ => (),
@@ -218,10 +210,14 @@ fn decode_and_trace<P: Debug>(ptype: &str, payload: P) {
 /// # Panics
 /// This function will panic if it fails to acquire a lock on the `GatewayState`
 #[allow(clippy::too_many_lines)] // most of these lines are just logging calls
-async fn decode_payload(pkt: &MeshPacket, state: &Arc<Mutex<GatewayState>>, pool: &Pool<Postgres>) {
+async fn decode_payload(pkt: &MeshPacket, state: &Arc<GatewayState>, pool: &Pool<Postgres>) {
     // Count received packets in debug builds for period reporting in logs
     #[cfg(feature = "debug")]
-    state.lock().await.increment_rx_count(pkt.from);
+    {
+        if let Some(counter) = state.get_counter(pkt.from) {
+            counter.increment();
+        }
+    }
     // Check if the packet is on the telemetry channel before decoding a payload
     if pkt.channel == 0
         && let Some(payload) = &pkt.payload_variant
@@ -298,7 +294,7 @@ async fn decode_payload(pkt: &MeshPacket, state: &Arc<Mutex<GatewayState>>, pool
                             // insert into GatewayState
                             #[cfg(feature = "debug")]
                             if let Some(user) = &ni.user {
-                                state.lock().await.insert(ni.num, user);
+                                state.insert(ni.num, user);
                             }
                         }
                         #[cfg(feature = "trace")]
