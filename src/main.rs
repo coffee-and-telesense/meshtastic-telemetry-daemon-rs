@@ -24,7 +24,6 @@ use meshtastic::utils;
 #[cfg(feature = "print-packets")]
 use serde_json::to_string_pretty;
 use std::sync::Arc;
-use tokio::sync::Mutex;
 
 /// Handle data transfer objects
 pub(crate) mod dto;
@@ -52,6 +51,7 @@ async fn main() -> Result<(), anyhow::Error> {
     let postgres_db = Arc::new(
         settings
             .setup_postgres()
+            .await
             .with_context(|| "Failed to connect to postgresql database")?,
     );
 

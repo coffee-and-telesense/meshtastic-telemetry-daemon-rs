@@ -49,7 +49,7 @@ impl PostgresConnection<'_> {
     ///
     /// # Panics
     /// Will panic if the database connection string is longer than 128 characters long
-    fn setup(&self) -> Result<PgPool> {
+    async fn setup(&self) -> Result<PgPool> {
         use std::fmt::Write;
 
         // Write the database connection string into a String with a given capacity
@@ -64,7 +64,8 @@ impl PostgresConnection<'_> {
         PgPoolOptions::new()
             .max_connections(self.max_connections)
             .min_connections(self.min_connections)
-            .connect_lazy(s.as_str())
+            .connect(s.as_str())
+            .await
             .map_err(anyhow::Error::from)
     }
 }
@@ -249,7 +250,7 @@ impl<'a> Settings<'a> {
     /// # Returns
     /// * `Result<PgPool>` - An `anyhow` result with a connection pool to the postgresql
     ///   database
-    pub(crate) fn setup_postgres(&self) -> Result<PgPool> {
-        self.postgres.setup()
+    pub(crate) async fn setup_postgres(&self) -> Result<PgPool> {
+        self.postgres.setup().await
     }
 }
