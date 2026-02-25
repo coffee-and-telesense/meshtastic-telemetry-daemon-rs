@@ -44,7 +44,7 @@ use tokio::sync::Mutex;
 #[allow(clippy::too_many_lines)] // most of these lines are just logging calls
 pub async fn process_packet(
     pkt: &FromRadio,
-    state: &Arc<Mutex<GatewayState<'_>>>,
+    state: &Arc<Mutex<GatewayState>>,
     pool: &Pool<Postgres>,
 ) {
     if let Some(pv) = &pkt.payload_variant {
@@ -218,11 +218,7 @@ fn decode_and_trace<P: Debug>(ptype: &str, payload: P) {
 /// # Panics
 /// This function will panic if it fails to acquire a lock on the `GatewayState`
 #[allow(clippy::too_many_lines)] // most of these lines are just logging calls
-async fn decode_payload(
-    pkt: &MeshPacket,
-    state: &Arc<Mutex<GatewayState<'_>>>,
-    pool: &Pool<Postgres>,
-) {
+async fn decode_payload(pkt: &MeshPacket, state: &Arc<Mutex<GatewayState>>, pool: &Pool<Postgres>) {
     // Count received packets in debug builds for period reporting in logs
     #[cfg(feature = "debug")]
     state.lock().await.increment_rx_count(pkt.from);

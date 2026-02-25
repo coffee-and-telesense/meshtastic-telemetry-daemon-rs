@@ -1,34 +1,34 @@
 use log::{info, warn};
 use meshtastic::protobufs::User;
-use std::{borrow::Cow, collections::HashMap, fmt::Display};
+use std::{collections::HashMap, fmt::Display};
 
 /// Local node type storing only the information we care about from nodeinfo table
-pub struct Node<'a> {
+pub struct Node {
     /// Long name of the node
-    long_name: Cow<'a, str>,
+    long_name: String,
     /// Short name of the node
-    short_name: Cow<'a, str>,
+    short_name: String,
     /// HW Model enum
     hw_model: i32,
     /// Node id, the string hash `!dasf31`
-    id: Cow<'a, str>,
+    id: String,
     /// Number of received packets
     rx_count: usize,
 }
 
 /// Declare a type alias for our hashmap of `node_ids` to numbers
-pub type NodeFakePkts<'a> = HashMap<u32, Node<'a>>;
+pub type NodeFakePkts = HashMap<u32, Node>;
 
 /// We need some state information for the serial vs mesh packet resolution of conflicts
 /// It is a necessary evil unfortunately.
-pub struct GatewayState<'a> {
+pub struct GatewayState {
     /// Our hashmap of known nodes
-    nodes: NodeFakePkts<'a>,
+    nodes: NodeFakePkts,
     /// Connected node number
     serial_node: u32,
 }
 
-impl Default for GatewayState<'_> {
+impl Default for GatewayState {
     /// Default constructor
     ///
     /// # Returns
@@ -41,7 +41,7 @@ impl Default for GatewayState<'_> {
     }
 }
 
-impl Display for GatewayState<'_> {
+impl Display for GatewayState {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_str("Counts:\n")?;
         for (id, node) in &self.nodes {
@@ -61,13 +61,13 @@ impl Display for GatewayState<'_> {
     }
 }
 
-impl<'a> GatewayState<'a> {
+impl GatewayState {
     /// New `GatewayState` struct
     ///
     /// # Returns
     /// * An empty `GatewayState` struct
     #[must_use]
-    pub fn new() -> GatewayState<'a> {
+    pub fn new() -> GatewayState {
         // Stub this function for now, but in the future:
         GatewayState {
             nodes: NodeFakePkts::new(),
@@ -134,10 +134,10 @@ impl<'a> GatewayState<'a> {
         if let std::collections::hash_map::Entry::Vacant(e) = self.nodes.entry(node_id) {
             info!("Inserting new node to the local state");
             let v = Node {
-                long_name: Cow::Owned(user.long_name.as_str().to_owned()),
-                short_name: Cow::Owned(user.short_name.as_str().to_owned()),
+                long_name: user.long_name.to_owned(),
+                short_name: user.short_name.to_owned(),
                 hw_model: user.hw_model,
-                id: Cow::Owned(user.id.as_str().to_owned()),
+                id: user.id.to_owned(),
                 rx_count: 0, // Initialize to 0 to not count any from nodedb?
             };
             e.insert(v);
@@ -150,8 +150,8 @@ impl<'a> GatewayState<'a> {
         {
             warn!("Local state conflicts with nodeinfo received");
             // Update our local db
-            n.long_name = Cow::Owned(user.long_name.as_str().to_owned());
-            n.short_name = Cow::Owned(user.short_name.as_str().to_owned());
+            n.long_name = user.long_name.to_owned();
+            n.short_name = user.short_name.to_owned();
             n.hw_model = user.hw_model;
             return true;
         }
