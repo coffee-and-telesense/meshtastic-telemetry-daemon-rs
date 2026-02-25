@@ -102,9 +102,16 @@ async fn main() -> Result<(), anyhow::Error> {
                         #[cfg(feature = "log_perf")]
                         log_perf();
                         // log state messages
+                        let display_str = {
                         let lock = state.lock().await;
-                        if lock.any_recvd() {
-                            log_msg!(log::Level::Info, "{lock}");
+                            if lock.any_recvd() {
+                                Some(lock.to_string())
+                            } else {
+                                None
+                            }
+                        };
+                        if let Some(s) = display_str {
+                            log_msg!(log::Level::Info, "{s}");
                         }
                     }
                 } else {
