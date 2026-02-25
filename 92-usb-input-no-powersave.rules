@@ -7,5 +7,5 @@ SUBSYSTEM=="usb", ATTRS{product}=="*433MHz*", ATTR{power/control}="on", ATTR{pow
 SUBSYSTEM=="usb", ATTRS{product}=="*915MHz*", ATTR{power/control}="on", ATTR{power/autosuspend}="-1"
 
 # start systemd services?
-# SUBSYSTEM=="usb", ATTRS{product}=="*433MHz*", TAG+="systemd", ENV{SYSTEMD_WANTS}+="mesh-telem.service"
-# SUBSYSTEM=="usb", ATTRS{product}=="*915MHz*", TAG+="systemd", ENV{SYSTEMD_WANTS}+="mesh-telem.service"
+SUBSYSTEM=="usb", ATTRS{product}=="*433MHz*", TAG+="systemd", ENV{SYSTEMD_WANTS}+="mesh-telem433.service"
+SUBSYSTEM=="usb", ATTRS{product}=="*915MHz*", TAG+="systemd", ENV{SYSTEMD_WANTS}+="mesh-telem915.service"

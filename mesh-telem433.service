@@ -1,0 +1,13 @@
+[Unit]
+Description=Meshtastic Telemetry Daemon
+After=docker.service
+
+[Service]
+User=u433
+Group=u433
+ExecStartPre=/bin/sleep 30
+ExecStart=/home/u433/meshtastic-telemetry-daemon-rs
+Type=simple
+
+[Install]
+WantedBy=multi-user.target
