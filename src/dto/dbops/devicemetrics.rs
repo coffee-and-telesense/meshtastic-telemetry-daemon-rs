@@ -110,7 +110,7 @@ VALUES
 ///
 /// # Returns
 /// * `anyhow::Result<PgQueryResult, anyhow::Error>` - Anyhow result and error with debug info
-pub(crate) async fn insert_mp_ni(
+pub(crate) async fn insert_mp_dm(
     pkt: &MeshPacket,
     ni: &NodeInfo,
     pool: &sqlx::Pool<sqlx::Postgres>,
@@ -176,7 +176,7 @@ VALUES
 ///
 /// # Returns
 /// * `anyhow::Result<PgQueryResult, anyhow::Error>` - Anyhow result and error with debug info
-pub(crate) async fn update_mp_ni(
+pub(crate) async fn update_mp_dm(
     pkt: &MeshPacket,
     ni: &NodeInfo,
     pool: &sqlx::Pool<sqlx::Postgres>,
@@ -227,7 +227,7 @@ WHERE
 ///
 /// # Returns
 /// * `anyhow::Result<PgQueryResult, anyhow::Error>` - Anyhow result and error with debug info
-pub(crate) async fn insert_fr_ni(
+pub(crate) async fn insert_fr_dm(
     pkt: &FromRadio,
     ni: &NodeInfo,
     pool: &sqlx::Pool<sqlx::Postgres>,
@@ -293,7 +293,7 @@ VALUES
 ///
 /// # Returns
 /// * `anyhow::Result<PgQueryResult, anyhow::Error>` - Anyhow result and error with debug info
-pub(crate) async fn update_fr_ni(
+pub(crate) async fn update_fr_dm(
     pkt: &FromRadio,
     ni: &NodeInfo,
     pool: &sqlx::Pool<sqlx::Postgres>,

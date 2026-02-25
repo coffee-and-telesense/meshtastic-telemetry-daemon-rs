@@ -50,7 +50,7 @@ pub async fn process_packet(pkt: &FromRadio, state: &Arc<GatewayState>, pool: &P
             from_radio::PayloadVariant::NodeInfo(node_info) => {
                 // only insert if user is some
                 if node_info.user.is_some() {
-                    match devicemetrics::insert_fr_ni(pkt, node_info, pool).await {
+                    match devicemetrics::insert_fr_dm(pkt, node_info, pool).await {
                         Ok(_) => {
                             log_msg!(log::Level::Info, "Inserted 1 row into DeviceMetrics table");
                         }
@@ -59,7 +59,7 @@ pub async fn process_packet(pkt: &FromRadio, state: &Arc<GatewayState>, pool: &P
                             log_msg!(log::Level::Error, "{_e:?}");
 
                             // Try updating the row
-                            match devicemetrics::update_fr_ni(pkt, node_info, pool).await {
+                            match devicemetrics::update_fr_dm(pkt, node_info, pool).await {
                                 Ok(_) => log_msg!(
                                     log::Level::Info,
                                     "Updated 1 row in DeviceMetrics table"
@@ -245,7 +245,7 @@ async fn decode_payload(pkt: &MeshPacket, state: &Arc<GatewayState>, pool: &Pool
                     PortNum::NodeinfoApp => match NodeInfo::decode(data.payload.clone()) {
                         Ok(ni) => {
                             // insert into db
-                            match devicemetrics::insert_mp_ni(pkt, &ni, pool).await {
+                            match devicemetrics::insert_mp_dm(pkt, &ni, pool).await {
                                 Ok(_) => log_msg!(
                                     log::Level::Info,
                                     "Inserted 1 row into DeviceMetrics table"
@@ -255,7 +255,7 @@ async fn decode_payload(pkt: &MeshPacket, state: &Arc<GatewayState>, pool: &Pool
                                     log_msg!(log::Level::Error, "{_e:?}");
 
                                     // Try updating the row
-                                    match devicemetrics::update_mp_ni(pkt, &ni, pool).await {
+                                    match devicemetrics::update_mp_dm(pkt, &ni, pool).await {
                                         Ok(_) => log_msg!(
                                             log::Level::Info,
                                             "Updated 1 row in NodeInfo table"
