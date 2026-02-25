@@ -115,6 +115,20 @@ pub(crate) async fn upsert_mp(
     ni: &NodeInfo,
     pool: &sqlx::Pool<sqlx::Postgres>,
 ) -> anyhow::Result<sqlx::postgres::PgQueryResult, anyhow::Error> {
+    // Destructure
+    let (battery, voltage, channel_util, air_util) =
+        ni.device_metrics.map_or((None, None, None, None), |d| {
+            (
+                d.battery_level.map(Oid),
+                d.voltage,
+                d.channel_utilization,
+                d.air_util_tx,
+            )
+        });
+    let (lat, lon) = ni
+        .position
+        .map_or((None, None), |d| (d.latitude_i, d.longitude_i));
+
     sqlx::query!(
         "
 INSERT INTO DeviceMetrics (
@@ -139,12 +153,12 @@ ON CONFLICT (msg_id) DO UPDATE SET
         Oid(pkt.id),
         Oid(pkt.from),
         timestamp(pkt.rx_time),
-        ni.device_metrics.and_then(|d| d.battery_level.map(Oid)),
-        ni.device_metrics.and_then(|d| d.voltage),
-        ni.device_metrics.and_then(|d| d.channel_utilization),
-        ni.device_metrics.and_then(|d| d.air_util_tx),
-        ni.position.and_then(|l| l.latitude_i),
-        ni.position.and_then(|l| l.longitude_i),
+        battery,
+        voltage,
+        channel_util,
+        air_util,
+        lat,
+        lon,
         ni.user.as_ref().map(|u| u.long_name.as_str()),
         ni.user.as_ref().map(|u| u.short_name.as_str()),
         ni.user.as_ref().map(|u| u.hw_model),
@@ -169,6 +183,20 @@ pub(crate) async fn upsert_fr(
     ni: &NodeInfo,
     pool: &sqlx::Pool<sqlx::Postgres>,
 ) -> anyhow::Result<sqlx::postgres::PgQueryResult, anyhow::Error> {
+    // Destructure
+    let (battery, voltage, channel_util, air_util) =
+        ni.device_metrics.map_or((None, None, None, None), |d| {
+            (
+                d.battery_level.map(Oid),
+                d.voltage,
+                d.channel_utilization,
+                d.air_util_tx,
+            )
+        });
+    let (lat, lon) = ni
+        .position
+        .map_or((None, None), |d| (d.latitude_i, d.longitude_i));
+
     sqlx::query!(
         "
 INSERT INTO DeviceMetrics (
@@ -193,12 +221,12 @@ ON CONFLICT (msg_id) DO UPDATE SET
         Oid(pkt.id),
         Oid(ni.num),
         timestamp(0),
-        ni.device_metrics.and_then(|d| d.battery_level.map(Oid)),
-        ni.device_metrics.and_then(|d| d.voltage),
-        ni.device_metrics.and_then(|d| d.channel_utilization),
-        ni.device_metrics.and_then(|d| d.air_util_tx),
-        ni.position.and_then(|l| l.latitude_i),
-        ni.position.and_then(|l| l.longitude_i),
+        battery,
+        voltage,
+        channel_util,
+        air_util,
+        lat,
+        lon,
         ni.user.as_ref().map(|u| u.long_name.as_str()),
         ni.user.as_ref().map(|u| u.short_name.as_str()),
         ni.user.as_ref().map(|u| u.hw_model),
