@@ -1,6 +1,6 @@
 [package]
 name = "meshtastic-telemetry-daemon-rs"
-version = "0.2.2"
+version = "0.3.0"
 edition = "2024"
 license = "MIT"
 authors = ["Gatlin Newhouse"]
@@ -14,9 +14,7 @@ categories = ["command-line-utils"]
 # Handle errors gracefully
 anyhow = { version = "1.0", default-features = false }
 # Handle clocks, no wasm. "now" enables "std"
-chrono = { version = "0.4", default-features = false, features = [
-  "now",
-] }
+chrono = { version = "0.4", default-features = false, features = ["now"] }
 # Debug logger
 colog = { version = "1.4", optional = true }
 # Handle config reading
@@ -50,9 +48,7 @@ sqlx = { version = "0.8", default-features = false, features = [
 # Release logger
 syslog = { version = "7.0", optional = true }
 # Async runtime with tokio::main macro
-tokio = { version = "1.49", features = [
-  "macros",
-] }
+tokio = { version = "1.49", features = ["macros"] }
 
 [features]
 default = ["debug", "native-tls", "trace"]
