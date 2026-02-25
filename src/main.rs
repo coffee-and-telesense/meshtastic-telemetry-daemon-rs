@@ -71,14 +71,10 @@ async fn main() -> Result<(), anyhow::Error> {
 
     // Set the global deployment location string
     DEPLOYMENT_LOCATION
-        .set(Box::leak(settings.deployment.location.to_string().into_boxed_str()))
-        .unwrap_or_else(|e| {
-            panic!(
-                "{}:\n\tUnable to initialize global DEPLOYMENT_LOCATION from configuration's value: {}\n ",
-                e,
-                settings.deployment.location
-            )
-        });
+        .set(Box::leak(
+            settings.deployment.location.into_owned().into_boxed_str(),
+        ))
+        .expect("DEPLOYMENT_LOCATION initialized twice");
 
     // Output the version of the daemon to the logger
     log_msg!(log::Level::Info, "Daemon version: {VERSION}");
