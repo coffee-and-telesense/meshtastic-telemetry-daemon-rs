@@ -6,7 +6,7 @@ host = "localhost"
 dbname = "meshtastic"
 # Max and min connection configures how many workers can be allocated
 # for performing postgres connections
-max_connections = 4
+max_connections = 8
 min_connections = 1
 #TODO: Add more settings
 
