@@ -53,7 +53,7 @@ impl PostgresConnection<'_> {
         use std::fmt::Write;
 
         // Write the database connection string into a String with a given capacity
-        let mut s = String::with_capacity(128);
+        let mut s = String::with_capacity(256);
         write!(
             s,
             "postgres://{}:{}@{}:{}/{}",
