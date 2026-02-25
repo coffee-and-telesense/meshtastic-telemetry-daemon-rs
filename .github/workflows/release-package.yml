@@ -99,7 +99,8 @@ jobs:
           executable-name: meshtastic-telemetry-daemon-rs
           target: ${{ matrix.platform.build_target }}
           extra-files: |
-            mesh-telem.service
+            mesh-telem433.service
+            mesh-telem915.service
             src/util/example_config.toml
             92-usb-input-no-powersave.rules
             install.sh
