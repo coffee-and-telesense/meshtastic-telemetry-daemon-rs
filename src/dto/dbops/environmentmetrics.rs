@@ -25,7 +25,7 @@ INSERT INTO
   EnvironmentMetrics (
     msg_id,
     node_id,
-    TIME,
+    time,
     temperature,
     relative_humidity,
     barometric_pressure,
