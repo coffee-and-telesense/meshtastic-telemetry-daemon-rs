@@ -6,7 +6,7 @@ use std::{
     },
     fmt::Display,
     sync::{
-        Arc, RwLock,
+        RwLock,
         atomic::{AtomicU32, AtomicUsize, Ordering::Relaxed},
     },
 };
@@ -22,23 +22,7 @@ pub struct NodeMeta {
     /// Node id, the string hash `!dasf31`
     id: String,
     /// Number of received packets
-    rx_count: Arc<AtomicUsize>,
-}
-
-/// Lightweight handle to a node's counter to eliminate lock holding in parts of the code
-#[derive(Clone)]
-pub struct RxCounter(Arc<AtomicUsize>);
-
-impl RxCounter {
-    #[inline]
-    pub fn increment(&self) {
-        self.0.fetch_add(1, Relaxed);
-    }
-
-    #[inline]
-    pub fn load(&self) -> usize {
-        self.0.load(Relaxed)
-    }
+    rx_count: AtomicUsize,
 }
 
 /// We need some state information for the serial vs mesh packet resolution of conflicts
@@ -104,14 +88,26 @@ impl GatewayState {
         }
     }
 
-    /// Return a cloned `RxCounter` handle if the node is known.
-    /// Allowing the caller to call `increment()` without holding locks
-    pub fn get_counter(&self, node_id: u32) -> Option<RxCounter> {
-        self.nodes
+    /// Increment the `rx_count` of a given node
+    ///
+    /// # Arguments
+    /// * `&self` - The `GatewayState` reference
+    /// * `node_id` - The `u32` id of a node
+    ///
+    /// # Returns
+    /// * `bool` - True if the count was incremented, false otherwise
+    pub fn increment_count(&self, node_id: u32) -> bool {
+        // Lock is only held for an atomic instruction, so it is short
+        if let Some(n) = self
+            .nodes
             .read()
             .unwrap_or_else(std::sync::PoisonError::into_inner)
             .get(&node_id)
-            .map(|n| RxCounter(Arc::clone(&n.rx_count)))
+        {
+            n.rx_count.fetch_add(1, Relaxed);
+            return true;
+        }
+        false
     }
 
     /// Return `true` if any node in the local state contains an `rx_count` > 0
@@ -164,7 +160,7 @@ impl GatewayState {
                     short_name: user.short_name.clone(),
                     hw_model: user.hw_model,
                     id: user.id.clone(),
-                    rx_count: Arc::new(AtomicUsize::new(0)),
+                    rx_count: AtomicUsize::new(0),
                 });
                 true
             }

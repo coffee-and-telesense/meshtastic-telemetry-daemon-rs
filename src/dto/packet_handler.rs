@@ -196,9 +196,7 @@ async fn decode_payload(pkt: &MeshPacket, state: &Arc<GatewayState>, pool: &Pool
     // Count received packets in debug builds for period reporting in logs
     #[cfg(feature = "debug")]
     {
-        if let Some(counter) = state.get_counter(pkt.from) {
-            counter.increment();
-        } else {
+        if !state.increment_count(pkt.from) {
             log_msg!(
                 log::Level::Debug,
                 "rx count missed for unregistered node {:08x}",
