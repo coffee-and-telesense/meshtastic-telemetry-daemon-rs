@@ -8,7 +8,7 @@ use crate::{
 };
 #[cfg(feature = "trace")]
 use meshtastic::protobufs::{
-    AdminMessage, Compressed, HardwareMessage, MapReport, Paxcount, PowerStressMessage,
+    AdminMessage, Compressed, Data, HardwareMessage, MapReport, Paxcount, PowerStressMessage,
     RouteDiscovery, Routing, StoreAndForward, TakPacket, Waypoint,
 };
 use meshtastic::{
@@ -40,7 +40,6 @@ use std::sync::Arc;
 ///
 /// # Panics
 /// This function will panic if it fails to acquire a lock on the `GatewayState`
-#[allow(clippy::too_many_lines)] // most of these lines are just logging calls
 pub async fn process_packet(pkt: &FromRadio, state: &Arc<GatewayState>, pool: &Pool<Postgres>) {
     if let Some(pv) = &pkt.payload_variant {
         match pv {
@@ -84,85 +83,81 @@ pub async fn process_packet(pkt: &FromRadio, state: &Arc<GatewayState>, pool: &P
                 // Indicate the serial connection for the local state from this packet
                 state.set_serial_number(my_node_info.my_node_num);
             }
-            #[cfg(not(feature = "trace"))]
-            _ => (),
-            #[cfg(feature = "trace")]
-            from_radio::PayloadVariant::Config(config) => {
-                log_msg!(log::Level::Info, "Received config packet: {config:?}");
-            }
-            #[cfg(feature = "trace")]
-            from_radio::PayloadVariant::LogRecord(log_record) => {
-                log_msg!(
-                    log::Level::Info,
-                    "Received log_record packet: {log_record:?}"
-                );
-            }
-            #[cfg(feature = "trace")]
-            from_radio::PayloadVariant::ConfigCompleteId(id) => {
-                log_msg!(
-                    log::Level::Info,
-                    "Received config {id} complete packet over serial"
-                );
-            }
-            #[cfg(feature = "trace")]
-            from_radio::PayloadVariant::Rebooted(rbt) => {
-                log_msg!(log::Level::Info, "Received rebooted packet: {rbt}");
-            }
-            #[cfg(feature = "trace")]
-            from_radio::PayloadVariant::ModuleConfig(module_config) => {
-                log_msg!(
-                    log::Level::Info,
-                    "Received module_config packet: {module_config:?}"
-                );
-            }
-            #[cfg(feature = "trace")]
-            from_radio::PayloadVariant::Channel(channel) => {
-                log_msg!(log::Level::Info, "Received channel packet: {channel:?}");
-            }
-            #[cfg(feature = "trace")]
-            from_radio::PayloadVariant::QueueStatus(queue_status) => {
-                log_msg!(
-                    log::Level::Info,
-                    "Received queue_status packet: {queue_status:?}"
-                );
-            }
-            #[cfg(feature = "trace")]
-            from_radio::PayloadVariant::XmodemPacket(xmodem) => {
-                log_msg!(log::Level::Info, "Received xmodem packet: {xmodem:?}");
-            }
-            #[cfg(feature = "trace")]
-            from_radio::PayloadVariant::Metadata(device_metadata) => {
-                log_msg!(
-                    log::Level::Info,
-                    "Received device_metadata packet: {device_metadata:?}"
-                );
-            }
-            #[cfg(feature = "trace")]
-            from_radio::PayloadVariant::MqttClientProxyMessage(mqtt_client_proxy_message) => {
-                log_msg!(
-                    log::Level::Info,
-                    "Received mqtt_client_proxy_message packet: {mqtt_client_proxy_message:?}"
-                );
-            }
-            #[cfg(feature = "trace")]
-            from_radio::PayloadVariant::FileInfo(file_info) => {
-                log_msg!(log::Level::Info, "Received file_info packet: {file_info:?}");
-            }
-            #[cfg(feature = "trace")]
-            from_radio::PayloadVariant::ClientNotification(client_notification) => {
-                log_msg!(
-                    log::Level::Info,
-                    "Received client_notification packet: {client_notification:?}"
-                );
-            }
-            #[cfg(feature = "trace")]
-            from_radio::PayloadVariant::DeviceuiConfig(device_ui_config) => {
-                log_msg!(
-                    log::Level::Info,
-                    "Received device_ui_config packet: {device_ui_config:?}"
-                );
+            other => {
+                #[cfg(feature = "trace")]
+                trace_fromradio(other);
             }
         }
+    }
+}
+
+#[cfg(feature = "trace")]
+fn trace_fromradio(payload: &from_radio::PayloadVariant) {
+    match payload {
+        from_radio::PayloadVariant::Config(config) => {
+            log_msg!(log::Level::Info, "Received config packet: {config:?}");
+        }
+        from_radio::PayloadVariant::LogRecord(log_record) => {
+            log_msg!(
+                log::Level::Info,
+                "Received log_record packet: {log_record:?}"
+            );
+        }
+        from_radio::PayloadVariant::ConfigCompleteId(id) => {
+            log_msg!(
+                log::Level::Info,
+                "Received config {id} complete packet over serial"
+            );
+        }
+        from_radio::PayloadVariant::Rebooted(rbt) => {
+            log_msg!(log::Level::Info, "Received rebooted packet: {rbt}");
+        }
+        from_radio::PayloadVariant::ModuleConfig(module_config) => {
+            log_msg!(
+                log::Level::Info,
+                "Received module_config packet: {module_config:?}"
+            );
+        }
+        from_radio::PayloadVariant::Channel(channel) => {
+            log_msg!(log::Level::Info, "Received channel packet: {channel:?}");
+        }
+        from_radio::PayloadVariant::QueueStatus(queue_status) => {
+            log_msg!(
+                log::Level::Info,
+                "Received queue_status packet: {queue_status:?}"
+            );
+        }
+        from_radio::PayloadVariant::XmodemPacket(xmodem) => {
+            log_msg!(log::Level::Info, "Received xmodem packet: {xmodem:?}");
+        }
+        from_radio::PayloadVariant::Metadata(device_metadata) => {
+            log_msg!(
+                log::Level::Info,
+                "Received device_metadata packet: {device_metadata:?}"
+            );
+        }
+        from_radio::PayloadVariant::MqttClientProxyMessage(mqtt_client_proxy_message) => {
+            log_msg!(
+                log::Level::Info,
+                "Received mqtt_client_proxy_message packet: {mqtt_client_proxy_message:?}"
+            );
+        }
+        from_radio::PayloadVariant::FileInfo(file_info) => {
+            log_msg!(log::Level::Info, "Received file_info packet: {file_info:?}");
+        }
+        from_radio::PayloadVariant::ClientNotification(client_notification) => {
+            log_msg!(
+                log::Level::Info,
+                "Received client_notification packet: {client_notification:?}"
+            );
+        }
+        from_radio::PayloadVariant::DeviceuiConfig(device_ui_config) => {
+            log_msg!(
+                log::Level::Info,
+                "Received device_ui_config packet: {device_ui_config:?}"
+            );
+        }
+        _ => {}
     }
 }
 
@@ -191,7 +186,6 @@ fn decode_and_trace<P: Debug>(ptype: &str, payload: P) {
 ///
 /// # Panics
 /// This function will panic if it fails to acquire a lock on the `GatewayState`
-#[allow(clippy::too_many_lines)] // most of these lines are just logging calls
 async fn decode_payload(pkt: &MeshPacket, state: &Arc<GatewayState>, pool: &Pool<Postgres>) {
     // Count received packets in debug builds for period reporting in logs
     #[cfg(feature = "debug")]
@@ -205,273 +199,240 @@ async fn decode_payload(pkt: &MeshPacket, state: &Arc<GatewayState>, pool: &Pool
         }
     }
     // Check if the packet is on the telemetry channel before decoding a payload
-    if pkt.channel == 0
-        && let Some(payload) = &pkt.payload_variant
-    {
-        match payload {
-            mesh_packet::PayloadVariant::Decoded(data) => {
-                match data.portnum() {
-                    // We care about these four payload types for sure!
-                    PortNum::PositionApp => match Position::decode(data.payload.as_ref()) {
-                        Ok(pos) => match devicemetrics::insert_pos(pkt, &pos, pool).await {
-                            Ok(_) => log_msg!(
-                                log::Level::Info,
-                                "Inserted 1 row into DeviceMetrics table"
-                            ),
-                            #[cfg(feature = "trace")]
-                            Err(e) => log_msg!(log::Level::Error, "{e:?}"),
-                            #[cfg(not(feature = "trace"))]
-                            Err(e) => log_msg!(log::Level::Error, "{e}"),
-                        },
-                        #[cfg(feature = "trace")]
-                        Err(e) => log_msg!(log::Level::Warn, "{e:?}"),
-                        #[cfg(not(feature = "trace"))]
-                        Err(e) => log_msg!(log::Level::Warn, "{e}"),
-                    },
-                    PortNum::NodeinfoApp => match NodeInfo::decode(data.payload.as_ref()) {
-                        Ok(ni) => {
-                            let (dm_result, ni_result) = tokio::join!(
-                                devicemetrics::upsert_mp(pkt, &ni, pool),
-                                nodeinfo::upsert(&ni, pool),
-                            );
+    if pkt.channel != 0 {
+        return;
+    }
+    let Some(payload) = &pkt.payload_variant else {
+        return;
+    };
+    let mesh_packet::PayloadVariant::Decoded(data) = payload else {
+        #[cfg(feature = "trace")]
+        trace_encrypted(payload);
+        return;
+    };
 
-                            match dm_result {
-                                Ok(_) => log_msg!(
-                                    log::Level::Info,
-                                    "Upserted 1 row into DeviceMetrics table"
-                                ),
-                                #[cfg(feature = "trace")]
-                                Err(e) => log_msg!(log::Level::Error, "{e:?}"),
-                                #[cfg(not(feature = "trace"))]
-                                Err(e) => log_msg!(log::Level::Error, "{e}"),
-                            }
+    match data.portnum() {
+        // We care about these four payload types for sure!
+        PortNum::PositionApp => match Position::decode(data.payload.as_ref()) {
+            Ok(pos) => match devicemetrics::insert_pos(pkt, &pos, pool).await {
+                Ok(_) => log_msg!(log::Level::Info, "Inserted 1 row into DeviceMetrics table"),
+                #[cfg(feature = "trace")]
+                Err(e) => log_msg!(log::Level::Error, "{e:?}"),
+                #[cfg(not(feature = "trace"))]
+                Err(e) => log_msg!(log::Level::Error, "{e}"),
+            },
+            #[cfg(feature = "trace")]
+            Err(e) => log_msg!(log::Level::Warn, "{e:?}"),
+            #[cfg(not(feature = "trace"))]
+            Err(e) => log_msg!(log::Level::Warn, "{e}"),
+        },
+        PortNum::NodeinfoApp => match NodeInfo::decode(data.payload.as_ref()) {
+            Ok(ni) => {
+                let (dm_result, ni_result) = tokio::join!(
+                    devicemetrics::upsert_mp(pkt, &ni, pool),
+                    nodeinfo::upsert(&ni, pool),
+                );
 
-                            match ni_result {
-                                Ok(_) => {
-                                    log_msg!(
-                                        log::Level::Info,
-                                        "Upserted 1 row into NodeInfo table"
-                                    );
-                                }
-                                #[cfg(feature = "trace")]
-                                Err(e) => log_msg!(log::Level::Error, "{e:?}"),
-                                #[cfg(not(feature = "trace"))]
-                                Err(e) => log_msg!(log::Level::Error, "{e}"),
-                            }
-
-                            // insert into GatewayState
-                            #[cfg(feature = "debug")]
-                            if let Some(user) = &ni.user {
-                                state.insert(ni.num, user);
-                            }
-                        }
-                        #[cfg(feature = "trace")]
-                        Err(e) => log_msg!(log::Level::Warn, "{e:?}"),
-                        #[cfg(not(feature = "trace"))]
-                        Err(e) => log_msg!(log::Level::Warn, "{e}"),
-                    },
-                    PortNum::TelemetryApp => match Telemetry::decode(data.payload.as_ref()) {
-                        Ok(telemetry) => decode_telemetry(pkt, telemetry, pool).await,
-                        #[cfg(feature = "trace")]
-                        Err(e) => log_msg!(log::Level::Warn, "{e:?}"),
-                        #[cfg(not(feature = "trace"))]
-                        Err(e) => log_msg!(log::Level::Warn, "{e}"),
-                    },
-                    PortNum::NeighborinfoApp => match NeighborInfo::decode(data.payload.as_ref()) {
-                        Ok(ni) => match neighborinfo::insert(pkt, &ni, pool).await {
-                            Ok(_) => {
-                                log_msg!(
-                                    log::Level::Info,
-                                    "Inserted 1 row into NeighborInfo table"
-                                );
-                            }
-                            #[cfg(feature = "trace")]
-                            Err(e) => log_msg!(log::Level::Error, "{e:?}"),
-                            #[cfg(not(feature = "trace"))]
-                            Err(e) => log_msg!(log::Level::Error, "{e}"),
-                        },
-                        #[cfg(feature = "trace")]
-                        Err(e) => log_msg!(log::Level::Warn, "{e:?}"),
-                        #[cfg(not(feature = "trace"))]
-                        Err(e) => log_msg!(log::Level::Warn, "{e}"),
-                    },
+                match dm_result {
+                    Ok(_) => log_msg!(log::Level::Info, "Upserted 1 row into DeviceMetrics table"),
+                    #[cfg(feature = "trace")]
+                    Err(e) => log_msg!(log::Level::Error, "{e:?}"),
                     #[cfg(not(feature = "trace"))]
-                    _ => log_msg!(log::Level::Info, "Received untracked payload"),
-                    // The others are nice for tracing during development
-                    #[cfg(feature = "trace")]
-                    PortNum::UnknownApp => {
-                        decode_and_trace("UnknownApp", data.payload.as_ref());
+                    Err(e) => log_msg!(log::Level::Error, "{e}"),
+                }
+
+                match ni_result {
+                    Ok(_) => {
+                        log_msg!(log::Level::Info, "Upserted 1 row into NodeInfo table");
                     }
                     #[cfg(feature = "trace")]
-                    PortNum::TextMessageApp => match String::decode(data.payload.as_ref()) {
-                        Ok(payload) => decode_and_trace("TextMessageApp", payload),
-                        Err(e) => {
-                            log_msg!(log::Level::Warn, "Error decoding TextMessageApp: {e:?}");
-                        }
-                    },
-                    #[cfg(feature = "trace")]
-                    PortNum::RemoteHardwareApp => {
-                        match HardwareMessage::decode(data.payload.as_ref()) {
-                            Ok(payload) => decode_and_trace("RemoteHardwareApp", payload),
-                            Err(e) => {
-                                log_msg!(
-                                    log::Level::Warn,
-                                    "Error decoding RemoteHardwareApp: {e:?}"
-                                );
-                            }
-                        }
-                    }
-                    #[cfg(feature = "trace")]
-                    PortNum::RoutingApp => match Routing::decode(data.payload.as_ref()) {
-                        Ok(payload) => decode_and_trace("RoutingApp", payload),
-                        Err(e) => {
-                            log_msg!(log::Level::Warn, "Error decoding RoutingApp: {e:?}");
-                        }
-                    },
-                    #[cfg(feature = "trace")]
-                    PortNum::AdminApp => match AdminMessage::decode(data.payload.as_ref()) {
-                        Ok(payload) => decode_and_trace("AdminApp", payload),
-                        Err(e) => {
-                            log_msg!(log::Level::Warn, "Error decoding AdminApp: {e:?}");
-                        }
-                    },
-                    #[cfg(feature = "trace")]
-                    PortNum::TextMessageCompressedApp => {
-                        match Compressed::decode(data.payload.as_ref()) {
-                            Ok(payload) => decode_and_trace("TextMessageCompressedApp", payload),
-                            Err(e) => {
-                                log_msg!(
-                                    log::Level::Warn,
-                                    "Error decoding TextMessageCompressedApp: {e:?}"
-                                );
-                            }
-                        }
-                    }
-                    #[cfg(feature = "trace")]
-                    PortNum::WaypointApp => match Waypoint::decode(data.payload.as_ref()) {
-                        Ok(payload) => decode_and_trace("WaypointApp", payload),
-                        Err(e) => {
-                            log_msg!(log::Level::Warn, "Error decoding WaypointApp: {e:?}");
-                        }
-                    },
-                    #[cfg(feature = "trace")]
-                    PortNum::AudioApp => {
-                        decode_and_trace("AudioApp", data.payload.as_ref());
-                    }
-                    #[cfg(feature = "trace")]
-                    PortNum::DetectionSensorApp => match String::decode(data.payload.as_ref()) {
-                        Ok(payload) => decode_and_trace("DetectionSensorApp", payload),
-                        Err(e) => {
-                            log_msg!(log::Level::Warn, "Error decoding DetectionSensorApp: {e:?}");
-                        }
-                    },
-                    #[cfg(feature = "trace")]
-                    PortNum::AlertApp => match String::decode(data.payload.as_ref()) {
-                        Ok(payload) => decode_and_trace("AlertApp", payload),
-                        Err(e) => {
-                            log_msg!(log::Level::Warn, "Error decoding AlertApp: {e:?}");
-                        }
-                    },
-                    #[cfg(feature = "trace")]
-                    PortNum::ReplyApp => match String::decode(data.payload.as_ref()) {
-                        Ok(payload) => decode_and_trace("ReplyApp", payload),
-                        Err(e) => {
-                            log_msg!(log::Level::Warn, "Error decoding ReplyApp: {e:?}");
-                        }
-                    },
-                    #[cfg(feature = "trace")]
-                    PortNum::IpTunnelApp => {
-                        decode_and_trace("IpTunnelApp", data.payload.as_ref());
-                    }
-                    #[cfg(feature = "trace")]
-                    PortNum::PaxcounterApp => match Paxcount::decode(data.payload.as_ref()) {
-                        Ok(payload) => decode_and_trace("PaxcounterApp", payload),
-                        Err(e) => {
-                            log_msg!(log::Level::Warn, "Error decoding PaxcounterApp: {e:?}");
-                        }
-                    },
-                    #[cfg(feature = "trace")]
-                    PortNum::SerialApp => {
-                        decode_and_trace("SerialApp", data.payload.as_ref());
-                    }
-                    #[cfg(feature = "trace")]
-                    PortNum::StoreForwardApp => {
-                        match StoreAndForward::decode(data.payload.as_ref()) {
-                            Ok(payload) => decode_and_trace("StoreForwardApp", payload),
-                            Err(e) => {
-                                log_msg!(log::Level::Warn, "Error decoding StoreForwardApp: {e:?}");
-                            }
-                        }
-                    }
-                    #[cfg(feature = "trace")]
-                    PortNum::RangeTestApp => match String::decode(data.payload.as_ref()) {
-                        Ok(payload) => decode_and_trace("RangeTestApp", payload),
-                        Err(e) => {
-                            log_msg!(log::Level::Warn, "Error decoding RangeTestApp: {e:?}");
-                        }
-                    },
-                    #[cfg(feature = "trace")]
-                    PortNum::ZpsApp => {
-                        decode_and_trace("ZpsApp", data.payload.as_ref());
-                    }
-                    #[cfg(feature = "trace")]
-                    PortNum::SimulatorApp => {
-                        decode_and_trace("SimulatorApp", data.payload.as_ref());
-                    }
-                    #[cfg(feature = "trace")]
-                    PortNum::TracerouteApp => match RouteDiscovery::decode(data.payload.as_ref()) {
-                        Ok(payload) => decode_and_trace("TracerouteApp", payload),
-                        Err(e) => {
-                            log_msg!(log::Level::Warn, "Error decoding TracerouteApp: {e:?}");
-                        }
-                    },
-                    #[cfg(feature = "trace")]
-                    PortNum::AtakPlugin => match TakPacket::decode(data.payload.as_ref()) {
-                        Ok(payload) => decode_and_trace("AtakPlugin", payload),
-                        Err(e) => {
-                            log_msg!(log::Level::Warn, "Error decoding AtakPlugin: {e:?}");
-                        }
-                    },
-                    #[cfg(feature = "trace")]
-                    PortNum::MapReportApp => match MapReport::decode(data.payload.as_ref()) {
-                        Ok(payload) => decode_and_trace("MapReportApp", payload),
-                        Err(e) => {
-                            log_msg!(log::Level::Warn, "Error decoding MapReportApp: {e:?}");
-                        }
-                    },
-                    #[cfg(feature = "trace")]
-                    PortNum::PowerstressApp => {
-                        match PowerStressMessage::decode(data.payload.as_ref()) {
-                            Ok(payload) => decode_and_trace("PowerstressApp", payload),
-                            Err(e) => {
-                                log_msg!(log::Level::Warn, "Error decoding PowerstressApp: {e:?}");
-                            }
-                        }
-                    }
-                    #[cfg(feature = "trace")]
-                    PortNum::PrivateApp => {
-                        decode_and_trace("PrivateApp", data.payload.as_ref());
-                    }
-                    #[cfg(feature = "trace")]
-                    PortNum::AtakForwarder => match TakPacket::decode(data.payload.as_ref()) {
-                        Ok(payload) => decode_and_trace("AtakForwarder", payload),
-                        Err(e) => {
-                            log_msg!(log::Level::Warn, "Error decoding AtakForwarder: {e:?}");
-                        }
-                    },
-                    #[cfg(feature = "trace")]
-                    PortNum::Max => {
-                        decode_and_trace("Max", data.payload.as_ref());
-                    }
+                    Err(e) => log_msg!(log::Level::Error, "{e:?}"),
+                    #[cfg(not(feature = "trace"))]
+                    Err(e) => log_msg!(log::Level::Error, "{e}"),
+                }
+
+                // insert into GatewayState
+                #[cfg(feature = "debug")]
+                if let Some(user) = &ni.user {
+                    state.insert(ni.num, user);
                 }
             }
-            #[cfg(not(feature = "trace"))]
-            _ => (),
             #[cfg(feature = "trace")]
-            mesh_packet::PayloadVariant::Encrypted(items) => {
-                log_msg!(log::Level::Info, "Received encrypted packet: {items:?}");
-            }
+            Err(e) => log_msg!(log::Level::Warn, "{e:?}"),
+            #[cfg(not(feature = "trace"))]
+            Err(e) => log_msg!(log::Level::Warn, "{e}"),
+        },
+        PortNum::TelemetryApp => match Telemetry::decode(data.payload.as_ref()) {
+            Ok(telemetry) => decode_telemetry(pkt, telemetry, pool).await,
+            #[cfg(feature = "trace")]
+            Err(e) => log_msg!(log::Level::Warn, "{e:?}"),
+            #[cfg(not(feature = "trace"))]
+            Err(e) => log_msg!(log::Level::Warn, "{e}"),
+        },
+        PortNum::NeighborinfoApp => match NeighborInfo::decode(data.payload.as_ref()) {
+            Ok(ni) => match neighborinfo::insert(pkt, &ni, pool).await {
+                Ok(_) => {
+                    log_msg!(log::Level::Info, "Inserted 1 row into NeighborInfo table");
+                }
+                #[cfg(feature = "trace")]
+                Err(e) => log_msg!(log::Level::Error, "{e:?}"),
+                #[cfg(not(feature = "trace"))]
+                Err(e) => log_msg!(log::Level::Error, "{e}"),
+            },
+            #[cfg(feature = "trace")]
+            Err(e) => log_msg!(log::Level::Warn, "{e:?}"),
+            #[cfg(not(feature = "trace"))]
+            Err(e) => log_msg!(log::Level::Warn, "{e}"),
+        },
+        other => {
+            #[cfg(feature = "trace")]
+            trace_portnum(other, data);
         }
+    }
+}
+
+#[cfg(feature = "trace")]
+fn trace_encrypted(payload: &mesh_packet::PayloadVariant) {
+    let mesh_packet::PayloadVariant::Encrypted(items) = payload else {
+        return;
+    };
+    log_msg!(log::Level::Info, "Received encrypted packet: {items:?}");
+}
+
+#[cfg(feature = "trace")]
+#[allow(clippy::too_many_lines)] // most of these lines are just logging calls for tracing
+fn trace_portnum(port: PortNum, data: &Data) {
+    match port {
+        PortNum::UnknownApp => {
+            decode_and_trace("UnknownApp", data.payload.as_ref());
+        }
+        PortNum::TextMessageApp => match String::decode(data.payload.as_ref()) {
+            Ok(payload) => decode_and_trace("TextMessageApp", payload),
+            Err(e) => {
+                log_msg!(log::Level::Warn, "Error decoding TextMessageApp: {e:?}");
+            }
+        },
+        PortNum::RemoteHardwareApp => match HardwareMessage::decode(data.payload.as_ref()) {
+            Ok(payload) => decode_and_trace("RemoteHardwareApp", payload),
+            Err(e) => {
+                log_msg!(log::Level::Warn, "Error decoding RemoteHardwareApp: {e:?}");
+            }
+        },
+        PortNum::RoutingApp => match Routing::decode(data.payload.as_ref()) {
+            Ok(payload) => decode_and_trace("RoutingApp", payload),
+            Err(e) => {
+                log_msg!(log::Level::Warn, "Error decoding RoutingApp: {e:?}");
+            }
+        },
+        PortNum::AdminApp => match AdminMessage::decode(data.payload.as_ref()) {
+            Ok(payload) => decode_and_trace("AdminApp", payload),
+            Err(e) => {
+                log_msg!(log::Level::Warn, "Error decoding AdminApp: {e:?}");
+            }
+        },
+        PortNum::TextMessageCompressedApp => match Compressed::decode(data.payload.as_ref()) {
+            Ok(payload) => decode_and_trace("TextMessageCompressedApp", payload),
+            Err(e) => {
+                log_msg!(
+                    log::Level::Warn,
+                    "Error decoding TextMessageCompressedApp: {e:?}"
+                );
+            }
+        },
+        PortNum::WaypointApp => match Waypoint::decode(data.payload.as_ref()) {
+            Ok(payload) => decode_and_trace("WaypointApp", payload),
+            Err(e) => {
+                log_msg!(log::Level::Warn, "Error decoding WaypointApp: {e:?}");
+            }
+        },
+        PortNum::AudioApp => {
+            decode_and_trace("AudioApp", data.payload.as_ref());
+        }
+        PortNum::DetectionSensorApp => match String::decode(data.payload.as_ref()) {
+            Ok(payload) => decode_and_trace("DetectionSensorApp", payload),
+            Err(e) => {
+                log_msg!(log::Level::Warn, "Error decoding DetectionSensorApp: {e:?}");
+            }
+        },
+        PortNum::AlertApp => match String::decode(data.payload.as_ref()) {
+            Ok(payload) => decode_and_trace("AlertApp", payload),
+            Err(e) => {
+                log_msg!(log::Level::Warn, "Error decoding AlertApp: {e:?}");
+            }
+        },
+        PortNum::ReplyApp => match String::decode(data.payload.as_ref()) {
+            Ok(payload) => decode_and_trace("ReplyApp", payload),
+            Err(e) => {
+                log_msg!(log::Level::Warn, "Error decoding ReplyApp: {e:?}");
+            }
+        },
+        PortNum::IpTunnelApp => {
+            decode_and_trace("IpTunnelApp", data.payload.as_ref());
+        }
+        PortNum::PaxcounterApp => match Paxcount::decode(data.payload.as_ref()) {
+            Ok(payload) => decode_and_trace("PaxcounterApp", payload),
+            Err(e) => {
+                log_msg!(log::Level::Warn, "Error decoding PaxcounterApp: {e:?}");
+            }
+        },
+        PortNum::SerialApp => {
+            decode_and_trace("SerialApp", data.payload.as_ref());
+        }
+        PortNum::StoreForwardApp => match StoreAndForward::decode(data.payload.as_ref()) {
+            Ok(payload) => decode_and_trace("StoreForwardApp", payload),
+            Err(e) => {
+                log_msg!(log::Level::Warn, "Error decoding StoreForwardApp: {e:?}");
+            }
+        },
+        PortNum::RangeTestApp => match String::decode(data.payload.as_ref()) {
+            Ok(payload) => decode_and_trace("RangeTestApp", payload),
+            Err(e) => {
+                log_msg!(log::Level::Warn, "Error decoding RangeTestApp: {e:?}");
+            }
+        },
+        PortNum::ZpsApp => {
+            decode_and_trace("ZpsApp", data.payload.as_ref());
+        }
+        PortNum::SimulatorApp => {
+            decode_and_trace("SimulatorApp", data.payload.as_ref());
+        }
+        PortNum::TracerouteApp => match RouteDiscovery::decode(data.payload.as_ref()) {
+            Ok(payload) => decode_and_trace("TracerouteApp", payload),
+            Err(e) => {
+                log_msg!(log::Level::Warn, "Error decoding TracerouteApp: {e:?}");
+            }
+        },
+        PortNum::AtakPlugin => match TakPacket::decode(data.payload.as_ref()) {
+            Ok(payload) => decode_and_trace("AtakPlugin", payload),
+            Err(e) => {
+                log_msg!(log::Level::Warn, "Error decoding AtakPlugin: {e:?}");
+            }
+        },
+        PortNum::MapReportApp => match MapReport::decode(data.payload.as_ref()) {
+            Ok(payload) => decode_and_trace("MapReportApp", payload),
+            Err(e) => {
+                log_msg!(log::Level::Warn, "Error decoding MapReportApp: {e:?}");
+            }
+        },
+        PortNum::PowerstressApp => match PowerStressMessage::decode(data.payload.as_ref()) {
+            Ok(payload) => decode_and_trace("PowerstressApp", payload),
+            Err(e) => {
+                log_msg!(log::Level::Warn, "Error decoding PowerstressApp: {e:?}");
+            }
+        },
+        PortNum::PrivateApp => {
+            decode_and_trace("PrivateApp", data.payload.as_ref());
+        }
+        PortNum::AtakForwarder => match TakPacket::decode(data.payload.as_ref()) {
+            Ok(payload) => decode_and_trace("AtakForwarder", payload),
+            Err(e) => {
+                log_msg!(log::Level::Warn, "Error decoding AtakForwarder: {e:?}");
+            }
+        },
+        PortNum::Max => {
+            decode_and_trace("Max", data.payload.as_ref());
+        }
+        _ => {}
     }
 }
 
