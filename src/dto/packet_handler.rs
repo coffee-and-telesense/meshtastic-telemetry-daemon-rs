@@ -56,7 +56,7 @@ pub async fn process_packet(pkt: &FromRadio, state: &Arc<GatewayState>, pool: &P
                     );
                     match dm_result {
                         Ok(_) => {
-                            log_msg!(log::Level::Info, "Upserted 1 row into DeviceMetrics table")
+                            log_msg!(log::Level::Info, "Upserted 1 row into DeviceMetrics table");
                         }
                         #[cfg(feature = "trace")]
                         Err(e) => log_msg!(log::Level::Error, "{e:?}"),
@@ -244,7 +244,10 @@ async fn decode_payload(pkt: &MeshPacket, state: &Arc<GatewayState>, pool: &Pool
 
                             match ni_result {
                                 Ok(_) => {
-                                    log_msg!(log::Level::Info, "Upserted 1 row into NodeInfo table")
+                                    log_msg!(
+                                        log::Level::Info,
+                                        "Upserted 1 row into NodeInfo table"
+                                    );
                                 }
                                 #[cfg(feature = "trace")]
                                 Err(e) => log_msg!(log::Level::Error, "{e:?}"),
@@ -299,7 +302,7 @@ async fn decode_payload(pkt: &MeshPacket, state: &Arc<GatewayState>, pool: &Pool
                     PortNum::TextMessageApp => match String::decode(data.payload.clone()) {
                         Ok(payload) => decode_and_trace("TextMessageApp", payload),
                         Err(e) => {
-                            log_msg!(log::Level::Warn, "Error decoding TextMessageApp: {e:?}")
+                            log_msg!(log::Level::Warn, "Error decoding TextMessageApp: {e:?}");
                         }
                     },
                     #[cfg(feature = "trace")]

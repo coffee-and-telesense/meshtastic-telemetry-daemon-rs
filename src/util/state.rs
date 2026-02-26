@@ -1,4 +1,3 @@
-use log::{info, warn};
 use meshtastic::protobufs::User;
 use std::{
     collections::{
@@ -12,7 +11,7 @@ use std::{
     },
 };
 
-/// Local node type storing only the information we care about from nodeinfo table
+/// Local node type storing only the information we care about from `NodeInfo` table
 pub struct NodeMeta {
     /// Long name of the node
     long_name: String,
@@ -105,7 +104,7 @@ impl GatewayState {
         }
     }
 
-    /// Return a cloned RxCounter handle if the node is known.
+    /// Return a cloned `RxCounter` handle if the node is known.
     /// Allowing the caller to call `increment()` without holding locks
     pub fn get_counter(&self, node_id: u32) -> Option<RxCounter> {
         self.nodes
@@ -153,22 +152,6 @@ impl GatewayState {
     /// # Returns
     /// * `bool` - True if inserted/updated, false if not
     pub fn insert(&self, node_id: u32, user: &User) -> bool {
-        // Read lock only for hot path
-        if let Some(n) = self
-            .nodes
-            .read()
-            .expect("Unable to acquire read lock in insert()")
-            .get(&node_id)
-        {
-            if n.long_name == user.long_name
-                && n.short_name == user.short_name
-                && n.hw_model == user.hw_model
-            {
-                return false;
-            }
-        }
-
-        // Write lock only acquired if needed
         match self
             .nodes
             .write()
@@ -187,8 +170,8 @@ impl GatewayState {
             }
             Occupied(mut e) => {
                 let n = e.get_mut();
-                n.long_name = user.long_name.clone();
-                n.short_name = user.short_name.clone();
+                n.long_name.clone_from(&user.long_name);
+                n.short_name.clone_from(&user.short_name);
                 n.hw_model = user.hw_model;
                 true
             }
