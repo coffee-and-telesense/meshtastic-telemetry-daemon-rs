@@ -7,7 +7,7 @@ use std::{
     fmt::Display,
     sync::{
         RwLock,
-        atomic::{AtomicU32, AtomicUsize, Ordering::Relaxed},
+        atomic::{AtomicBool, AtomicU32, AtomicUsize, Ordering::Relaxed},
     },
 };
 
@@ -32,6 +32,8 @@ pub struct GatewayState {
     nodes: RwLock<HashMap<u32, NodeMeta>>,
     /// Connected node number
     serial_node: AtomicU32,
+    /// Any packets received yet?
+    any_recv: AtomicBool,
 }
 
 impl Default for GatewayState {
@@ -43,6 +45,7 @@ impl Default for GatewayState {
         GatewayState {
             nodes: RwLock::new(HashMap::new()),
             serial_node: AtomicU32::new(0),
+            any_recv: AtomicBool::new(false),
         }
     }
 }
@@ -101,6 +104,7 @@ impl GatewayState {
             .get(&node_id)
         {
             n.rx_count.fetch_add(1, Relaxed);
+            self.any_recv.store(true, Relaxed);
             return true;
         }
         false
@@ -115,11 +119,7 @@ impl GatewayState {
     /// * `bool` - `true` if any node has an `rx_count` > 0, otherwise false
     #[inline]
     pub fn any_recvd(&self) -> bool {
-        self.nodes
-            .read()
-            .unwrap_or_else(std::sync::PoisonError::into_inner)
-            .values()
-            .any(|n| n.rx_count.load(Relaxed) > 1)
+        self.any_recv.swap(false, Relaxed)
     }
 
     /// Modify the `serial_node` connection
