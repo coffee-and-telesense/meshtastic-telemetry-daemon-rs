@@ -212,7 +212,7 @@ async fn decode_payload(pkt: &MeshPacket, state: &Arc<GatewayState>, pool: &Pool
             mesh_packet::PayloadVariant::Decoded(data) => {
                 match data.portnum() {
                     // We care about these four payload types for sure!
-                    PortNum::PositionApp => match Position::decode(data.payload.clone()) {
+                    PortNum::PositionApp => match Position::decode(data.payload.as_ref()) {
                         Ok(pos) => match devicemetrics::insert_pos(pkt, &pos, pool).await {
                             Ok(_) => log_msg!(
                                 log::Level::Info,
@@ -228,7 +228,7 @@ async fn decode_payload(pkt: &MeshPacket, state: &Arc<GatewayState>, pool: &Pool
                         #[cfg(not(feature = "trace"))]
                         Err(e) => log_msg!(log::Level::Warn, "{e}"),
                     },
-                    PortNum::NodeinfoApp => match NodeInfo::decode(data.payload.clone()) {
+                    PortNum::NodeinfoApp => match NodeInfo::decode(data.payload.as_ref()) {
                         Ok(ni) => {
                             let (dm_result, ni_result) = tokio::join!(
                                 devicemetrics::upsert_mp(pkt, &ni, pool),
@@ -270,14 +270,14 @@ async fn decode_payload(pkt: &MeshPacket, state: &Arc<GatewayState>, pool: &Pool
                         #[cfg(not(feature = "trace"))]
                         Err(e) => log_msg!(log::Level::Warn, "{e}"),
                     },
-                    PortNum::TelemetryApp => match Telemetry::decode(data.payload.clone()) {
+                    PortNum::TelemetryApp => match Telemetry::decode(data.payload.as_ref()) {
                         Ok(telemetry) => decode_telemetry(pkt, telemetry, pool).await,
                         #[cfg(feature = "trace")]
                         Err(e) => log_msg!(log::Level::Warn, "{e:?}"),
                         #[cfg(not(feature = "trace"))]
                         Err(e) => log_msg!(log::Level::Warn, "{e}"),
                     },
-                    PortNum::NeighborinfoApp => match NeighborInfo::decode(data.payload.clone()) {
+                    PortNum::NeighborinfoApp => match NeighborInfo::decode(data.payload.as_ref()) {
                         Ok(ni) => match neighborinfo::insert(pkt, &ni, pool).await {
                             Ok(_) => {
                                 log_msg!(
@@ -300,10 +300,10 @@ async fn decode_payload(pkt: &MeshPacket, state: &Arc<GatewayState>, pool: &Pool
                     // The others are nice for tracing during development
                     #[cfg(feature = "trace")]
                     PortNum::UnknownApp => {
-                        decode_and_trace("UnknownApp", data.payload.clone());
+                        decode_and_trace("UnknownApp", data.payload.as_ref());
                     }
                     #[cfg(feature = "trace")]
-                    PortNum::TextMessageApp => match String::decode(data.payload.clone()) {
+                    PortNum::TextMessageApp => match String::decode(data.payload.as_ref()) {
                         Ok(payload) => decode_and_trace("TextMessageApp", payload),
                         Err(e) => {
                             log_msg!(log::Level::Warn, "Error decoding TextMessageApp: {e:?}");
@@ -311,7 +311,7 @@ async fn decode_payload(pkt: &MeshPacket, state: &Arc<GatewayState>, pool: &Pool
                     },
                     #[cfg(feature = "trace")]
                     PortNum::RemoteHardwareApp => {
-                        match HardwareMessage::decode(data.payload.clone()) {
+                        match HardwareMessage::decode(data.payload.as_ref()) {
                             Ok(payload) => decode_and_trace("RemoteHardwareApp", payload),
                             Err(e) => {
                                 log_msg!(
@@ -322,14 +322,14 @@ async fn decode_payload(pkt: &MeshPacket, state: &Arc<GatewayState>, pool: &Pool
                         }
                     }
                     #[cfg(feature = "trace")]
-                    PortNum::RoutingApp => match Routing::decode(data.payload.clone()) {
+                    PortNum::RoutingApp => match Routing::decode(data.payload.as_ref()) {
                         Ok(payload) => decode_and_trace("RoutingApp", payload),
                         Err(e) => {
                             log_msg!(log::Level::Warn, "Error decoding RoutingApp: {e:?}");
                         }
                     },
                     #[cfg(feature = "trace")]
-                    PortNum::AdminApp => match AdminMessage::decode(data.payload.clone()) {
+                    PortNum::AdminApp => match AdminMessage::decode(data.payload.as_ref()) {
                         Ok(payload) => decode_and_trace("AdminApp", payload),
                         Err(e) => {
                             log_msg!(log::Level::Warn, "Error decoding AdminApp: {e:?}");
@@ -337,7 +337,7 @@ async fn decode_payload(pkt: &MeshPacket, state: &Arc<GatewayState>, pool: &Pool
                     },
                     #[cfg(feature = "trace")]
                     PortNum::TextMessageCompressedApp => {
-                        match Compressed::decode(data.payload.clone()) {
+                        match Compressed::decode(data.payload.as_ref()) {
                             Ok(payload) => decode_and_trace("TextMessageCompressedApp", payload),
                             Err(e) => {
                                 log_msg!(
@@ -348,7 +348,7 @@ async fn decode_payload(pkt: &MeshPacket, state: &Arc<GatewayState>, pool: &Pool
                         }
                     }
                     #[cfg(feature = "trace")]
-                    PortNum::WaypointApp => match Waypoint::decode(data.payload.clone()) {
+                    PortNum::WaypointApp => match Waypoint::decode(data.payload.as_ref()) {
                         Ok(payload) => decode_and_trace("WaypointApp", payload),
                         Err(e) => {
                             log_msg!(log::Level::Warn, "Error decoding WaypointApp: {e:?}");
@@ -356,24 +356,24 @@ async fn decode_payload(pkt: &MeshPacket, state: &Arc<GatewayState>, pool: &Pool
                     },
                     #[cfg(feature = "trace")]
                     PortNum::AudioApp => {
-                        decode_and_trace("AudioApp", data.payload.clone());
+                        decode_and_trace("AudioApp", data.payload.as_ref());
                     }
                     #[cfg(feature = "trace")]
-                    PortNum::DetectionSensorApp => match String::decode(data.payload.clone()) {
+                    PortNum::DetectionSensorApp => match String::decode(data.payload.as_ref()) {
                         Ok(payload) => decode_and_trace("DetectionSensorApp", payload),
                         Err(e) => {
                             log_msg!(log::Level::Warn, "Error decoding DetectionSensorApp: {e:?}");
                         }
                     },
                     #[cfg(feature = "trace")]
-                    PortNum::AlertApp => match String::decode(data.payload.clone()) {
+                    PortNum::AlertApp => match String::decode(data.payload.as_ref()) {
                         Ok(payload) => decode_and_trace("AlertApp", payload),
                         Err(e) => {
                             log_msg!(log::Level::Warn, "Error decoding AlertApp: {e:?}");
                         }
                     },
                     #[cfg(feature = "trace")]
-                    PortNum::ReplyApp => match String::decode(data.payload.clone()) {
+                    PortNum::ReplyApp => match String::decode(data.payload.as_ref()) {
                         Ok(payload) => decode_and_trace("ReplyApp", payload),
                         Err(e) => {
                             log_msg!(log::Level::Warn, "Error decoding ReplyApp: {e:?}");
@@ -381,10 +381,10 @@ async fn decode_payload(pkt: &MeshPacket, state: &Arc<GatewayState>, pool: &Pool
                     },
                     #[cfg(feature = "trace")]
                     PortNum::IpTunnelApp => {
-                        decode_and_trace("IpTunnelApp", data.payload.clone());
+                        decode_and_trace("IpTunnelApp", data.payload.as_ref());
                     }
                     #[cfg(feature = "trace")]
-                    PortNum::PaxcounterApp => match Paxcount::decode(data.payload.clone()) {
+                    PortNum::PaxcounterApp => match Paxcount::decode(data.payload.as_ref()) {
                         Ok(payload) => decode_and_trace("PaxcounterApp", payload),
                         Err(e) => {
                             log_msg!(log::Level::Warn, "Error decoding PaxcounterApp: {e:?}");
@@ -392,11 +392,11 @@ async fn decode_payload(pkt: &MeshPacket, state: &Arc<GatewayState>, pool: &Pool
                     },
                     #[cfg(feature = "trace")]
                     PortNum::SerialApp => {
-                        decode_and_trace("SerialApp", data.payload.clone());
+                        decode_and_trace("SerialApp", data.payload.as_ref());
                     }
                     #[cfg(feature = "trace")]
                     PortNum::StoreForwardApp => {
-                        match StoreAndForward::decode(data.payload.clone()) {
+                        match StoreAndForward::decode(data.payload.as_ref()) {
                             Ok(payload) => decode_and_trace("StoreForwardApp", payload),
                             Err(e) => {
                                 log_msg!(log::Level::Warn, "Error decoding StoreForwardApp: {e:?}");
@@ -404,7 +404,7 @@ async fn decode_payload(pkt: &MeshPacket, state: &Arc<GatewayState>, pool: &Pool
                         }
                     }
                     #[cfg(feature = "trace")]
-                    PortNum::RangeTestApp => match String::decode(data.payload.clone()) {
+                    PortNum::RangeTestApp => match String::decode(data.payload.as_ref()) {
                         Ok(payload) => decode_and_trace("RangeTestApp", payload),
                         Err(e) => {
                             log_msg!(log::Level::Warn, "Error decoding RangeTestApp: {e:?}");
@@ -412,28 +412,28 @@ async fn decode_payload(pkt: &MeshPacket, state: &Arc<GatewayState>, pool: &Pool
                     },
                     #[cfg(feature = "trace")]
                     PortNum::ZpsApp => {
-                        decode_and_trace("ZpsApp", data.payload.clone());
+                        decode_and_trace("ZpsApp", data.payload.as_ref());
                     }
                     #[cfg(feature = "trace")]
                     PortNum::SimulatorApp => {
-                        decode_and_trace("SimulatorApp", data.payload.clone());
+                        decode_and_trace("SimulatorApp", data.payload.as_ref());
                     }
                     #[cfg(feature = "trace")]
-                    PortNum::TracerouteApp => match RouteDiscovery::decode(data.payload.clone()) {
+                    PortNum::TracerouteApp => match RouteDiscovery::decode(data.payload.as_ref()) {
                         Ok(payload) => decode_and_trace("TracerouteApp", payload),
                         Err(e) => {
                             log_msg!(log::Level::Warn, "Error decoding TracerouteApp: {e:?}");
                         }
                     },
                     #[cfg(feature = "trace")]
-                    PortNum::AtakPlugin => match TakPacket::decode(data.payload.clone()) {
+                    PortNum::AtakPlugin => match TakPacket::decode(data.payload.as_ref()) {
                         Ok(payload) => decode_and_trace("AtakPlugin", payload),
                         Err(e) => {
                             log_msg!(log::Level::Warn, "Error decoding AtakPlugin: {e:?}");
                         }
                     },
                     #[cfg(feature = "trace")]
-                    PortNum::MapReportApp => match MapReport::decode(data.payload.clone()) {
+                    PortNum::MapReportApp => match MapReport::decode(data.payload.as_ref()) {
                         Ok(payload) => decode_and_trace("MapReportApp", payload),
                         Err(e) => {
                             log_msg!(log::Level::Warn, "Error decoding MapReportApp: {e:?}");
@@ -441,7 +441,7 @@ async fn decode_payload(pkt: &MeshPacket, state: &Arc<GatewayState>, pool: &Pool
                     },
                     #[cfg(feature = "trace")]
                     PortNum::PowerstressApp => {
-                        match PowerStressMessage::decode(data.payload.clone()) {
+                        match PowerStressMessage::decode(data.payload.as_ref()) {
                             Ok(payload) => decode_and_trace("PowerstressApp", payload),
                             Err(e) => {
                                 log_msg!(log::Level::Warn, "Error decoding PowerstressApp: {e:?}");
@@ -450,10 +450,10 @@ async fn decode_payload(pkt: &MeshPacket, state: &Arc<GatewayState>, pool: &Pool
                     }
                     #[cfg(feature = "trace")]
                     PortNum::PrivateApp => {
-                        decode_and_trace("PrivateApp", data.payload.clone());
+                        decode_and_trace("PrivateApp", data.payload.as_ref());
                     }
                     #[cfg(feature = "trace")]
-                    PortNum::AtakForwarder => match TakPacket::decode(data.payload.clone()) {
+                    PortNum::AtakForwarder => match TakPacket::decode(data.payload.as_ref()) {
                         Ok(payload) => decode_and_trace("AtakForwarder", payload),
                         Err(e) => {
                             log_msg!(log::Level::Warn, "Error decoding AtakForwarder: {e:?}");
@@ -461,7 +461,7 @@ async fn decode_payload(pkt: &MeshPacket, state: &Arc<GatewayState>, pool: &Pool
                     },
                     #[cfg(feature = "trace")]
                     PortNum::Max => {
-                        decode_and_trace("Max", data.payload.clone());
+                        decode_and_trace("Max", data.payload.as_ref());
                     }
                 }
             }
