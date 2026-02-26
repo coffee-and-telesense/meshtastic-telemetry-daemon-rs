@@ -28,3 +28,51 @@ pub(crate) fn timestamp(epoch: u32) -> NaiveDateTime {
         Utc::now().naive_utc()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn valid_epoch_returns_correct_datetime() {
+        // 2025-01-01 12:00:01 UTC
+        let dt = timestamp(1_735_689_601);
+        assert_eq!(
+            dt,
+            DateTime::from_timestamp(1_735_689_601, 0)
+                .unwrap()
+                .naive_utc()
+        );
+    }
+
+    #[test]
+    fn zero_epoch_falls_back_to_now() {
+        let before = Utc::now().naive_utc();
+        let dt = timestamp(0);
+        let after = Utc::now().naive_utc();
+        assert!(dt >= before && dt <= after);
+    }
+
+    #[test]
+    fn boundary_epoch_falls_back_to_now() {
+        // Exactly the cutoff — should use Utc::now()
+        let before = Utc::now().naive_utc();
+        let dt = timestamp(1_735_689_600);
+        let after = Utc::now().naive_utc();
+        assert!(dt >= before && dt <= after);
+    }
+
+    #[test]
+    fn one_above_boundary_uses_packet_time() {
+        let dt = timestamp(1_735_689_601);
+        assert_eq!(dt.and_utc().timestamp(), 1_735_689_601);
+    }
+
+    #[test]
+    fn max_u32_epoch() {
+        // u32::MAX = 4294967295, which is 2106-02-07
+        // Should succeed, not fall back
+        let dt = timestamp(u32::MAX);
+        assert_eq!(dt.and_utc().timestamp(), i64::from(u32::MAX));
+    }
+}
