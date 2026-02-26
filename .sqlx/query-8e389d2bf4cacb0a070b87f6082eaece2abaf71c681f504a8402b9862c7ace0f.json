@@ -1,0 +1,40 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\nSELECT\n    node_id,\n    longname,\n    shortname,\n    hwmodel\nFROM nodeinfo\nWHERE\n    deployment_location = $1\n    AND longname IS NOT NULL\n    AND shortname IS NOT NULL\n    AND hwmodel IS NOT NULL\n    ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "node_id",
+        "type_info": "Oid"
+      },
+      {
+        "ordinal": 1,
+        "name": "longname",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
+        "name": "shortname",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "hwmodel",
+        "type_info": "Int4"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "8e389d2bf4cacb0a070b87f6082eaece2abaf71c681f504a8402b9862c7ace0f"
+}

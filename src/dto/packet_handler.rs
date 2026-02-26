@@ -83,9 +83,9 @@ pub async fn process_packet(pkt: &FromRadio, state: &Arc<GatewayState>, pool: &P
                 // Indicate the serial connection for the local state from this packet
                 state.set_serial_number(my_node_info.my_node_num);
             }
-            other => {
+            _other => {
                 #[cfg(feature = "trace")]
-                trace_fromradio(other);
+                trace_fromradio(_other);
             }
         }
     }
@@ -287,9 +287,9 @@ async fn decode_payload(pkt: &MeshPacket, state: &Arc<GatewayState>, pool: &Pool
             #[cfg(not(feature = "trace"))]
             Err(e) => log_msg!(log::Level::Warn, "{e}"),
         },
-        other => {
+        _other => {
             #[cfg(feature = "trace")]
-            trace_portnum(other, data);
+            trace_portnum(_other, data);
         }
     }
 }

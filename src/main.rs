@@ -20,6 +20,7 @@ use crate::util::log::log_perf;
 use crate::util::{config::Settings, log::set_logger, state::GatewayState};
 use anyhow::{Context, Result};
 use meshtastic::api::StreamApi;
+use meshtastic::protobufs::User;
 use meshtastic::utils;
 #[cfg(feature = "print-packets")]
 use serde_json::to_string_pretty;
@@ -81,6 +82,39 @@ async fn main() -> Result<(), anyhow::Error> {
 
     // Output the version of the daemon to the logger
     log_msg!(log::Level::Info, "Daemon version: {VERSION}");
+
+    // Load the already filled in nodeinfo tables to the state
+    let rows = sqlx::query!(
+        "
+SELECT
+    node_id,
+    longname,
+    shortname,
+    hwmodel
+FROM nodeinfo
+WHERE
+    deployment_location = $1
+    AND longname IS NOT NULL
+    AND shortname IS NOT NULL
+    AND hwmodel IS NOT NULL
+    ",
+        DEPLOYMENT_LOCATION.get()
+    )
+    .fetch_all(&postgres_db)
+    .await?;
+    for row in rows {
+        // Reconstruct a minimal User and insert into GatewayState
+        state.insert(
+            row.node_id.0,
+            &User {
+                long_name: row.longname,
+                short_name: row.shortname,
+                hw_model: row.hwmodel,
+                id: format!("!{:08x}", row.node_id.0),
+                ..Default::default()
+            },
+        );
+    }
 
     // This loop can be broken with ctrl+c, or by disconnecting
     // the attached serial port, or by sending a SIGTERM signal
