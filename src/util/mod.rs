@@ -10,14 +10,14 @@ pub(crate) mod state;
 /// Create a timestamp from a given epoch `u32`
 ///
 /// # Arguments
-/// * `epoch` - u32 epoch value
+/// * `epoch` - epoch value (`u32`)
 ///
 /// # Returns
-/// * `NaiveDateTime` - from a u32 epoch value or the `Utc::now()` value of the daemon if the epoch value is
+/// * `NaiveDateTime` - from an epoch value (`u32`) or the `Utc::now()` value of the daemon if the epoch value is
 ///   zero
 ///
 /// # Panics
-/// * If the epoch is more than 250,000 year from the common era or if the nanosecs is > 2
+/// * If the epoch is more than 250,000 year from the common era or if the nanoseconds is > 2
 #[inline]
 pub(crate) fn timestamp(epoch: u32) -> NaiveDateTime {
     if epoch > 1_735_689_600 {

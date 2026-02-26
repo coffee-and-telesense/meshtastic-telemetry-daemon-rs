@@ -20,19 +20,18 @@ static EXAMPLE_CONFIG: &[u8] = include_bytes!("example_config.toml");
 /// XDG app specification for use (possibly caching or saving state)
 static APP: OnceCell<XdgApp> = OnceCell::const_new();
 
-/// Struct reprenting a postgres connection's settings
+/// Struct representing a Postgres connection's settings
 #[derive(Debug, Deserialize)]
-#[allow(unused)]
 struct PostgresConnection<'a> {
-    /// Username for postgres db
+    /// Username for Postgres db
     user: Cow<'a, str>,
-    /// Password for postgres db
+    /// Password for Postgres db
     password: Cow<'a, str>,
-    /// Port for postgres db
+    /// Port for Postgres db
     port: u32,
-    /// Hostname of postgres db
+    /// Hostname of Postgres db
     host: Cow<'a, str>,
-    /// Database name for postgres db
+    /// Database name for Postgres db
     dbname: Cow<'a, str>,
     /// Maximum connection workers for db connection
     max_connections: u32,
@@ -41,10 +40,10 @@ struct PostgresConnection<'a> {
 }
 
 impl PostgresConnection<'_> {
-    /// Setup a Postgresql connection pool
+    /// Setup a `PostgreSQL` connection pool
     ///
     /// # Returns
-    /// * `Result<PgPool>` - An `anyhow` result with a connection pool to the postgresql
+    /// * `Result<PgPool>` - An `anyhow` result with a connection pool to the `PostgreSQL`
     ///   database
     ///
     /// # Panics
@@ -70,9 +69,8 @@ impl PostgresConnection<'_> {
     }
 }
 
-/// Struct reprenting a connection to a serial port's settings
+/// Struct representing a connection to a serial port's settings
 #[derive(Debug, Deserialize)]
-#[allow(unused)]
 struct SerialConnection<'a> {
     /// The path to the serial port of a connected Meshtastic node, if left
     /// blank the user is prompted for the path out of a list of possible paths
@@ -81,17 +79,15 @@ struct SerialConnection<'a> {
 
 /// Struct representing configured deployment information, like location
 #[derive(Debug, Deserialize)]
-#[allow(unused)]
 pub struct DeploymentSettings<'a> {
     /// The name of this group of nodes
     pub location: Cow<'a, str>,
 }
 
-/// Settings struct that parses a config and performs setup
+/// Settings struct that parses a config and sets up
 #[derive(Debug, Deserialize)]
-#[allow(unused)]
 pub struct Settings<'a> {
-    /// The postgres connection config
+    /// The Postgres connection config
     postgres: PostgresConnection<'a>,
     /// The serial connection to a Meshtastic node config
     serial: SerialConnection<'a>,
@@ -143,7 +139,7 @@ impl<'a> Settings<'a> {
             Err(e) => panic!("{e}"),
         }
 
-        // Check the config directory for a config.toml file, if it does not exist then create it
+        // Check the config directory for a `config.toml` file, if it does not exist then create it
         let config_file = match APP
             .get()
             .expect("APP OnceCell not initialized before use")
@@ -226,10 +222,10 @@ impl<'a> Settings<'a> {
         }
     }
 
-    /// Setup postgres connection
+    /// Setup a Postgres connection
     ///
     /// # Returns
-    /// * `Result<PgPool>` - An `anyhow` result with a connection pool to the postgresql
+    /// * `Result<PgPool>` - An `anyhow` result with a connection pool to the `PostgreSQL`
     ///   database
     pub(crate) async fn setup_postgres(&self) -> Result<PgPool> {
         self.postgres.setup().await

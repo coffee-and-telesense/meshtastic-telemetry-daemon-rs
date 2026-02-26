@@ -17,7 +17,7 @@ pub struct NodeMeta {
     long_name: String,
     /// Short name of the node
     short_name: String,
-    /// HW Model enum
+    /// Hardware Model enum
     hw_model: i32,
     /// Node id, the string hash `!dasf31`
     id: String,
@@ -162,6 +162,12 @@ impl GatewayState {
             }
             Occupied(mut e) => {
                 let n = e.get_mut();
+                if n.long_name == user.long_name
+                    && n.short_name == user.short_name
+                    && n.hw_model == user.hw_model
+                {
+                    return false;
+                }
                 n.long_name.clone_from(&user.long_name);
                 n.short_name.clone_from(&user.short_name);
                 n.hw_model = user.hw_model;

@@ -53,7 +53,7 @@ async fn main() -> Result<(), anyhow::Error> {
         .await
         .with_context(|| "Failed to connect to postgresql database")?;
 
-    // Connect to serial meshtastic
+    // Connect to serial Meshtastic
     let stream_api = StreamApi::new();
     let entered_port = settings.get_serial_port();
     let serial_stream =
@@ -108,7 +108,7 @@ async fn main() -> Result<(), anyhow::Error> {
         }
     }
 
-    // Called when either the radio is disconnected or the daemon recieves
+    // Called when either the radio is disconnected or the daemon receives
     // a SIGTERM or SIGKILL signal from systemctl or by other means
     match stream_api.disconnect().await {
         Ok(_) => log_msg!(log::Level::Warn, "StreamApi disconnected without error",),

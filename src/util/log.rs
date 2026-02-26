@@ -15,7 +15,7 @@ static INIT_LOGGER: Once = Once::new();
 
 /// Set logger for CLI
 ///
-/// If building a debug build, this will log to stdout using colog.
+/// If building a debug build, this will log to standard output using colog.
 ///
 /// If building a release build, this will log to the system log using syslog.
 ///

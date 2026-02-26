@@ -84,7 +84,7 @@ strip = false
 inherits = "dev"
 codegen-units = 1
 debug = true
-opt-level = 's'   # use loop vectorization instead of not with 'z'?
+opt-level = 's'   # size-optimized; keeps loop unrolling and some inlining for MIPS/ARM
 panic = "unwind"
 strip = false
 
@@ -94,6 +94,6 @@ strip = false
 codegen-units = 1
 debug = false
 lto = true
-opt-level = 's'   # use loop vectorization instead of not with 'z'?
+opt-level = 's'   # size-optimized; keeps loop unrolling and some inlining for MIPS/ARM
 panic = "abort"
 strip = true
