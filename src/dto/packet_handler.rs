@@ -157,7 +157,10 @@ fn trace_fromradio(payload: &from_radio::PayloadVariant) {
                 "Received device_ui_config packet: {device_ui_config:?}"
             );
         }
-        _ => {}
+        _ => log_msg!(
+            log::Level::Info,
+            "Received an unknown from_radio PayloadVariant"
+        ),
     }
 }
 
@@ -432,7 +435,7 @@ fn trace_portnum(port: PortNum, data: &Data) {
         PortNum::Max => {
             decode_and_trace("Max", data.payload.as_ref());
         }
-        _ => {}
+        _ => log_msg!(log::Level::Debug, "Received an unknown PortNum"),
     }
 }
 
