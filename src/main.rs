@@ -5,7 +5,7 @@
 // Unfortunately we have duplicate dependencies with different versions
 #![allow(clippy::multiple_crate_versions)]
 
-//! Meshtastic to Postgresql database daemon
+//! Meshtastic to `PostgreSQL` database daemon
 
 #[cfg(feature = "syslog")]
 extern crate syslog;
@@ -47,13 +47,11 @@ async fn main() -> Result<(), anyhow::Error> {
     // Create the gateway's state object
     let state = Arc::new(GatewayState::new());
 
-    // Create postgresql connection
-    let postgres_db = Arc::new(
-        settings
-            .setup_postgres()
-            .await
-            .with_context(|| "Failed to connect to postgresql database")?,
-    );
+    // Create PostgreSQL connection
+    let postgres_db = settings
+        .setup_postgres()
+        .await
+        .with_context(|| "Failed to connect to postgresql database")?;
 
     // Connect to serial meshtastic
     let stream_api = StreamApi::new();
