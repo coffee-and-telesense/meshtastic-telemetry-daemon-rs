@@ -69,7 +69,7 @@ impl Display for GatewayState {
         for (id, node) in self
             .nodes
             .read()
-            .expect("Unable to acquire read lock in Display impl")
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
             .iter()
         {
             if *id == self.serial_node.load(Relaxed) {
@@ -109,7 +109,7 @@ impl GatewayState {
     pub fn get_counter(&self, node_id: u32) -> Option<RxCounter> {
         self.nodes
             .read()
-            .expect("Unable to acquire read lock in get_counter()")
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
             .get(&node_id)
             .map(|n| RxCounter(Arc::clone(&n.rx_count)))
     }
@@ -125,7 +125,7 @@ impl GatewayState {
     pub fn any_recvd(&self) -> bool {
         self.nodes
             .read()
-            .expect("Unable to acquire read lock in any_recvd()")
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
             .values()
             .any(|n| n.rx_count.load(Relaxed) > 1)
     }
@@ -155,7 +155,7 @@ impl GatewayState {
         match self
             .nodes
             .write()
-            .expect("Unable to acquire write lock in insert()")
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
             .entry(node_id)
         {
             Vacant(e) => {
