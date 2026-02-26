@@ -88,7 +88,11 @@ async fn main() -> Result<(), anyhow::Error> {
             }
             msg = decoded_listener.recv() => {
                 if let Some(from_radio) = msg {
-                    process_packet(&from_radio, &state, &postgres_db).await;
+                    let s = Arc::clone(&state);
+                    let pool = postgres_db.clone();
+                    tokio::spawn(async move {
+                        process_packet(&from_radio, &s, &pool).await;
+                    });
 
                     #[cfg(feature = "debug")]
                     {
