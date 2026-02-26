@@ -80,12 +80,8 @@ impl GatewayState {
     /// # Returns
     /// * An empty `GatewayState` struct
     #[must_use]
-    pub fn new() -> GatewayState {
-        // Stub this function for now, but in the future:
-        GatewayState {
-            nodes: RwLock::new(HashMap::new()),
-            serial_node: AtomicU32::new(0),
-        }
+    pub fn new() -> Self {
+        Self::default()
     }
 
     /// Increment the `rx_count` of a given node
