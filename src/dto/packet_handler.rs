@@ -198,6 +198,12 @@ async fn decode_payload(pkt: &MeshPacket, state: &Arc<GatewayState>, pool: &Pool
     {
         if let Some(counter) = state.get_counter(pkt.from) {
             counter.increment();
+        } else {
+            log_msg!(
+                log::Level::Debug,
+                "rx count missed for unregistered node {:08x}",
+                pkt.from
+            );
         }
     }
     // Check if the packet is on the telemetry channel before decoding a payload
