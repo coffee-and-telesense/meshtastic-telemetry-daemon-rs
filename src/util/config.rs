@@ -87,23 +87,6 @@ pub struct DeploymentSettings<'a> {
     pub location: Cow<'a, str>,
 }
 
-/// Struct representing configured async runtime settings
-#[derive(Debug, Deserialize)]
-#[allow(unused)]
-pub struct AsyncSettings {
-    /// The buffer size impacts how many packets can remain in the queue for
-    /// processing and submitting to the database
-    pub mpsc_buffer_size: u8,
-    /// Sets the number of worker threads the runtime will use. By default
-    /// tokio chooses the number of cores on a system.
-    pub worker_threads: u8,
-    /// Specify the limit for additional threads spawned by the runtime for
-    /// blocling operations. Default of 512
-    pub max_blocking_threads: u16,
-    /// Thread stack size, default is 2 MiB, or 2097000.
-    pub thread_stack_size: u32,
-}
-
 /// Settings struct that parses a config and performs setup
 #[derive(Debug, Deserialize)]
 #[allow(unused)]
@@ -114,8 +97,6 @@ pub struct Settings<'a> {
     serial: SerialConnection<'a>,
     /// The deployment config
     pub deployment: DeploymentSettings<'a>,
-    /// The asynchronous runtime config
-    pub async_runtime: AsyncSettings,
 }
 
 impl<'a> Settings<'a> {
@@ -143,7 +124,7 @@ impl<'a> Settings<'a> {
         // Check the config directory, if it does not exist then create it
         let config_dir = match APP
             .get()
-            .expect("")
+            .expect("APP OnceCell not initialized before use")
             .app_config()
             .with_context(|| "Unable to find meshtastic_telemetry XDG configuration directory")
         {
@@ -165,7 +146,7 @@ impl<'a> Settings<'a> {
         // Check the config directory for a config.toml file, if it does not exist then create it
         let config_file = match APP
             .get()
-            .expect("")
+            .expect("APP OnceCell not initialized before use")
             .app_config_file("config.toml")
             .with_context(|| {
                 format!(
