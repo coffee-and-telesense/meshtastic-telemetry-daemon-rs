@@ -1,4 +1,4 @@
-use chrono::{NaiveDateTime, Utc};
+use chrono::{DateTime, NaiveDateTime, Utc};
 
 /// Config file interaction module
 pub(crate) mod config;
@@ -22,8 +22,8 @@ pub(crate) mod state;
 pub(crate) fn timestamp(epoch: u32) -> NaiveDateTime {
     if epoch > 1_735_689_600 {
         // Not recording timestamps earlier than 01/01/2025 12:00:00
-        #[allow(deprecated)]
-        NaiveDateTime::from_timestamp(epoch.into(), 0)
+        DateTime::from_timestamp(i64::from(epoch), 0)
+            .map_or_else(|| Utc::now().naive_utc(), |dt| dt.naive_utc())
     } else {
         Utc::now().naive_utc()
     }
