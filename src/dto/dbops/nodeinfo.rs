@@ -44,12 +44,5 @@ ON CONFLICT (node_id) DO UPDATE SET
     .execute(pool)
     .await
     .map_err(anyhow::Error::from)
-    .and_then(|result| {
-        if result.rows_affected() == 0 {
-            Err(anyhow::anyhow!("Upsert matched 0 rows in NodeInfo"))
-        } else {
-            Ok(result)
-        }
-    })
     .with_context(|| "Failed to upsert row in NodeInfo table")
 }
