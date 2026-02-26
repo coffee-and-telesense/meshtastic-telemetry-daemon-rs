@@ -1,6 +1,6 @@
 use crate::util::timestamp;
 use anyhow::Context;
-use meshtastic::protobufs::{PowerMetrics, MeshPacket, Telemetry};
+use meshtastic::protobufs::{MeshPacket, PowerMetrics, Telemetry};
 use sqlx::postgres::types::Oid;
 
 /// Insert a row into the `PowerMetrics` table

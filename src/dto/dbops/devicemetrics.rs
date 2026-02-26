@@ -166,7 +166,16 @@ ON CONFLICT (msg_id) DO UPDATE SET
     .execute(pool)
     .await
     .map_err(anyhow::Error::from)
-    .with_context(|| "Failed to update row in DeviceMetrics table")
+    .and_then(|result| {
+        if result.rows_affected() == 0 {
+            Err(anyhow::anyhow!(
+                "Upsert from MeshPacket matched 0 rows in DeviceMetrics"
+            ))
+        } else {
+            Ok(result)
+        }
+    })
+    .with_context(|| "Failed to upsert row in DeviceMetrics table from MeshPacket")
 }
 
 /// Upsert (insert or update) a row in the `DeviceMetrics` table with node info data from the serial interface
@@ -234,5 +243,14 @@ ON CONFLICT (msg_id) DO UPDATE SET
     .execute(pool)
     .await
     .map_err(anyhow::Error::from)
-    .with_context(|| "Failed to upsert row in DeviceMetrics table")
+    .and_then(|result| {
+        if result.rows_affected() == 0 {
+            Err(anyhow::anyhow!(
+                "Upsert from serial matched 0 rows in DeviceMetrics"
+            ))
+        } else {
+            Ok(result)
+        }
+    })
+    .with_context(|| "Failed to upsert row in DeviceMetrics table from serial")
 }
