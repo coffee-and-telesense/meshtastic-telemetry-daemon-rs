@@ -97,19 +97,22 @@ async fn main() -> Result<(), anyhow::Error> {
                     let pool = postgres_db.clone();
                     tokio::spawn(async move {
                         process_packet(&from_radio, &s, &pool).await;
+
+                        // Debug logging in task after receiving/processing/inserting
+                        #[cfg(feature = "debug")]
+                        {
+                            // log performance metrics
+                            #[cfg(feature = "log_perf")]
+                            log_perf();
+                            // log state messages
+                            if s.any_recvd() {
+                                log_msg!(log::Level::Info, "{s}");
+                            }
+                        }
+
+                        // Release semaphore permit to permit spawning a new task
                         drop(permit);
                     });
-
-                    #[cfg(feature = "debug")]
-                    {
-                        // log performance metrics
-                        #[cfg(feature = "log_perf")]
-                        log_perf();
-                        // log state messages
-                        if state.any_recvd() {
-                            log_msg!(log::Level::Info, "{state}");
-                        }
-                    }
                 } else {
                     log_msg!(log::Level::Error, "Serial connection closed");
                     break;
