@@ -5,8 +5,8 @@ port = 5431
 host = "localhost"
 dbname = "meshtastic"
 # Max and minimum connection configures how many workers can be allocated for
-# performing Postgres connections, and max_connections is also half of the
-# incoming packets bound (maximum in-flight tasks)
+# performing Postgres connections. max_connections is also half of the
+# incoming packets bound (maximum in-flight tasks) which is at most 32
 max_connections = 8
 min_connections = 1
 #TODO: Add more settings

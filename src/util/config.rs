@@ -33,7 +33,7 @@ struct PostgresConnection<'a> {
     host: Cow<'a, str>,
     /// Database name for Postgres db
     dbname: Cow<'a, str>,
-    /// Maximum connection workers for db connection and half of incoming packets bound
+    /// Maximum connection workers for db connection and half of incoming packets bound (max 32)
     max_connections: u32,
     /// Minimum connection workers for db connection
     min_connections: u32,

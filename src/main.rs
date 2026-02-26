@@ -68,8 +68,9 @@ async fn main() -> Result<(), anyhow::Error> {
         .await
         .with_context(|| "Failed to configure serial stream")?;
 
-    // Create a semaphore to bound the unbounded channel
-    let semaphore = Arc::new(Semaphore::new(settings.get_max_connections() * 2));
+    // Create a semaphore to bound the unbounded channel, maximum value of 32 tasks
+    let max_tasks = (settings.get_max_connections() * 2).min(32);
+    let semaphore = Arc::new(Semaphore::new(max_tasks));
 
     // Set the global deployment location string
     DEPLOYMENT_LOCATION
