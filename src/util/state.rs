@@ -176,3 +176,88 @@ impl GatewayState {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use meshtastic::protobufs::User;
+
+    fn test_user(long: &str, short: &str) -> User {
+        User {
+            id: String::from("!abc123"),
+            long_name: String::from(long),
+            short_name: String::from(short),
+            hw_model: 1,
+            ..Default::default()
+        }
+    }
+
+    #[test]
+    fn increment_unknown_node_returns_false() {
+        let state = GatewayState::new();
+        assert!(!state.increment_count(0xDEAD_BEEF));
+    }
+
+    #[test]
+    fn increment_known_node_returns_true() {
+        let state = GatewayState::new();
+        let user = test_user("TestNode", "TN");
+        state.insert(1, &user);
+        assert!(state.increment_count(1));
+    }
+
+    #[test]
+    fn any_recvd_false_when_no_packets() {
+        let state = GatewayState::new();
+        assert!(!state.any_recvd());
+    }
+
+    #[test]
+    fn any_recvd_true_after_increment_then_resets() {
+        let state = GatewayState::new();
+        let user = test_user("TestNode", "TN");
+        state.insert(1, &user);
+        state.increment_count(1);
+        assert!(state.any_recvd()); // first call: true
+        assert!(!state.any_recvd()); // second call: reset to false
+    }
+
+    #[test]
+    fn insert_new_node_returns_true() {
+        let state = GatewayState::new();
+        let user = test_user("NodeA", "NA");
+        assert!(state.insert(1, &user));
+    }
+
+    #[test]
+    fn insert_same_data_returns_false() {
+        let state = GatewayState::new();
+        let user = test_user("NodeA", "NA");
+        state.insert(1, &user);
+        assert!(!state.insert(1, &user)); // no change
+    }
+
+    #[test]
+    fn insert_changed_data_returns_true() {
+        let state = GatewayState::new();
+        state.insert(1, &test_user("NodeA", "NA"));
+        assert!(state.insert(1, &test_user("NodeB", "NB"))); // changed
+    }
+
+    #[test]
+    fn serial_number_roundtrip() {
+        let state = GatewayState::new();
+        state.set_serial_number(42);
+        // Verify via Display output containing "*serial"
+        state.insert(42, &test_user("Serial", "SR"));
+        let display = format!("{state}");
+        assert!(display.contains("*serial"));
+    }
+
+    #[test]
+    fn increment_does_not_set_flag_for_unknown_node() {
+        let state = GatewayState::new();
+        state.increment_count(999); // unknown
+        assert!(!state.any_recvd()); // should still be false
+    }
+}
