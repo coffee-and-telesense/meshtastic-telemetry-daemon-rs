@@ -24,6 +24,7 @@ use meshtastic::utils;
 #[cfg(feature = "print-packets")]
 use serde_json::to_string_pretty;
 use std::sync::Arc;
+use tokio::sync::Semaphore;
 
 /// Handle data transfer objects
 pub(crate) mod dto;
@@ -67,6 +68,9 @@ async fn main() -> Result<(), anyhow::Error> {
         .await
         .with_context(|| "Failed to configure serial stream")?;
 
+    // Create a semaphore to bound the unbounded channel
+    let semaphore = Arc::new(Semaphore::new(settings.get_max_connections() * 2));
+
     // Set the global deployment location string
     DEPLOYMENT_LOCATION
         .set(Box::leak(
@@ -88,10 +92,12 @@ async fn main() -> Result<(), anyhow::Error> {
             }
             msg = decoded_listener.recv() => {
                 if let Some(from_radio) = msg {
+                    let permit = semaphore.clone().acquire_owned().await.unwrap();
                     let s = Arc::clone(&state);
                     let pool = postgres_db.clone();
                     tokio::spawn(async move {
                         process_packet(&from_radio, &s, &pool).await;
+                        drop(permit);
                     });
 
                     #[cfg(feature = "debug")]

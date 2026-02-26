@@ -33,7 +33,7 @@ struct PostgresConnection<'a> {
     host: Cow<'a, str>,
     /// Database name for Postgres db
     dbname: Cow<'a, str>,
-    /// Maximum connection workers for db connection
+    /// Maximum connection workers for db connection and half of incoming packets bound
     max_connections: u32,
     /// Minimum connection workers for db connection
     min_connections: u32,
@@ -229,5 +229,16 @@ impl<'a> Settings<'a> {
     ///   database
     pub(crate) async fn setup_postgres(&self) -> Result<PgPool> {
         self.postgres.setup().await
+    }
+
+    /// Get the maximum connections value to bound in-flight tasks for received packets
+    ///
+    /// # Arguments
+    /// * `&self` - A reference to the `Settings` struct
+    ///
+    /// # Returns
+    /// * `usize` - The configured number of maximum connections
+    pub(crate) fn get_max_connections(&self) -> usize {
+        self.postgres.max_connections as usize
     }
 }

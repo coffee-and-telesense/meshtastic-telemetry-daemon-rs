@@ -4,15 +4,16 @@ password = "postgres"
 port = 5431
 host = "localhost"
 dbname = "meshtastic"
-# Max and min connection configures how many workers can be allocated
-# for performing postgres connections
+# Max and minimum connection configures how many workers can be allocated for
+# performing Postgres connections, and max_connections is also half of the
+# incoming packets bound (maximum in-flight tasks)
 max_connections = 8
 min_connections = 1
 #TODO: Add more settings
 
 [serial]
-# The path to the serial port of a connected Meshtastic node, if left blank
-# the user is prompted for the path out of a list of possible paths
+# The path to the serial port of a connected Meshtastic node, if left blank the
+# user is prompted for the path out of a list of possible paths
 port = ""
 
 [deployment]
