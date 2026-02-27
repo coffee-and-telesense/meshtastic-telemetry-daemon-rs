@@ -17,7 +17,7 @@ pub(crate) static DEPLOYMENT_LOCATION: OnceCell<&'static str> = OnceCell::const_
 /// Example config file to write in case one cannot be found
 static EXAMPLE_CONFIG: &[u8] = include_bytes!("example_config.toml");
 
-/// XDG app specification for use (possibly caching or saving state)
+/// XDG application handle for finding config paths.
 static APP: OnceCell<XdgApp> = OnceCell::const_new();
 
 /// Struct representing a Postgres connection's settings
