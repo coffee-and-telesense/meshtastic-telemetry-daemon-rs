@@ -1,9 +1,9 @@
 #![feature(stmt_expr_attributes)]
 #![warn(missing_docs)]
-#![warn(clippy::cargo)]
-#![warn(clippy::pedantic)]
-// Unfortunately we have duplicate dependencies with different versions
-#![allow(clippy::multiple_crate_versions)]
+#![expect(
+    clippy::multiple_crate_versions,
+    reason = "meshtastic and sqlx pull different version of core deps"
+)]
 
 //! Meshtastic to `PostgreSQL` database daemon
 
@@ -14,6 +14,7 @@ extern crate syslog;
 extern crate log;
 
 use crate::dto::packet_handler::process_packet;
+use crate::util::MAX_INFLIGHT_TASKS;
 use crate::util::config::DEPLOYMENT_LOCATION;
 #[cfg(feature = "log_perf")]
 use crate::util::log::log_perf;
@@ -70,7 +71,7 @@ async fn main() -> Result<(), anyhow::Error> {
         .with_context(|| "Failed to configure serial stream")?;
 
     // Create a semaphore to bound the unbounded channel, maximum value of 32 tasks
-    let max_tasks = (settings.get_max_connections() * 2).min(32);
+    let max_tasks = (settings.get_max_connections() * 2).min(MAX_INFLIGHT_TASKS);
     let semaphore = Arc::new(Semaphore::new(max_tasks));
 
     // Set the global deployment location string
@@ -127,7 +128,7 @@ WHERE
             }
             msg = decoded_listener.recv() => {
                 if let Some(from_radio) = msg {
-                    let permit = semaphore.clone().acquire_owned().await.unwrap();
+                    let permit = Arc::clone(&semaphore).acquire_owned().await.expect("Could not acquire an owned clone of the semaphore");
                     let s = Arc::clone(&state);
                     let pool = postgres_db.clone();
                     tokio::spawn(async move {

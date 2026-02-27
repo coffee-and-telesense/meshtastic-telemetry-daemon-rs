@@ -12,6 +12,7 @@ use std::{
 };
 
 /// Local node type storing only the information we care about from `NodeInfo` table
+#[derive(Debug)]
 pub struct NodeMeta {
     /// Long name of the node
     long_name: String,
@@ -27,6 +28,7 @@ pub struct NodeMeta {
 
 /// We need some state information for the serial vs mesh packet resolution of conflicts
 /// It is a necessary evil unfortunately.
+#[derive(Debug)]
 pub struct GatewayState {
     /// Our hashmap of known nodes
     nodes: RwLock<HashMap<u32, NodeMeta>>,
