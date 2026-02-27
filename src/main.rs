@@ -54,7 +54,7 @@ async fn main() -> Result<(), anyhow::Error> {
     let postgres_db = settings
         .setup_postgres()
         .await
-        .with_context(|| "Failed to connect to postgresql database")?;
+        .context("Failed to connect to postgresql database")?;
 
     // Connect to serial Meshtastic
     let stream_api = StreamApi::new();
@@ -68,7 +68,7 @@ async fn main() -> Result<(), anyhow::Error> {
     let stream_api = stream_api
         .configure(config_id)
         .await
-        .with_context(|| "Failed to configure serial stream")?;
+        .context("Failed to configure serial stream")?;
 
     // Create a semaphore to bound the unbounded channel, maximum value of 32 tasks
     let max_tasks = (settings.get_max_connections() * 2).min(MAX_INFLIGHT_TASKS);

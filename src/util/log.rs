@@ -44,13 +44,11 @@ pub(crate) fn set_logger() {
                 process: String::from("mesh_telem"),
                 pid: 0,
             };
-            match syslog::unix(formatter)
-                .with_context(|| "Could not connect to syslog posix socket")
-            {
+            match syslog::unix(formatter).context("Could not connect to syslog posix socket") {
                 Ok(logger) => {
                     let _ = log::set_boxed_logger(Box::new(BasicLogger::new(logger)))
                         .map(|()| log::set_max_level(LevelFilter::Warn))
-                        .with_context(|| "Failed to set logger to syslog")
+                        .context("Failed to set logger to syslog")
                         .inspect_err(|e| {
                             error!("{e}");
                             warn!("Continuing execution");

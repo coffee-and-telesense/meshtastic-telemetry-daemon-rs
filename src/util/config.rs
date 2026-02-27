@@ -107,7 +107,7 @@ impl<'a> Settings<'a> {
         // Create the XDG app while also setting a global static APP
         match APP.set(
             match XdgApp::new("meshtastic_telemetry")
-                .with_context(|| "Unable to initialize meshtastic_telemetry XDG Application")
+                .context("Unable to initialize meshtastic_telemetry XDG Application")
             {
                 Ok(x) => x,
                 Err(e) => panic!("{e}"),
@@ -122,7 +122,7 @@ impl<'a> Settings<'a> {
             .get()
             .expect("APP OnceCell not initialized before use")
             .app_config()
-            .with_context(|| "Unable to find meshtastic_telemetry XDG configuration directory")
+            .context("Unable to find meshtastic_telemetry XDG configuration directory")
         {
             Ok(c) => c,
             Err(e) => panic!("{e}"),
@@ -169,7 +169,7 @@ impl<'a> Settings<'a> {
         match config::Config::builder()
             .add_source(config::File::from(config_file))
             .build()
-            .with_context(|| "Failed to read config file")
+            .context("Failed to read config file")
         {
             Ok(rv) => rv.try_deserialize().expect("Error deserializing config"),
             Err(e) => {
@@ -192,9 +192,7 @@ impl<'a> Settings<'a> {
     pub(crate) fn get_serial_port(&'a self) -> Cow<'a, str> {
         if self.serial.port.is_empty() {
             warn!("Prompting user for serial port instead");
-            match available_serial_ports()
-                .with_context(|| "Failed to enumerate list of serial ports")
-            {
+            match available_serial_ports().context("Failed to enumerate list of serial ports") {
                 Ok(ap) => println!("Available ports: {ap:?}"),
                 Err(e) => {
                     error!("{e}");
@@ -209,7 +207,7 @@ impl<'a> Settings<'a> {
                 .lines()
                 .next()
                 .expect("Failed to find next line")
-                .with_context(|| "Could not read from stdin")
+                .context("Could not read from stdin")
             {
                 Ok(sp) => Cow::Owned(sp),
                 Err(e) => {

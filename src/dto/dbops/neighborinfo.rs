@@ -75,5 +75,5 @@ VALUES
     .execute(pool)
     .await
     .map_err(anyhow::Error::from)
-    .with_context(|| "Failed to insert row into NeighborInfo table")
+    .context("Failed to insert row into NeighborInfo table")
 }

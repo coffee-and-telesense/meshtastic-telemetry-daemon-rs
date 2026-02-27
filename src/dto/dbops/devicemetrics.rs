@@ -53,7 +53,7 @@ VALUES
     .execute(pool)
     .await
     .map_err(anyhow::Error::from)
-    .with_context(|| "Failed to insert row into DeviceMetrics table")
+    .context("Failed to insert row into DeviceMetrics table")
 }
 
 /// Insert a row into the `DeviceMetrics` table with position data
@@ -98,7 +98,7 @@ VALUES
     .execute(pool)
     .await
     .map_err(anyhow::Error::from)
-    .with_context(|| "Failed to insert row into DeviceMetrics table")
+    .context("Failed to insert row into DeviceMetrics table")
 }
 
 /// Upsert (insert or update) a row in the `DeviceMetrics` table with node info data from a mesh packet
@@ -166,7 +166,7 @@ ON CONFLICT (msg_id) DO UPDATE SET
     .execute(pool)
     .await
     .map_err(anyhow::Error::from)
-    .with_context(|| "Failed to upsert row in DeviceMetrics table from MeshPacket")
+    .context("Failed to upsert row in DeviceMetrics table from MeshPacket")
 }
 
 /// Upsert (insert or update) a row in the `DeviceMetrics` table with node info data from the serial interface
@@ -234,5 +234,5 @@ ON CONFLICT (msg_id) DO UPDATE SET
     .execute(pool)
     .await
     .map_err(anyhow::Error::from)
-    .with_context(|| "Failed to upsert row in DeviceMetrics table from serial")
+    .context("Failed to upsert row in DeviceMetrics table from serial")
 }
