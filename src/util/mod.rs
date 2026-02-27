@@ -19,7 +19,7 @@ const MIN_VALID_EPOCH: u32 = 1_735_689_600;
 ///
 /// Bounded to twice the DB pool size (so tasks can overlap decode
 /// and I/O) but capped at 32 to prevent memory pressure on
-/// embedded targets like BeagleBone and OpenWRT.
+/// embedded targets like `BeagleBone` an`OpenWRT`.
 pub const MAX_INFLIGHT_TASKS: usize = 32;
 
 /// Create a timestamp from a given epoch `u32`

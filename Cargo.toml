@@ -24,8 +24,6 @@ config = { version = "0.15", default-features = false, features = [
 ] }
 # tokio-console
 console-subscriber = { version = "0.5", optional = true }
-# Derive new functions for structs
-derive-new = { version = "0.7", default-features = false }
 # Logger
 log = { version = "0.4", default-features = false }
 # My fork of the meshtastic protocol library with updated protobufs---no serde
@@ -101,11 +99,13 @@ strip = true
 [lints.rust]
 ambiguous_negative_literals = "warn"
 missing_debug_implementations = "warn"
+missing_docs = "warn"
 redundant_imports = "warn"
 redundant_lifetimes = "warn"
 trivial_numeric_casts = "warn"
 unsafe_op_in_unsafe_fn = "warn"
 unused_lifetimes = "warn"
+unused_crate_dependencies = "warn"
 
 [lints.clippy]
 cargo = { level = "warn", priority = -1 }
@@ -123,17 +123,27 @@ allow_attributes_without_reason = "warn"
 as_pointer_underscore = "warn"
 assertions_on_result_states = "warn"
 clone_on_ref_ptr = "warn"
+cloned_instead_of_copied = "warn"
 deref_by_slicing = "warn"
 disallowed_script_idents = "warn"
 empty_drop = "warn"
 empty_enum_variants_with_brackets = "warn"
 empty_structs_with_brackets = "warn"
+enum_variant_names = "warn"
 fn_to_numeric_cast_any = "warn"
 if_then_some_else_none = "warn"
+inefficient_to_string = "warn"
+large_enum_variant = "warn"
+large_stack_frames = "warn"
+large_types_passed_by_value = "warn"
 map_err_ignore = "warn"
+manual_let_else = "warn"
+needless_pass_by_value = "warn"
+rc_mutex = "warn"
 redundant_type_annotations = "warn"
 renamed_function_params = "warn"
 semicolon_outside_block = "warn"
+str_to_string = "warn"
 undocumented_unsafe_blocks = "warn"
 unnecessary_safety_comment = "warn"
 unnecessary_safety_doc = "warn"
@@ -142,6 +152,7 @@ unused_result_ok = "warn"
 
 # tokio tasks
 large_futures = "warn"
+unused_async = "warn"
 
 # May cause issues with structured logging otherwise.
 literal_string_with_formatting_args = "allow"
