@@ -15,15 +15,7 @@ struct Neighbor {
     rssi: i32,
 }
 
-/// Insert a row into the `NeighborInfo` table
-///
-/// # Arguments
-/// * `pkt` - A `MeshPacket` reference
-/// * `nbi` - A `NeighborInfo` reference
-/// * `pool` - A `Pool<Postgres>` reference
-///
-/// # Returns
-/// * `anyhow::Result<PgQueryResult, anyhow::Error>` - Anyhow result and error with debug info
+/// Insert a row into the `NeighborInfo` table from a `MeshPacket`
 pub(crate) async fn insert(
     pkt: &MeshPacket,
     nbi: &NeighborInfo,

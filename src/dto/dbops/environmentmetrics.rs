@@ -3,16 +3,7 @@ use anyhow::Context;
 use meshtastic::protobufs::{EnvironmentMetrics, MeshPacket, Telemetry};
 use sqlx::postgres::types::Oid;
 
-/// Insert a row into the `EnvironmentMetrics` table
-///
-/// # Arguments
-/// * `pkt` - A `MeshPacket` reference
-/// * `tm` - A `Telemetry` reference
-/// * `enm` - An `EnvironmentMetrics` reference
-/// * `pool` - A `Pool<Postgres>` reference
-///
-/// # Returns
-/// * `anyhow::Result<PgQueryResult, anyhow::Error>` - Anyhow result and error with debug info
+/// Insert a row into the `EnvironmentMetrics` table from a `MeshPacket`
 pub(crate) async fn insert(
     pkt: &MeshPacket,
     tm: &Telemetry,

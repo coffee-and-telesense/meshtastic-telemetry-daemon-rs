@@ -16,14 +16,7 @@ static INIT_LOGGER: Once = Once::new();
 /// Set logger for CLI
 ///
 /// If building a debug build, this will log to standard output using colog.
-///
 /// If building a release build, this will log to the system log using syslog.
-///
-/// # Arguments
-/// None
-///
-/// # Returns
-/// None
 pub(crate) fn set_logger() {
     // Check if global logger is set, if not set the global logger
     INIT_LOGGER.call_once(|| {

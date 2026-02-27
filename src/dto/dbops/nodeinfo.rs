@@ -4,13 +4,6 @@ use meshtastic::protobufs::NodeInfo;
 use sqlx::postgres::types::Oid;
 
 /// Upsert (insert or update) a row in the `NodeInfo` table
-///
-/// # Arguments
-/// * `ni` - A `NodeInfo` reference
-/// * `pool` - A `Pool<Postgres>` reference
-///
-/// # Returns
-/// * `anyhow::Result<PgQueryResult, anyhow::Error>` - Anyhow result and error with debug info
 pub(crate) async fn upsert(
     ni: &NodeInfo,
     pool: &sqlx::Pool<sqlx::Postgres>,

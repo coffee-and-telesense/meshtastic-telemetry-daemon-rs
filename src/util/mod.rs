@@ -9,10 +9,9 @@ pub(crate) mod state;
 
 /// Minimum valid epoch — 2025-01-01 12:00:00 UTC.
 ///
-/// Packets with timestamps at or before this value are treated as
-/// having no valid time, falling back to the daemon's wall clock.
-/// This filters out uninitialized devices that report epoch 0 or
-/// small values from their RTC.
+/// Packets with timestamps at or before this value are treated as having no valid time, falling
+/// back to the daemon's wall clock. This filters out uninitialized devices that report epoch 0
+/// or small values from their RTC.
 const MIN_VALID_EPOCH: u32 = 1_735_689_600;
 
 /// Maximum concurrent packet-processing tasks.
@@ -24,15 +23,8 @@ pub const MAX_INFLIGHT_TASKS: usize = 32;
 
 /// Create a timestamp from a given epoch `u32`
 ///
-/// # Arguments
-/// * `epoch` - epoch value (`u32`)
-///
-/// # Returns
-/// * `NaiveDateTime` - from an epoch value (`u32`) or the `Utc::now()` value of the daemon if the epoch value is
-///   zero
-///
 /// # Panics
-/// * If the epoch is more than 250,000 year from the common era or if the nanoseconds is > 2
+/// If the epoch is more than 250,000 year from the common era or if the nanoseconds is > 2
 #[inline]
 pub(crate) fn timestamp(epoch: u32) -> NaiveDateTime {
     if epoch > MIN_VALID_EPOCH {

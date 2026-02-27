@@ -15,16 +15,7 @@ struct Errors {
     too_large: Option<Oid>,
 }
 
-/// Insert a row into the `ErrorMetrics` table
-///
-/// # Arguments
-/// * `pkt` - A `MeshPacket` reference
-/// * `tm` - A `Telemetry` reference
-/// * `em` - An `ErrorMetrics` struct
-/// * `pool` - A `Pool<Postgres>` reference
-///
-/// # Returns
-/// * `anyhow::Result<PgQueryResult, anyhow::Error>` - Anyhow result and error with debug info
+/// Insert a row into the `ErrorMetrics` table from a `MeshPacket`
 pub(crate) async fn insert(
     pkt: &MeshPacket,
     tm: &Telemetry,

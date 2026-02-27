@@ -40,9 +40,6 @@ pub struct GatewayState {
 
 impl Default for GatewayState {
     /// Default constructor
-    ///
-    /// # Returns
-    /// * An empty `GatewayState` struct
     fn default() -> Self {
         GatewayState {
             nodes: RwLock::new(HashMap::new()),
@@ -81,22 +78,12 @@ impl Display for GatewayState {
 
 impl GatewayState {
     /// New `GatewayState` struct
-    ///
-    /// # Returns
-    /// * An empty `GatewayState` struct
     #[must_use]
     pub fn new() -> Self {
         Self::default()
     }
 
     /// Increment the `rx_count` of a given node
-    ///
-    /// # Arguments
-    /// * `&self` - The `GatewayState` reference
-    /// * `node_id` - The `u32` id of a node
-    ///
-    /// # Returns
-    /// * `bool` - True if the count was incremented, false otherwise
     pub fn increment_count(&self, node_id: u32) -> bool {
         // Lock is only held for an atomic instruction, so it is short
         if let Some(n) = self
@@ -113,38 +100,18 @@ impl GatewayState {
     }
 
     /// Return `true` if any node in the local state contains an `rx_count` > 0
-    ///
-    /// # Arguments
-    /// * `&self` - The `GatewayState` reference
-    ///
-    /// # Returns
-    /// * `bool` - `true` if any node has an `rx_count` > 0, otherwise false
     #[inline]
     pub fn any_recvd(&self) -> bool {
         self.any_recv.swap(false, Relaxed)
     }
 
     /// Modify the `serial_node` connection
-    ///
-    /// # Arguments
-    /// * `self` - Mutable self reference
-    /// * `num` - The number of the serial node
     #[inline]
     pub fn set_serial_number(&self, num: u32) {
         self.serial_node.store(num, Relaxed);
     }
 
     /// Insert a new node into the state
-    ///
-    /// Possibly updating our local state if any of the `Node` struct items have changed
-    ///
-    /// # Arguments
-    /// * `self` - Operates on the `GatewayState` struct
-    /// * `node_id` - The `u32` id in the `from` field of packets
-    /// * `user` - The `User` type payload from packets
-    ///
-    /// # Returns
-    /// * `bool` - True if inserted/updated, false if not
     pub fn insert(&self, node_id: u32, user: &User) -> bool {
         match self
             .nodes

@@ -31,13 +31,6 @@ use std::sync::Arc;
 ///
 /// Shout-out to <https://github.com/PeterGrace/meshtui> for some of the code structure here
 ///
-/// # Arguments
-/// * `pkt` - A `FromRadio` reference that is read on the serial connection to a Meshtastic node
-/// * `state` - The `GatewayState` with the various concurrency locks
-///
-/// # Returns
-/// * An optional `Pkt`, our local types for packet handling
-///
 /// # Panics
 /// This function will panic if it fails to acquire a lock on the `GatewayState`
 pub async fn process_packet(pkt: &FromRadio, state: &Arc<GatewayState>, pool: &Pool<Postgres>) {
@@ -165,13 +158,6 @@ fn trace_fromradio(payload: &from_radio::PayloadVariant) {
 }
 
 /// Trace logging decoded payloads
-///
-/// # Arguments
-/// * `ptype` - `&str` of the payload type name
-/// * `payload` - `P` generic that implements the `Debug` trait
-///
-/// # Returns
-/// None
 #[cfg(feature = "trace")]
 #[inline]
 fn decode_and_trace<P: Debug>(ptype: &str, payload: P) {
@@ -179,13 +165,6 @@ fn decode_and_trace<P: Debug>(ptype: &str, payload: P) {
 }
 
 /// Decode payloads
-///
-/// # Arguments
-/// * `pkt` - A `MeshPacket` reference that is read on the serial connection to a Meshtastic node
-/// * `state` - The `GatewayState` with the various concurrency locks
-///
-/// # Returns
-/// * An optional `Pkt`, our local types for packet handling
 ///
 /// # Panics
 /// This function will panic if it fails to acquire a lock on the `GatewayState`

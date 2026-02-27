@@ -42,12 +42,8 @@ struct PostgresConnection<'a> {
 impl PostgresConnection<'_> {
     /// Setup a `PostgreSQL` connection pool
     ///
-    /// # Returns
-    /// * `Result<PgPool>` - An `anyhow` result with a connection pool to the `PostgreSQL`
-    ///   database
-    ///
     /// # Panics
-    /// Will panic if the database connection string is longer than 128 characters long
+    /// Will panic if the database connection string is longer than 256 characters long
     async fn setup(&self) -> Result<PgPool> {
         use std::fmt::Write;
 
@@ -97,9 +93,6 @@ pub struct Settings<'a> {
 
 impl<'a> Settings<'a> {
     /// Read config file and create settings structure
-    ///
-    /// # Returns
-    /// * `Settings` - `Settings` struct with keys and values
     ///
     /// # Panics
     /// Will panic if the configuration file or directory cannot be read or created
@@ -183,9 +176,6 @@ impl<'a> Settings<'a> {
     /// Either the serial port will be found in the config file, or the serial port will be specified
     /// at the command line by the user.
     ///
-    /// # Returns
-    /// * `String` - The path of the serial port as a string
-    ///
     /// # Panics
     /// This panics if a serial port is not provided by the user in the case that the config file does
     /// not provide a serial port path
@@ -221,21 +211,11 @@ impl<'a> Settings<'a> {
     }
 
     /// Setup a Postgres connection
-    ///
-    /// # Returns
-    /// * `Result<PgPool>` - An `anyhow` result with a connection pool to the `PostgreSQL`
-    ///   database
     pub(crate) async fn setup_postgres(&self) -> Result<PgPool> {
         self.postgres.setup().await
     }
 
     /// Get the maximum connections value to bound in-flight tasks for received packets
-    ///
-    /// # Arguments
-    /// * `&self` - A reference to the `Settings` struct
-    ///
-    /// # Returns
-    /// * `usize` - The configured number of maximum connections
     pub(crate) fn get_max_connections(&self) -> usize {
         self.postgres.max_connections as usize
     }

@@ -3,16 +3,7 @@ use anyhow::Context;
 use meshtastic::protobufs::{DeviceMetrics, FromRadio, MeshPacket, NodeInfo, Position, Telemetry};
 use sqlx::postgres::types::Oid;
 
-/// Insert a row into the `DeviceMetrics` table with device metrics data
-///
-/// # Arguments
-/// * `pkt` - A `MeshPacket` reference
-/// * `tm` - A `Telemetry` reference
-/// * `dm` - A `DeviceMetrics` reference
-/// * `pool` - A `Pool<Postgres>` reference
-///
-/// # Returns
-/// * `anyhow::Result<PgQueryResult, anyhow::Error>` - Anyhow result and error with debug info
+/// Insert a row into the `DeviceMetrics` table from a `MeshPacket`
 pub(crate) async fn insert_dm(
     pkt: &MeshPacket,
     tm: &Telemetry,
@@ -56,15 +47,7 @@ VALUES
     .context("Failed to insert row into DeviceMetrics table")
 }
 
-/// Insert a row into the `DeviceMetrics` table with position data
-///
-/// # Arguments
-/// * `pkt` - A `MeshPacket` reference
-/// * `pos` - A `Position` reference
-/// * `pool` - A `Pool<Postgres>` reference
-///
-/// # Returns
-/// * `anyhow::Result<PgQueryResult, anyhow::Error>` - Anyhow result and error with debug info
+/// Insert a row into the `DeviceMetrics` table from a `MeshPacket` with `Position` data
 pub(crate) async fn insert_pos(
     pkt: &MeshPacket,
     pos: &Position,
@@ -102,14 +85,6 @@ VALUES
 }
 
 /// Upsert (insert or update) a row in the `DeviceMetrics` table with node info data from a mesh packet
-///
-/// # Arguments
-/// * `pkt` - A `MeshPacket` reference
-/// * `ni` - A `NodeInfo` reference
-/// * `pool` - A `Pool<Postgres>` reference
-///
-/// # Returns
-/// * `anyhow::Result<PgQueryResult, anyhow::Error>` - Anyhow result and error with debug info
 pub(crate) async fn upsert_mp(
     pkt: &MeshPacket,
     ni: &NodeInfo,
@@ -170,14 +145,6 @@ ON CONFLICT (msg_id) DO UPDATE SET
 }
 
 /// Upsert (insert or update) a row in the `DeviceMetrics` table with node info data from the serial interface
-///
-/// # Arguments
-/// * `pkt` - A `FromRadio` reference
-/// * `ni` - A `NodeInfo` reference
-/// * `pool` - A `Pool<Postgres>` reference
-///
-/// # Returns
-/// * `anyhow::Result<PgQueryResult, anyhow::Error>` - Anyhow result and error with debug info
 pub(crate) async fn upsert_fr(
     pkt: &FromRadio,
     ni: &NodeInfo,
