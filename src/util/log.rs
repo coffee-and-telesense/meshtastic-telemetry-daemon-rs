@@ -13,10 +13,9 @@ use syslog::{BasicLogger, Facility, Formatter3164};
 /// The global boolean indicating if the logger is set or not
 static INIT_LOGGER: Once = Once::new();
 
-/// Set logger for CLI
+/// Initializes the global logger based on the active feature flags.
 ///
-/// If building a debug build, this will log to standard output using colog.
-/// If building a release build, this will log to the system log using syslog.
+/// With `colog`, logs to stdout. With `syslog`, logs to the system log via a POSIX socket.
 pub(crate) fn set_logger() {
     // Check if global logger is set, if not set the global logger
     INIT_LOGGER.call_once(|| {
@@ -64,7 +63,7 @@ thread_local! {
 /// Timestamp cached string
 pub(crate) struct CachedTs;
 
-/// Display the cached timestamp string only invalidating if a second has passed
+/// Formats the current local time, reusing the formatted string within each second.
 impl Display for CachedTs {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         let now = Local::now();
@@ -84,7 +83,7 @@ impl Display for CachedTs {
     }
 }
 
-/// Performance metrics with regular printing for debugging
+/// Logs tokio runtime metrics (workers, alive tasks, queue depth).
 #[cfg(feature = "log_perf")]
 #[inline]
 pub(crate) fn log_perf() {
@@ -101,14 +100,7 @@ pub(crate) fn log_perf() {
     );
 }
 
-/// Log a message to the system logger with timestamp
-///
-/// # Arguments
-/// * `msg` - an arbitrary String message to print
-/// * `lvl` - the log level to use
-///
-/// # Returns
-/// None
+/// Logs a timestamped message at the given level.
 #[macro_export]
 macro_rules! log_msg {
     ($lvl:expr, $($arg:tt)*) => {{

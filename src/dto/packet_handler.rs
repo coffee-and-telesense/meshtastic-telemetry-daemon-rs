@@ -23,16 +23,7 @@ use sqlx::{Pool, Postgres};
 use std::fmt::Debug;
 use std::sync::Arc;
 
-/// Process Packets
-///
-/// Match packet types based on payloads or origin on mesh or serial, then convert them to our
-/// local types to pass along to the database handler. This could probably be simplified and I
-/// should do that sometime. I should also make it much shorter because it is way too long
-///
-/// Shout-out to <https://github.com/PeterGrace/meshtui> for some of the code structure here
-///
-/// # Panics
-/// This function will panic if it fails to acquire a lock on the `GatewayState`
+/// Dispatches a `FromRadio` packet to the appropriate database insert or upsert.
 pub async fn process_packet(pkt: &FromRadio, state: &Arc<GatewayState>, pool: &Pool<Postgres>) {
     if let Some(pv) = &pkt.payload_variant {
         match pv {
@@ -164,10 +155,7 @@ fn decode_and_trace<P: Debug>(ptype: &str, payload: P) {
     log_msg!(log::Level::Info, "Received {ptype} packet: {payload:?}");
 }
 
-/// Decode payloads
-///
-/// # Panics
-/// This function will panic if it fails to acquire a lock on the `GatewayState`
+/// Decodes a `MeshPacket` payload and inserts the result into the database.
 async fn decode_payload(pkt: &MeshPacket, state: &Arc<GatewayState>, pool: &Pool<Postgres>) {
     // Count received packets in debug builds for period reporting in logs
     #[cfg(feature = "debug")]
@@ -418,6 +406,7 @@ fn trace_portnum(port: PortNum, data: &Data) {
     }
 }
 
+/// Dispatches a telemetry variant to the matching database insert.
 async fn decode_telemetry(pkt: &MeshPacket, tm: Telemetry, pool: &Pool<Postgres>) {
     if let Some(data) = tm.variant {
         match data {

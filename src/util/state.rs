@@ -39,7 +39,7 @@ pub struct GatewayState {
 }
 
 impl Default for GatewayState {
-    /// Default constructor
+    /// Creates an empty state with no nodes and no serial connection.
     fn default() -> Self {
         GatewayState {
             nodes: RwLock::new(HashMap::new()),
@@ -77,7 +77,7 @@ impl Display for GatewayState {
 }
 
 impl GatewayState {
-    /// New `GatewayState` struct
+    /// Creates an empty gateway state with no known nodes.
     #[must_use]
     pub fn new() -> Self {
         Self::default()
@@ -99,13 +99,13 @@ impl GatewayState {
         false
     }
 
-    /// Return `true` if any node in the local state contains an `rx_count` > 0
+    /// Returns whether any packets were received since the last call, then resets the flag.
     #[inline]
     pub fn any_recvd(&self) -> bool {
         self.any_recv.swap(false, Relaxed)
     }
 
-    /// Modify the `serial_node` connection
+    /// Sets the node number of the locally-connected serial device.
     #[inline]
     pub fn set_serial_number(&self, num: u32) {
         self.serial_node.store(num, Relaxed);

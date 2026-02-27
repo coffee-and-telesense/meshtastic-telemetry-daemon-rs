@@ -40,7 +40,7 @@ struct PostgresConnection<'a> {
 }
 
 impl PostgresConnection<'_> {
-    /// Setup a `PostgreSQL` connection pool
+    /// Creates a `PostgreSQL` connection pool from these settings
     ///
     /// # Panics
     /// Will panic if the database connection string is longer than 256 characters long
@@ -92,7 +92,7 @@ pub struct Settings<'a> {
 }
 
 impl<'a> Settings<'a> {
-    /// Read config file and create settings structure
+    /// Reads the config file and returns a parsed `Settings` instance
     ///
     /// # Panics
     /// Will panic if the configuration file or directory cannot be read or created
@@ -171,10 +171,7 @@ impl<'a> Settings<'a> {
         }
     }
 
-    /// Get the serial port to listen on
-    ///
-    /// Either the serial port will be found in the config file, or the serial port will be specified
-    /// at the command line by the user.
+    /// Returns the configured serial port, prompting the user interactively if none is set.
     ///
     /// # Panics
     /// This panics if a serial port is not provided by the user in the case that the config file does
@@ -210,7 +207,7 @@ impl<'a> Settings<'a> {
         }
     }
 
-    /// Setup a Postgres connection
+    /// Sets up a Postgres connection
     pub(crate) async fn setup_postgres(&self) -> Result<PgPool> {
         self.postgres.setup().await
     }
