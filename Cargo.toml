@@ -18,10 +18,7 @@ chrono = { version = "0.4", default-features = false, features = ["now"] }
 # Debug logger
 colog = { version = "1.4", optional = true }
 # Handle config reading
-config = { version = "0.15", default-features = false, features = [
-  "async",
-  "toml",
-] }
+config = { version = "0.15", default-features = false, features = ["toml"] }
 # tokio-console
 console-subscriber = { version = "0.5", optional = true }
 # Logger
@@ -132,6 +129,7 @@ empty_structs_with_brackets = "warn"
 enum_variant_names = "warn"
 fn_to_numeric_cast_any = "warn"
 if_then_some_else_none = "warn"
+implicit_clone = "warn"
 inefficient_to_string = "warn"
 large_enum_variant = "warn"
 large_stack_frames = "warn"

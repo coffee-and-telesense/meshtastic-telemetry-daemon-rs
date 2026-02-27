@@ -182,7 +182,6 @@ impl GatewayState {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use meshtastic::protobufs::User;
 
     fn test_user(long: &str, short: &str) -> User {
         User {
