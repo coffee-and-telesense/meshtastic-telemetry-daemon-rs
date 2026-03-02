@@ -1,5 +1,4 @@
 use anyhow::{Context, Result};
-use log::{error, warn};
 use meshtastic::utils::stream::available_serial_ports;
 use microxdg::XdgApp;
 use serde::Deserialize;
@@ -178,12 +177,12 @@ impl<'a> Settings<'a> {
     /// not provide a serial port path
     pub(crate) fn get_serial_port(&'a self) -> Cow<'a, str> {
         if self.serial.port.is_empty() {
-            warn!("Prompting user for serial port instead");
+            tracing::warn!("Prompting user for serial port instead");
             match available_serial_ports().context("Failed to enumerate list of serial ports") {
                 Ok(ap) => println!("Available ports: {ap:?}"),
                 Err(e) => {
-                    error!("{e}");
-                    warn!("User will input their own serial port");
+                    tracing::error!(%e);
+                    tracing::warn!("User will input their own serial port");
                 }
             }
             println!("Enter the name of a port to connect to:");
