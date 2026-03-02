@@ -7,12 +7,6 @@
 
 //! Meshtastic to `PostgreSQL` database daemon
 
-#[cfg(feature = "syslog")]
-extern crate syslog;
-#[cfg(feature = "syslog")]
-#[macro_use]
-extern crate log;
-
 use crate::dto::packet_handler::process_packet;
 use crate::util::MAX_INFLIGHT_TASKS;
 use crate::util::config::DEPLOYMENT_LOCATION;
@@ -38,8 +32,6 @@ const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 #[tokio::main(flavor = "multi_thread")]
 async fn main() -> Result<(), anyhow::Error> {
-    use crate::log_msg;
-
     #[cfg(feature = "trace")]
     console_subscriber::init();
 
@@ -82,7 +74,7 @@ async fn main() -> Result<(), anyhow::Error> {
         .expect("DEPLOYMENT_LOCATION initialized twice");
 
     // Output the version of the daemon to the logger
-    log_msg!(log::Level::Info, "Daemon version: {VERSION}");
+    tracing::info!("Daemon version: {VERSION}");
 
     // Load the already filled in nodeinfo tables to the state
     let rows = sqlx::query!(
@@ -123,7 +115,7 @@ WHERE
     loop {
         tokio::select! {
             _ = tokio::signal::ctrl_c() => {
-                log_msg!(log::Level::Warn, "Received SIGINT");
+                tracing::warn!("Received SIGINT");
                 break;
             }
             msg = decoded_listener.recv() => {
@@ -142,7 +134,7 @@ WHERE
                             log_perf();
                             // log state messages
                             if s.any_recvd() {
-                                log_msg!(log::Level::Info, "{s}");
+                                tracing::info!("{s}");
                             }
                         }
 
@@ -150,7 +142,7 @@ WHERE
                         drop(permit);
                     });
                 } else {
-                    log_msg!(log::Level::Error, "Serial connection closed");
+                    tracing::error!("Serial connection closed");
                     break;
                 }
             }
@@ -160,12 +152,9 @@ WHERE
     // Called when either the radio is disconnected or the daemon receives
     // a SIGTERM or SIGKILL signal from systemctl or by other means
     match stream_api.disconnect().await {
-        Ok(_) => log_msg!(log::Level::Warn, "StreamApi disconnected without error",),
-        Err(e) => log_msg!(log::Level::Error, "StreamApi disconnected with error: {e}"),
+        Ok(_) => tracing::warn!("StreamApi disconnected without error"),
+        Err(e) => tracing::error!(%e, "StreamApi disconnected with error"),
     }
 
     Ok(())
 }
-
-#[cfg(all(feature = "colog", feature = "syslog"))]
-compile_error!("feature \"colog\" and feature \"syslog\" cannot be enabled at the same time");
