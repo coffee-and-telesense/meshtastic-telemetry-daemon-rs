@@ -16,7 +16,6 @@ pub(crate) fn set_logger() {
     {
         let console_layer = console_subscriber::spawn();
         registry.with(console_layer).init();
-        return;
     }
 
     #[cfg(feature = "journald")]
@@ -24,14 +23,16 @@ pub(crate) fn set_logger() {
         // Direct journald integration — structured fields preserved
         let journald = tracing_journald::layer().expect("failed to connect to journald");
         registry.with(journald).init();
-        return;
     }
 
-    // Fallback: standard output with timestamps
-    let fmt_layer = tracing_subscriber::fmt::layer()
-        .with_target(false)
-        .with_timer(tracing_subscriber::fmt::time::LocalTime::rfc_3339());
-    registry.with(fmt_layer).init();
+    #[cfg(not(any(feature = "journald", feature = "trace")))]
+    {
+        // Fallback: standard output with timestamps
+        let fmt_layer = tracing_subscriber::fmt::layer()
+            .with_target(false)
+            .with_timer(tracing_subscriber::fmt::time::LocalTime::rfc_3339());
+        registry.with(fmt_layer).init();
+    }
 }
 
 /// Logs tokio runtime metrics (workers, alive tasks, queue depth).
