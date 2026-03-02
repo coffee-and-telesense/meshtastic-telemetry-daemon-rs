@@ -55,7 +55,7 @@ default = ["debug", "native-tls"]
 debug = ["anyhow/std", "anyhow/backtrace"] # Print state and backtraces
 log_perf = []                              # Print async runtime stats behind feature flag
 print-packets = []                         # Pretty print packets
-journald = []                              # Just `journalctl` to log messages
+journald = ["dep:tracing-journald"]        # Just `journalctl` to log messages
 
 # Print tracing and include `tokio-console` support
 trace = ["dep:console-subscriber", "tokio/tracing"]
