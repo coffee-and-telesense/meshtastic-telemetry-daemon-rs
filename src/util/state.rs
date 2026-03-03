@@ -59,9 +59,9 @@ impl Display for GatewayState {
             .iter()
         {
             if *id == self.serial_node.load(Relaxed) {
-                f.write_str("*serial\t")?;
+                f.write_str("*serial    ")?;
             } else {
-                f.write_str("\t\t")?;
+                f.write_str("           ")?;
             }
             writeln!(
                 f,
