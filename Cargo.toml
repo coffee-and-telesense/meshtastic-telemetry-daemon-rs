@@ -21,12 +21,7 @@ config = { version = "0.15", default-features = false, features = ["toml"] }
 console-subscriber = { version = "0.5", optional = true }
 # Logger
 tracing = { version = "0.1", features = ["log"] }
-tracing-subscriber = { version = "0.3", features = [
-  "env-filter",
-  "time",
-  "local-time",
-  "fmt",
-] }
+tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt"] }
 tracing-journald = { version = "0.3", optional = true }
 # My fork of the meshtastic protocol library with updated protobufs---no serde
 meshtastic = { git = "https://github.com/gatlinnewhouse/meshtastic-rust.git", branch = "stable-science-bytes", default-features = false, features = [
