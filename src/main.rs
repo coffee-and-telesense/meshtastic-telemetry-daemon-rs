@@ -32,11 +32,9 @@ const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 #[tokio::main(flavor = "multi_thread")]
 async fn main() -> Result<(), anyhow::Error> {
-    #[cfg(feature = "trace")]
-    console_subscriber::init();
-
     let settings = Settings::new();
 
+    // Set the logger
     set_logger();
 
     // Create the gateway's state object
