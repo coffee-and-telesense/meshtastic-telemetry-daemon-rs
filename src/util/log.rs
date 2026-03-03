@@ -28,9 +28,7 @@ pub(crate) fn set_logger() {
     #[cfg(not(any(feature = "journald", feature = "trace")))]
     {
         // Fallback: standard output with timestamps
-        let fmt_layer = tracing_subscriber::fmt::layer()
-            .with_target(false)
-            .with_timer(tracing_subscriber::fmt::time::LocalTime::rfc_3339());
+        let fmt_layer = tracing_subscriber::fmt::layer().with_target(false);
         registry.with(fmt_layer).init();
     }
 }
