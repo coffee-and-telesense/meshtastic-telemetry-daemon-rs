@@ -14,6 +14,8 @@ pub(crate) fn set_logger() {
 
     #[cfg(feature = "trace")]
     {
+        //TODO: tokio-console not showing anything with this pattern below
+        //TODO: better timestamps (maybe use Chrono?) to get local time
         let fmt_layer = tracing_subscriber::fmt::layer().with_target(false);
         let console_layer = console_subscriber::spawn();
         registry.with(console_layer).with(fmt_layer).init();
