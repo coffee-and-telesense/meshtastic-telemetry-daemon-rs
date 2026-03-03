@@ -2,7 +2,10 @@ use anyhow::{Context, Result};
 use meshtastic::utils::stream::available_serial_ports;
 use microxdg::XdgApp;
 use serde::Deserialize;
-use sqlx::{PgPool, postgres::PgPoolOptions};
+use sqlx::{
+    PgPool,
+    postgres::{PgConnectOptions, PgPoolOptions},
+};
 use std::{
     borrow::Cow,
     fs,
@@ -27,7 +30,7 @@ struct PostgresConnection<'a> {
     /// Password for Postgres db
     password: Cow<'a, str>,
     /// Port for Postgres db
-    port: u32,
+    port: u16,
     /// Hostname of Postgres db
     host: Cow<'a, str>,
     /// Database name for Postgres db
@@ -44,21 +47,18 @@ impl PostgresConnection<'_> {
     /// # Panics
     /// Will panic if the database connection string is longer than 256 characters long
     async fn setup(&self) -> Result<PgPool> {
-        use std::fmt::Write;
-
-        // Write the database connection string into a String with a given capacity
-        let mut s = String::with_capacity(256);
-        write!(
-            s,
-            "postgres://{}:{}@{}:{}/{}",
-            self.user, self.password, self.host, self.port, self.dbname
-        )
-        .expect("Unable to write postgres connection string from config variables");
+        let conn = PgConnectOptions::new()
+            .username(&self.user)
+            .password(&self.password)
+            .host(&self.host)
+            .port(self.port)
+            .database(&self.dbname);
 
         PgPoolOptions::new()
             .max_connections(self.max_connections)
             .min_connections(self.min_connections)
-            .connect(s.as_str())
+            .acquire_timeout(std::time::Duration::from_secs(5))
+            .connect_with(conn)
             .await
             .map_err(anyhow::Error::from)
     }

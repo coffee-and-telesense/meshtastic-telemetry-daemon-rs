@@ -1,6 +1,7 @@
 [postgres]
 user = "postgres"
 password = "postgres"
+# Max port of 65535
 port = 5431
 host = "localhost"
 dbname = "meshtastic"
