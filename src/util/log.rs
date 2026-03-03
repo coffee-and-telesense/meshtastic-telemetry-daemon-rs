@@ -21,7 +21,6 @@ pub(crate) fn set_logger() {
             .with_target(false)
             .with_filter(app_filter);
 
-        //TODO: tokio-console not showing anything with this pattern below
         //TODO: better timestamps (maybe use Chrono?) to get local time
 
         registry.with(console_layer).with(fmt_layer).init();
