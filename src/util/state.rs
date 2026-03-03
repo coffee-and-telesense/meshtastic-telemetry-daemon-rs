@@ -63,6 +63,7 @@ impl Display for GatewayState {
             } else {
                 f.write_str("           ")?;
             }
+            //TODO: last line does not need newline
             writeln!(
                 f,
                 "{:20} ({:9}) {:10} - {:12} packets received",
