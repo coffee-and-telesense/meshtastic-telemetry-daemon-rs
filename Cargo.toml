@@ -44,7 +44,7 @@ sqlx = { version = "0.8", default-features = false, features = [
 tokio = { version = "1.49", features = ["macros"] }
 
 [features]
-default = ["debug", "native-tls"]
+default = ["debug", "native-tls", "trace"]
 
 # Debugging features
 debug = ["anyhow/std", "anyhow/backtrace"] # Print state and backtraces
