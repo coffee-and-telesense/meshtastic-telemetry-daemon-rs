@@ -19,9 +19,8 @@ pub(crate) fn set_logger() {
         let console_layer = console_subscriber::spawn();
         let fmt_layer = tracing_subscriber::fmt::layer()
             .with_target(false)
+            .with_timer(tracing_subscriber::fmt::time::ChronoLocal::rfc_3339())
             .with_filter(app_filter);
-
-        //TODO: better timestamps (maybe use Chrono?) to get local time
 
         registry.with(console_layer).with(fmt_layer).init();
     }
@@ -41,6 +40,7 @@ pub(crate) fn set_logger() {
         use tracing_subscriber::Layer;
         let fmt_layer = tracing_subscriber::fmt::layer()
             .with_target(false)
+            .with_timer(tracing_subscriber::fmt::time::ChronoLocal::rfc_3339())
             .with_filter(app_filter);
         registry.with(fmt_layer).init();
     }
