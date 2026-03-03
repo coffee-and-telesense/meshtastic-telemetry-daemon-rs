@@ -45,5 +45,10 @@ pub(crate) fn log_perf() {
     let nw = metrics.num_workers();
     let nat = metrics.num_alive_tasks();
     let gqd = metrics.global_queue_depth();
-    tracing::info!("RUNTIME PERF: {nw} workers used, {nat} alive tasks, {gqd} global queue depth");
+    tracing::info!(
+        workers = nw,
+        alive_tasks = nat,
+        queue_depth = gqd,
+        "runtime perf"
+    );
 }
