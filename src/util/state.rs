@@ -65,7 +65,7 @@ impl Display for GatewayState {
             }
             writeln!(
                 f,
-                "{} ({}) {} - {} packets received",
+                "{:20} ({:9}) {:10} - {:6} packets received",
                 node.long_name,
                 node.id,
                 id,
