@@ -13,10 +13,7 @@ pub(crate) fn set_logger() {
     let registry = tracing_subscriber::registry().with(filter);
 
     #[cfg(feature = "trace")]
-    {
-        let console_layer = console_subscriber::spawn();
-        registry.with(console_layer).init();
-    }
+    console_subscriber::init();
 
     #[cfg(feature = "journald")]
     {
@@ -25,7 +22,7 @@ pub(crate) fn set_logger() {
         registry.with(journald).init();
     }
 
-    #[cfg(not(any(feature = "journald", feature = "trace")))]
+    #[cfg(not(feature = "journald"))]
     {
         // Fallback: standard output with timestamps
         let fmt_layer = tracing_subscriber::fmt::layer().with_target(false);
