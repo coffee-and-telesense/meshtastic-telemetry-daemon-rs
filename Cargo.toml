@@ -46,7 +46,7 @@ sqlx = { version = "0.8", default-features = false, features = [
   "json",
 ] }
 # Async runtime with `tokio::main`` macro
-tokio = { version = "1.49", features = ["macros", "tracing"] }
+tokio = { version = "1.49", features = ["macros"] }
 
 [features]
 default = ["debug", "native-tls"]
