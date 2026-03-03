@@ -14,7 +14,7 @@ pub(crate) fn set_logger() {
 
     #[cfg(feature = "trace")]
     {
-        use tracing_subscriber::fmt::writer::MakeWriterExt;
+        use tracing_subscriber::{Layer, fmt::writer::MakeWriterExt};
 
         let console_layer = console_subscriber::spawn();
         let fmt_layer = tracing_subscriber::fmt::layer()
