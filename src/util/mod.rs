@@ -22,9 +22,6 @@ const MIN_VALID_EPOCH: u32 = 1_735_689_600;
 pub const MAX_INFLIGHT_TASKS: usize = 32;
 
 /// Create a timestamp from a given epoch `u32`
-///
-/// # Panics
-/// If the epoch is more than 250,000 year from the common era or if the nanoseconds is > 2
 #[inline]
 pub(crate) fn timestamp(epoch: u32) -> NaiveDateTime {
     if epoch > MIN_VALID_EPOCH {
