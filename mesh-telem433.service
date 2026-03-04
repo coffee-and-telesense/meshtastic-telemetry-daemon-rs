@@ -1,6 +1,7 @@
 [Unit]
 Description=Meshtastic Telemetry Daemon
 After=docker.service
+BindsTo=docker.service
 
 [Service]
 User=u433
