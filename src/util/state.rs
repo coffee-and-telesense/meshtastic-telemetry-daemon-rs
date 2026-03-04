@@ -1,3 +1,4 @@
+use anyhow::{Error, Result};
 use meshtastic::protobufs::User;
 use std::{
     collections::{
@@ -116,7 +117,7 @@ impl GatewayState {
     }
 
     /// Insert a new node into the state
-    pub fn insert(&self, node_id: u32, user: &User) -> bool {
+    pub fn insert(&self, node_id: u32, user: &User) -> Result<()> {
         match self
             .nodes
             .write()
@@ -131,7 +132,7 @@ impl GatewayState {
                     id: user.id.clone(),
                     rx_count: AtomicUsize::new(0),
                 });
-                true
+                Ok(())
             }
             Occupied(mut e) => {
                 let n = e.get_mut();
@@ -139,12 +140,12 @@ impl GatewayState {
                     && n.short_name == user.short_name
                     && n.hw_model == user.hw_model
                 {
-                    return false;
+                    return Err(Error::msg("Node already in state"));
                 }
                 n.long_name.clone_from(&user.long_name);
                 n.short_name.clone_from(&user.short_name);
                 n.hw_model = user.hw_model;
-                true
+                Ok(())
             }
         }
     }
@@ -174,7 +175,7 @@ mod tests {
     fn increment_known_node_returns_true() {
         let state = GatewayState::new();
         let user = test_user("TestNode", "TN");
-        state.insert(1, &user);
+        let _ = state.insert(1, &user);
         assert!(state.increment_count(1));
     }
 
@@ -188,7 +189,7 @@ mod tests {
     fn any_recvd_true_after_increment_then_resets() {
         let state = GatewayState::new();
         let user = test_user("TestNode", "TN");
-        state.insert(1, &user);
+        let _ = state.insert(1, &user);
         state.increment_count(1);
         assert!(state.any_recvd()); // first call: true
         assert!(!state.any_recvd()); // second call: reset to false
@@ -198,22 +199,22 @@ mod tests {
     fn insert_new_node_returns_true() {
         let state = GatewayState::new();
         let user = test_user("NodeA", "NA");
-        assert!(state.insert(1, &user));
+        state.insert(1, &user).unwrap();
     }
 
     #[test]
     fn insert_same_data_returns_false() {
         let state = GatewayState::new();
         let user = test_user("NodeA", "NA");
-        state.insert(1, &user);
-        assert!(!state.insert(1, &user)); // no change
+        let _ = state.insert(1, &user);
+        assert!(state.insert(1, &user).is_err()); // no change
     }
 
     #[test]
     fn insert_changed_data_returns_true() {
         let state = GatewayState::new();
-        state.insert(1, &test_user("NodeA", "NA"));
-        assert!(state.insert(1, &test_user("NodeB", "NB"))); // changed
+        let _ = state.insert(1, &test_user("NodeA", "NA"));
+        state.insert(1, &test_user("NodeB", "NB")).unwrap(); // changed
     }
 
     #[test]
@@ -221,7 +222,7 @@ mod tests {
         let state = GatewayState::new();
         state.set_serial_number(42);
         // Verify via Display output containing "*serial"
-        state.insert(42, &test_user("Serial", "SR"));
+        let _ = state.insert(42, &test_user("Serial", "SR"));
         let display = format!("{state}");
         assert!(display.contains("*serial"));
     }

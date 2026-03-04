@@ -30,6 +30,7 @@ pub async fn process_packet(pkt: &FromRadio, state: &Arc<GatewayState>, pool: &P
                 decode_payload(mesh_packet, state, pool).await;
             }
             from_radio::PayloadVariant::NodeInfo(node_info) => {
+                //TODO: collapse if statement, account for the position/devicemetrics as well
                 // only insert if user is some
                 if node_info.user.is_some() {
                     let (dm_result, ni_result) = tokio::join!(
@@ -50,7 +51,10 @@ pub async fn process_packet(pkt: &FromRadio, state: &Arc<GatewayState>, pool: &P
                     // insert into GatewayState
                     #[cfg(feature = "debug")]
                     if let Some(user) = &node_info.user {
-                        state.insert(node_info.num, user);
+                        match state.insert(node_info.num, user) {
+                            Ok(()) => tracing::trace!("Added {} to GatewayState", node_info.num),
+                            Err(e) => tracing::warn!(%e),
+                        }
                     }
                 }
             }
@@ -182,7 +186,10 @@ async fn decode_payload(pkt: &MeshPacket, state: &Arc<GatewayState>, pool: &Pool
                 // insert into GatewayState
                 #[cfg(feature = "debug")]
                 if let Some(user) = &ni.user {
-                    state.insert(ni.num, user);
+                    match state.insert(ni.num, user) {
+                        Ok(()) => tracing::trace!("Added {} to GatewayState", ni.num),
+                        Err(e) => tracing::warn!(%e),
+                    }
                 }
             }
             Err(e) => {

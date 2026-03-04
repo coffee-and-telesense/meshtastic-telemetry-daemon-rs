@@ -102,7 +102,7 @@ WHERE
     .await?;
     for row in rows {
         // Reconstruct a minimal User and insert into GatewayState
-        state.insert(
+        match state.insert(
             row.node_id.0,
             &User {
                 long_name: row.longname,
@@ -111,7 +111,10 @@ WHERE
                 id: format!("!{:08x}", row.node_id.0),
                 ..Default::default()
             },
-        );
+        ) {
+            Ok(()) => tracing::trace!("Added {} to GatewayState", row.node_id.0),
+            Err(e) => tracing::warn!(%e),
+        }
     }
 
     // This loop can be broken with ctrl+c, or by disconnecting
