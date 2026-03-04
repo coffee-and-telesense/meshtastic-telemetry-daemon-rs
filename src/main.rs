@@ -121,7 +121,9 @@ WHERE
                     let permit = Arc::clone(&semaphore).acquire_owned().await.expect("Could not acquire an owned clone of the semaphore");
                     let s = Arc::clone(&state);
                     let pool = postgres_db.clone();
+                    let span = tracing::info_span!("packet", from = from_radio.id);
                     tokio::spawn(async move {
+                        let _guard = span.enter();
                         process_packet(&from_radio, &s, &pool).await;
 
                         // Debug logging in task after receiving/processing/inserting
