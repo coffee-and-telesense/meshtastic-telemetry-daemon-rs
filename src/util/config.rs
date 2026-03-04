@@ -43,9 +43,6 @@ struct PostgresConnection<'a> {
 
 impl PostgresConnection<'_> {
     /// Creates a `PostgreSQL` connection pool from these settings
-    ///
-    /// # Panics
-    /// Will panic if the database connection string is longer than 256 characters long
     async fn setup(&self) -> Result<PgPool> {
         let conn = PgConnectOptions::new()
             .username(&self.user)
