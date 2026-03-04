@@ -17,11 +17,15 @@ use anyhow::{Context, Result};
 use meshtastic::api::StreamApi;
 use meshtastic::protobufs::User;
 use meshtastic::utils;
+use mimalloc::MiMalloc;
 #[cfg(feature = "print-packets")]
 use serde_json::to_string_pretty;
 use std::sync::Arc;
 use tokio::sync::Semaphore;
 use tracing::Instrument;
+
+#[global_allocator]
+static GLOBAL: MiMalloc = MiMalloc;
 
 /// Handle data transfer objects
 pub(crate) mod dto;

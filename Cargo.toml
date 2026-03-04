@@ -46,6 +46,7 @@ sqlx = { version = "0.8", default-features = false, features = [
 ] }
 # Async runtime with `tokio::main`` macro
 tokio = { version = "1.50", features = ["macros"] }
+mimalloc = { version = "0.1", features = ["v3"], optional = true }
 
 [features]
 default = ["debug", "native-tls"]
@@ -62,13 +63,16 @@ trace = []
 # tokio-console support
 tokio-console = ["dep:console-subscriber", "tokio/tracing"]
 
+# mimalloc
+mimalloc = ["dep:mimalloc"]
+
 # TLS config:
 native-tls = ["sqlx/runtime-tokio-native-tls"]
 rustls = ["sqlx/runtime-tokio-rustls"]
 
 # Specific shorthand targets
 alpine = ["native-tls", "debug"]
-beaglebone = ["rustls", "debug"]
+beaglebone = ["rustls", "debug", "mimalloc"]
 
 [profile.dev]
 debug = true
