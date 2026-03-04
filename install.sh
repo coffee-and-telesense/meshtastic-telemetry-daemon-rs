@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 # Install script for RPi4s to setup the mesh telemetry user service for 915 and 433 deployments
 mv mesh-telem433.service /etc/systemd/system/mesh-telem433.service
