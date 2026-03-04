@@ -51,20 +51,23 @@ impl Default for GatewayState {
 
 impl Display for GatewayState {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_str("Counts:\n")?;
+        f.write_str("Counts:")?;
         for (id, node) in self
             .nodes
             .read()
             .unwrap_or_else(std::sync::PoisonError::into_inner)
             .iter()
+            .peekable()
         {
+            f.write_str("\n")?;
+
             if *id == self.serial_node.load(Relaxed) {
                 f.write_str("*serial    ")?;
             } else {
                 f.write_str("           ")?;
             }
-            //TODO: last line does not need newline
-            writeln!(
+
+            write!(
                 f,
                 "{:20} ({:9}) {:10} - {:12} packets received",
                 node.long_name,
