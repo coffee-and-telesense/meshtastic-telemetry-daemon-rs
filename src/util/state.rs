@@ -59,13 +59,14 @@ impl Display for GatewayState {
             .iter()
         {
             if *id == self.serial_node.load(Relaxed) {
-                f.write_str("*serial\t")?;
+                f.write_str("*serial    ")?;
             } else {
-                f.write_str("\t\t")?;
+                f.write_str("           ")?;
             }
+            //TODO: last line does not need newline
             writeln!(
                 f,
-                "{} ({}) {} - {} packets received",
+                "{:20} ({:9}) {:10} - {:12} packets received",
                 node.long_name,
                 node.id,
                 id,

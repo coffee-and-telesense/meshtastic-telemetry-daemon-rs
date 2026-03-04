@@ -15,14 +15,18 @@ categories = ["command-line-utils"]
 anyhow = { version = "1.0", default-features = false }
 # Handle clocks, no wasm. "now" enables "std"
 chrono = { version = "0.4", default-features = false, features = ["now"] }
-# Debug logger
-colog = { version = "1.4", optional = true }
 # Handle config reading
 config = { version = "0.15", default-features = false, features = ["toml"] }
 # tokio-console
 console-subscriber = { version = "0.5", optional = true }
 # Logger
-log = { version = "0.4", default-features = false }
+tracing = { version = "0.1", features = ["log"] }
+tracing-subscriber = { version = "0.3", features = [
+  "chrono",
+  "env-filter",
+  "fmt",
+] }
+tracing-journald = { version = "0.3", optional = true }
 # My fork of the meshtastic protocol library with updated protobufs---no serde
 meshtastic = { git = "https://github.com/gatlinnewhouse/meshtastic-rust.git", branch = "stable-science-bytes", default-features = false, features = [
   "tokio",
@@ -40,26 +44,20 @@ sqlx = { version = "0.8", default-features = false, features = [
   "macros",
   "json",
 ] }
-# Release logger
-syslog = { version = "7.0", optional = true }
-# Async runtime with tokio::main macro
-tokio = { version = "1.49", features = ["macros"] }
+# Async runtime with `tokio::main`` macro
+tokio = { version = "1.50", features = ["macros"] }
 
 [features]
 default = ["debug", "native-tls"]
 
-# stdout/logging config:
-colog = ["dep:colog"]
-syslog = ["dep:syslog"]
-
 # Debugging features
-debug = ["anyhow/std", "anyhow/backtrace", "colog"] # print state and backtraces
-log_perf = [] # print async runtime stats behind feature flag
-print-packets = [] # pretty print packets
-trace = [
-  "dep:console-subscriber",
-  "tokio/tracing",
-] # print tracing and include tokio-console support
+debug = ["anyhow/std", "anyhow/backtrace"] # Print state and backtraces
+log_perf = []                              # Print async runtime stats behind feature flag
+print-packets = []                         # Pretty print packets
+journald = ["dep:tracing-journald"]        # Just `journalctl` to log messages
+
+# Print tracing and include `tokio-console` support
+trace = ["dep:console-subscriber", "tokio/tracing"]
 
 # TLS config:
 native-tls = ["sqlx/runtime-tokio-native-tls"]
@@ -67,7 +65,7 @@ rustls = ["sqlx/runtime-tokio-rustls"]
 
 # Specific shorthand targets
 alpine = ["native-tls", "debug"]
-beaglebone = ["rustls", "colog", "debug"]
+beaglebone = ["rustls", "debug"]
 
 [profile.dev]
 debug = true
@@ -79,7 +77,7 @@ strip = false
 inherits = "dev"
 codegen-units = 1
 debug = true
-opt-level = 's'   # size-optimized; keeps loop unrolling and some inlining for MIPS/ARM
+opt-level = 's'   # Size-optimized; keeps loop unrolling and some inlining for MIPS/ARM
 panic = "unwind"
 strip = false
 
@@ -89,7 +87,7 @@ strip = false
 codegen-units = 1
 debug = false
 lto = true
-opt-level = 's'   # size-optimized; keeps loop unrolling and some inlining for MIPS/ARM
+opt-level = 's'   # Size-optimized; keeps loop unrolling and some inlining for MIPS/ARM
 panic = "abort"
 strip = true
 
