@@ -62,6 +62,10 @@ pub async fn process_packet(pkt: &FromRadio, state: &Arc<GatewayState>, pool: &P
             }
             _other => {
                 #[cfg(feature = "trace")]
+                #[expect(
+                    clippy::used_underscore_binding,
+                    reason = "conditionally compiled variable"
+                )]
                 trace_fromradio(_other);
             }
         }
@@ -151,7 +155,7 @@ async fn decode_payload(pkt: &MeshPacket, state: &Arc<GatewayState>, pool: &Pool
             Ok(pos) => match devicemetrics::insert_pos(pkt, &pos, pool).await {
                 Ok(_) => tracing::info!(table = "DeviceMetrics", "inserted 1 row of position data"),
                 Err(e) => {
-                    tracing::error!(%e, table = "DeviceMetrics", "inserting position data failed")
+                    tracing::error!(%e, table = "DeviceMetrics", "inserting position data failed");
                 }
             },
             Err(e) => tracing::warn!(%e, "decoding of position payload failed"),
@@ -194,6 +198,10 @@ async fn decode_payload(pkt: &MeshPacket, state: &Arc<GatewayState>, pool: &Pool
         },
         _other => {
             #[cfg(feature = "trace")]
+            #[expect(
+                clippy::used_underscore_binding,
+                reason = "conditionally compiled variable"
+            )]
             trace_portnum(_other, data);
         }
     }
@@ -209,7 +217,7 @@ fn trace_encrypted(payload: &mesh_packet::PayloadVariant) {
 
 #[cfg(feature = "trace")]
 #[expect(
-    clippy::too_many_lines
+    clippy::too_many_lines,
     reason = "most of these lines are just logging calls for tracing"
 )]
 fn trace_portnum(port: PortNum, data: &Data) {
@@ -352,48 +360,84 @@ async fn decode_telemetry(pkt: &MeshPacket, tm: Telemetry, pool: &Pool<Postgres>
                 #[cfg(feature = "trace")]
                 decode_and_trace("Telemetry/DeviceMetrics", device_metrics);
                 match devicemetrics::insert_dm(pkt, &tm, &device_metrics, pool).await {
-                    Ok(_) => tracing::info!(table = "DeviceMetrics", "insert 1 row"),
-                    Err(e) => tracing::error!(%e, table = "DeviceMetrics", "insert failed"),
+                    Ok(_) => {
+                        tracing::info!(table = "DeviceMetrics", node_id = pkt.from, "insert 1 row");
+                    }
+                    Err(e) => {
+                        tracing::error!(%e, table = "DeviceMetrics", node_id = pkt.from, "insert failed");
+                    }
                 }
             }
             Variant::EnvironmentMetrics(environment_metrics) => {
                 #[cfg(feature = "trace")]
                 decode_and_trace("Telemetry/EnvironmentMetrics", environment_metrics);
                 match environmentmetrics::insert(pkt, &tm, &environment_metrics, pool).await {
-                    Ok(_) => tracing::info!(table = "EnvironmentMetrics", "inserted 1 row"),
-                    Err(e) => tracing::error!(%e, table = "EnvironmentMetrics", "insert failed"),
+                    Ok(_) => tracing::info!(
+                        table = "EnvironmentMetrics",
+                        node_id = pkt.from,
+                        "inserted 1 row"
+                    ),
+                    Err(e) => {
+                        tracing::error!(%e, table = "EnvironmentMetrics", node_id = pkt.from, "insert failed");
+                    }
                 }
             }
             Variant::AirQualityMetrics(air_quality_metrics) => {
                 #[cfg(feature = "trace")]
                 decode_and_trace("Telemetry/AirQualityMetrics", air_quality_metrics);
                 match airqualitymetrics::insert(pkt, &tm, &air_quality_metrics, pool).await {
-                    Ok(_) => tracing::info!(table = "AirQualityMetrics", "inserted 1 row"),
-                    Err(e) => tracing::error!(%e, table = "AirQualityMetrics", "insert failed"),
+                    Ok(_) => tracing::info!(
+                        table = "AirQualityMetrics",
+                        node_id = pkt.from,
+                        "inserted 1 row"
+                    ),
+                    Err(e) => {
+                        tracing::error!(%e, table = "AirQualityMetrics", node_id = pkt.from, "insert failed");
+                    }
                 }
             }
             Variant::LocalStats(local_stats) => {
                 #[cfg(feature = "trace")]
                 decode_and_trace("Telemetry/LocalStats", local_stats);
                 match localstats::insert(pkt, &tm, &local_stats, pool).await {
-                    Ok(_) => tracing::info!(table = "LocalStats", "inserted 1 row"),
-                    Err(e) => tracing::error!(%e, table = "LocalStats", "insert failed"),
+                    Ok(_) => {
+                        tracing::info!(table = "LocalStats", node_id = pkt.from, "inserted 1 row");
+                    }
+                    Err(e) => {
+                        tracing::error!(%e, table = "LocalStats", node_id = pkt.from, "insert failed");
+                    }
                 }
             }
             Variant::ErrorMetrics(error_metrics) => {
                 #[cfg(feature = "trace")]
                 decode_and_trace("Telemetry/ErrorMetrics", error_metrics);
                 match errormetrics::insert(pkt, &tm, &error_metrics, pool).await {
-                    Ok(_) => tracing::info!(table = "ErrorMetrics", "inserted 1 row"),
-                    Err(e) => tracing::error!(%e, table = "ErrorMetrics", "insert failed"),
+                    Ok(_) => {
+                        tracing::info!(
+                            table = "ErrorMetrics",
+                            node_id = pkt.from,
+                            "inserted 1 row"
+                        );
+                    }
+                    Err(e) => {
+                        tracing::error!(%e, table = "ErrorMetrics", node_id = pkt.from, "insert failed");
+                    }
                 }
             }
             Variant::PowerMetrics(power_metrics) => {
                 #[cfg(feature = "trace")]
                 decode_and_trace("Telemetry/PowerMetrics", power_metrics);
                 match powermetrics::insert(pkt, &tm, &power_metrics, pool).await {
-                    Ok(_) => tracing::info!(table = "PowerMetrics", "inserted 1 row"),
-                    Err(e) => tracing::error!(%e, table = "PowerMetrics", "insert failed"),
+                    Ok(_) => {
+                        tracing::info!(
+                            table = "PowerMetrics",
+                            node_id = pkt.from,
+                            "inserted 1 row"
+                        );
+                    }
+                    Err(e) => {
+                        tracing::error!(%e, table = "PowerMetrics", node_id = pkt.from, "insert failed");
+                    }
                 }
             }
             #[cfg(not(feature = "trace"))]
