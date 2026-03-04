@@ -76,47 +76,47 @@ pub async fn process_packet(pkt: &FromRadio, state: &Arc<GatewayState>, pool: &P
 fn trace_fromradio(payload: &from_radio::PayloadVariant) {
     match payload {
         from_radio::PayloadVariant::Config(config) => {
-            tracing::info!("Received config packet: {config:?}");
+            tracing::trace!("Received config packet: {config:?}");
         }
         from_radio::PayloadVariant::LogRecord(log_record) => {
-            tracing::info!("Received log_record packet: {log_record:?}");
+            tracing::trace!("Received log_record packet: {log_record:?}");
         }
         from_radio::PayloadVariant::ConfigCompleteId(id) => {
-            tracing::info!("Received config {id} complete packet over serial");
+            tracing::trace!("Received config {id} complete packet over serial");
         }
         from_radio::PayloadVariant::Rebooted(rbt) => {
-            tracing::info!("Received rebooted packet: {rbt}");
+            tracing::trace!("Received rebooted packet: {rbt}");
         }
         from_radio::PayloadVariant::ModuleConfig(module_config) => {
-            tracing::info!("Received module_config packet: {module_config:?}");
+            tracing::trace!("Received module_config packet: {module_config:?}");
         }
         from_radio::PayloadVariant::Channel(channel) => {
-            tracing::info!("Received channel packet: {channel:?}");
+            tracing::trace!("Received channel packet: {channel:?}");
         }
         from_radio::PayloadVariant::QueueStatus(queue_status) => {
-            tracing::info!("Received queue_status packet: {queue_status:?}");
+            tracing::trace!("Received queue_status packet: {queue_status:?}");
         }
         from_radio::PayloadVariant::XmodemPacket(xmodem) => {
-            tracing::info!("Received xmodem packet: {xmodem:?}");
+            tracing::trace!("Received xmodem packet: {xmodem:?}");
         }
         from_radio::PayloadVariant::Metadata(device_metadata) => {
-            tracing::info!("Received device_metadata packet: {device_metadata:?}");
+            tracing::trace!("Received device_metadata packet: {device_metadata:?}");
         }
         from_radio::PayloadVariant::MqttClientProxyMessage(mqtt_client_proxy_message) => {
-            tracing::info!(
+            tracing::trace!(
                 "Received mqtt_client_proxy_message packet: {mqtt_client_proxy_message:?}"
             );
         }
         from_radio::PayloadVariant::FileInfo(file_info) => {
-            tracing::info!("Received file_info packet: {file_info:?}");
+            tracing::trace!("Received file_info packet: {file_info:?}");
         }
         from_radio::PayloadVariant::ClientNotification(client_notification) => {
-            tracing::info!("Received client_notification packet: {client_notification:?}");
+            tracing::trace!("Received client_notification packet: {client_notification:?}");
         }
         from_radio::PayloadVariant::DeviceuiConfig(device_ui_config) => {
-            tracing::info!("Received device_ui_config packet: {device_ui_config:?}");
+            tracing::trace!("Received device_ui_config packet: {device_ui_config:?}");
         }
-        _ => tracing::info!("Received an unknown from_radio PayloadVariant"),
+        _ => tracing::trace!("Received an unknown from_radio PayloadVariant"),
     }
 }
 
@@ -124,7 +124,7 @@ fn trace_fromradio(payload: &from_radio::PayloadVariant) {
 #[cfg(feature = "trace")]
 #[inline]
 fn decode_and_trace<P: Debug>(ptype: &str, payload: P) {
-    tracing::info!("Received {ptype} packet: {payload:?}");
+    tracing::trace!("Received {ptype} packet: {payload:?}");
 }
 
 /// Decodes a `MeshPacket` payload and inserts the result into the database.
@@ -220,7 +220,7 @@ fn trace_encrypted(payload: &mesh_packet::PayloadVariant) {
     let mesh_packet::PayloadVariant::Encrypted(items) = payload else {
         return;
     };
-    tracing::info!("Received encrypted packet: {items:?}");
+    tracing::trace!("Received encrypted packet: {items:?}");
 }
 
 #[cfg(feature = "trace")]
