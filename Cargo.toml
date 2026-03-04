@@ -56,8 +56,11 @@ log_perf = []                              # Print async runtime stats behind fe
 print-packets = []                         # Pretty print packets
 journald = ["dep:tracing-journald"]        # Just `journalctl` to log messages
 
-# Print tracing and include `tokio-console` support
-trace = ["dep:console-subscriber", "tokio/tracing"]
+# Verbose packet logging
+trace = []
+
+# tokio-console support
+tokio-console = ["dep:console-subscriber", "tokio/tracing"]
 
 # TLS config:
 native-tls = ["sqlx/runtime-tokio-native-tls"]
