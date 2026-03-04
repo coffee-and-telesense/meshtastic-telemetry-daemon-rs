@@ -21,6 +21,7 @@ use meshtastic::utils;
 use serde_json::to_string_pretty;
 use std::sync::Arc;
 use tokio::sync::Semaphore;
+use tracing::Instrument;
 
 /// Handle data transfer objects
 pub(crate) mod dto;
@@ -123,7 +124,6 @@ WHERE
                     let pool = postgres_db.clone();
                     let span = tracing::info_span!("packet", from = from_radio.id);
                     tokio::spawn(async move {
-                        let _guard = span.enter();
                         process_packet(&from_radio, &s, &pool).await;
 
                         // Debug logging in task after receiving/processing/inserting
@@ -140,7 +140,7 @@ WHERE
 
                         // Release semaphore permit to permit spawning a new task
                         drop(permit);
-                    });
+                    }).instrument(span);
                 } else {
                     tracing::error!("Serial connection closed");
                     break;
