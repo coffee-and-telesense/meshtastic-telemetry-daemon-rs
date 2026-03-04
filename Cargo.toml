@@ -49,7 +49,7 @@ tokio = { version = "1.50", features = ["macros"] }
 mimalloc = { version = "0.1", features = ["v3"], optional = true }
 
 [features]
-default = ["debug", "native-tls"]
+default = ["debug", "native-tls", "mimalloc"]
 
 # Debugging features
 debug = ["anyhow/std", "anyhow/backtrace"] # Print state and backtraces
