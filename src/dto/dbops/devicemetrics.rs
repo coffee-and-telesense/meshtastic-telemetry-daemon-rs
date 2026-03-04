@@ -187,7 +187,7 @@ ON CONFLICT (msg_id) DO UPDATE SET
         ",
         Oid(pkt.id),
         Oid(ni.num),
-        timestamp(0),
+        timestamp(0), // Note: `FromRadio` packets lack a timestamp
         battery,
         voltage,
         channel_util,
