@@ -208,7 +208,10 @@ fn trace_encrypted(payload: &mesh_packet::PayloadVariant) {
 }
 
 #[cfg(feature = "trace")]
-#[allow(clippy::too_many_lines)] // most of these lines are just logging calls for tracing
+#[expect(
+    clippy::too_many_lines
+    reason = "most of these lines are just logging calls for tracing"
+)]
 fn trace_portnum(port: PortNum, data: &Data) {
     match port {
         PortNum::UnknownApp => {
