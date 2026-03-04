@@ -1,5 +1,13 @@
 
 
+## [v0.3.6] - 2026-03-04
+### :bug: Bug Fixes
+- [`fd364b9`](https://github.com/coffee-and-telesense/meshtastic-telemetry-daemon-rs/commit/fd364b906903ff5943f608955930bc4a3852a376) - **logging**: debug feature should print info statements *(commit by [@gatlinnewhouse](https://github.com/gatlinnewhouse))*
+
+### :wrench: Chores
+- [`a80f100`](https://github.com/coffee-and-telesense/meshtastic-telemetry-daemon-rs/commit/a80f100f3007ff7963a791f078445f6d0dbaab11) - **cargo**: update version *(commit by [@gatlinnewhouse](https://github.com/gatlinnewhouse))*
+
+
 ## [v0.3.5] - 2026-03-04
 ### :sparkles: New Features
 - [`bcf6928`](https://github.com/coffee-and-telesense/meshtastic-telemetry-daemon-rs/commit/bcf692808594ec3acda0c7c278649d2e59ca876c) - **upsert**: Use upserts instead of insert then update *(commit by [@gatlinnewhouse](https://github.com/gatlinnewhouse))*
@@ -380,3 +388,4 @@
 [v0.2.2]: https://github.com/coffee-and-telesense/meshtastic-telemetry-daemon-rs/compare/v0.2.1...v0.2.2
 [v0.3.0]: https://github.com/coffee-and-telesense/meshtastic-telemetry-daemon-rs/compare/v0.2.2...v0.3.0
 [v0.3.5]: https://github.com/coffee-and-telesense/meshtastic-telemetry-daemon-rs/compare/v0.3.0...v0.3.5
+[v0.3.6]: https://github.com/coffee-and-telesense/meshtastic-telemetry-daemon-rs/compare/v0.3.5...v0.3.6
