@@ -3,8 +3,8 @@ use tracing_subscriber::{EnvFilter, layer::SubscriberExt, util::SubscriberInitEx
 /// Initializes the global logger
 pub(crate) fn set_logger() {
     let app_filter = EnvFilter::try_from_default_env().unwrap_or_else(|_| {
-        if cfg!(feature = "debug") {
-            EnvFilter::new("debug")
+        if cfg!(feature = "trace") {
+            EnvFilter::new("trace")
         } else {
             EnvFilter::new("warn")
         }
@@ -12,7 +12,7 @@ pub(crate) fn set_logger() {
 
     let registry = tracing_subscriber::registry();
 
-    #[cfg(feature = "trace")]
+    #[cfg(feature = "tokio-console")]
     {
         use tracing_subscriber::Layer;
 
@@ -34,7 +34,7 @@ pub(crate) fn set_logger() {
         registry.with(journald).init();
     }
 
-    #[cfg(not(any(feature = "journald", feature = "trace")))]
+    #[cfg(not(any(feature = "journald", feature = "tokio-console")))]
     {
         // Fallback: standard output with timestamps
         use tracing_subscriber::Layer;
