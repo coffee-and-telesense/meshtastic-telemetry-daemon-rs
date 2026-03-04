@@ -158,7 +158,9 @@ async fn decode_payload(pkt: &MeshPacket, state: &Arc<GatewayState>, pool: &Pool
                     tracing::error!(%e, table = "DeviceMetrics", "inserting position data failed");
                 }
             },
-            Err(e) => tracing::warn!(%e, "decoding of position payload failed"),
+            Err(e) => {
+                tracing::warn!(%e, node_id = pkt.from, portnum = ?PortNum::PositionApp, "decode failed");
+            }
         },
         PortNum::NodeinfoApp => match NodeInfo::decode(data.payload.as_ref()) {
             Ok(ni) => {
@@ -183,18 +185,24 @@ async fn decode_payload(pkt: &MeshPacket, state: &Arc<GatewayState>, pool: &Pool
                     state.insert(ni.num, user);
                 }
             }
-            Err(e) => tracing::error!(%e, "decoding of nodeinfo payload failed"),
+            Err(e) => {
+                tracing::error!(%e, node_id = pkt.from, portnum = ?PortNum::NodeinfoApp, "decode failed");
+            }
         },
         PortNum::TelemetryApp => match Telemetry::decode(data.payload.as_ref()) {
             Ok(telemetry) => decode_telemetry(pkt, telemetry, pool).await,
-            Err(e) => tracing::warn!(%e, "failed to decode telemetry"),
+            Err(e) => {
+                tracing::warn!(%e, node_id = pkt.from, portnum = ?PortNum::TelemetryApp, "decode failed");
+            }
         },
         PortNum::NeighborinfoApp => match NeighborInfo::decode(data.payload.as_ref()) {
             Ok(ni) => match neighborinfo::insert(pkt, &ni, pool).await {
                 Ok(_) => tracing::info!(table = "NeighborInfo", "inserted 1 row"),
                 Err(e) => tracing::error!(%e, table = "NeighborInfo", "insert failed"),
             },
-            Err(e) => tracing::warn!(%e, "decoding of neighborinfo payload failed"),
+            Err(e) => {
+                tracing::warn!(%e, node_id = pkt.from, portnum = ?PortNum::NeighborinfoApp, "decode failed");
+            }
         },
         _other => {
             #[cfg(feature = "trace")]
