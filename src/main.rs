@@ -123,7 +123,7 @@ WHERE
                     let s = Arc::clone(&state);
                     let pool = postgres_db.clone();
                     let span = tracing::info_span!("packet", from = from_radio.id);
-                    tokio::spawn(async move {
+                    let _x = tokio::spawn(async move {
                         process_packet(&from_radio, &s, &pool).await;
 
                         // Debug logging in task after receiving/processing/inserting
@@ -140,7 +140,7 @@ WHERE
 
                         // Release semaphore permit to permit spawning a new task
                         drop(permit);
-                    }).instrument(span);
+                    }).instrument(span).await;
                 } else {
                     tracing::error!("Serial connection closed");
                     break;
