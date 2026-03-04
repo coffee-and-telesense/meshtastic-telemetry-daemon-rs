@@ -5,6 +5,8 @@ pub(crate) fn set_logger() {
     let app_filter = EnvFilter::try_from_default_env().unwrap_or_else(|_| {
         if cfg!(feature = "trace") {
             EnvFilter::new("trace")
+        } else if cfg!(feature = "debug") {
+            EnvFilter::new("info")
         } else {
             EnvFilter::new("warn")
         }
