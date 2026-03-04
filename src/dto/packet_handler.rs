@@ -220,37 +220,37 @@ fn trace_portnum(port: PortNum, data: &Data) {
         PortNum::TextMessageApp => match String::decode(data.payload.as_ref()) {
             Ok(payload) => decode_and_trace("TextMessageApp", payload),
             Err(e) => {
-                tracing::warn!(%e, "failed decoding TextMessageApp");
+                tracing::warn!(%e, portnum = ?port, "decode failed");
             }
         },
         PortNum::RemoteHardwareApp => match HardwareMessage::decode(data.payload.as_ref()) {
             Ok(payload) => decode_and_trace("RemoteHardwareApp", payload),
             Err(e) => {
-                tracing::warn!(%e, "failed decoding RemoteHardwareApp");
+                tracing::warn!(%e, portnum = ?port, "decode failed");
             }
         },
         PortNum::RoutingApp => match Routing::decode(data.payload.as_ref()) {
             Ok(payload) => decode_and_trace("RoutingApp", payload),
             Err(e) => {
-                tracing::warn!(%e, "failed decoding RoutingApp");
+                tracing::warn!(%e, portnum = ?port, "decode failed");
             }
         },
         PortNum::AdminApp => match AdminMessage::decode(data.payload.as_ref()) {
             Ok(payload) => decode_and_trace("AdminApp", payload),
             Err(e) => {
-                tracing::warn!(%e, "failed decoding AdminApp");
+                tracing::warn!(%e, portnum = ?port, "decode failed");
             }
         },
         PortNum::TextMessageCompressedApp => match Compressed::decode(data.payload.as_ref()) {
             Ok(payload) => decode_and_trace("TextMessageCompressedApp", payload),
             Err(e) => {
-                tracing::warn!(%e, "failed decoding TextMessageCompressedApp");
+                tracing::warn!(%e, portnum = ?port, "decode failed");
             }
         },
         PortNum::WaypointApp => match Waypoint::decode(data.payload.as_ref()) {
             Ok(payload) => decode_and_trace("WaypointApp", payload),
             Err(e) => {
-                tracing::warn!(%e, "failed decoding WaypointApp");
+                tracing::warn!(%e, portnum = ?port, "decode failed");
             }
         },
         PortNum::AudioApp => {
@@ -259,19 +259,19 @@ fn trace_portnum(port: PortNum, data: &Data) {
         PortNum::DetectionSensorApp => match String::decode(data.payload.as_ref()) {
             Ok(payload) => decode_and_trace("DetectionSensorApp", payload),
             Err(e) => {
-                tracing::warn!(%e, "failed decoding DetectionSensorApp");
+                tracing::warn!(%e, portnum = ?port, "decode failed");
             }
         },
         PortNum::AlertApp => match String::decode(data.payload.as_ref()) {
             Ok(payload) => decode_and_trace("AlertApp", payload),
             Err(e) => {
-                tracing::warn!(%e, "failed decoding AlertApp");
+                tracing::warn!(%e, portnum = ?port, "decode failed");
             }
         },
         PortNum::ReplyApp => match String::decode(data.payload.as_ref()) {
             Ok(payload) => decode_and_trace("ReplyApp", payload),
             Err(e) => {
-                tracing::warn!(%e, "failed decoding ReplyApp");
+                tracing::warn!(%e, portnum = ?port, "decode failed");
             }
         },
         PortNum::IpTunnelApp => {
@@ -280,7 +280,7 @@ fn trace_portnum(port: PortNum, data: &Data) {
         PortNum::PaxcounterApp => match Paxcount::decode(data.payload.as_ref()) {
             Ok(payload) => decode_and_trace("PaxcounterApp", payload),
             Err(e) => {
-                tracing::warn!(%e, "failed decoding PaxcounterApp");
+                tracing::warn!(%e, portnum = ?port, "decode failed");
             }
         },
         PortNum::SerialApp => {
@@ -289,13 +289,13 @@ fn trace_portnum(port: PortNum, data: &Data) {
         PortNum::StoreForwardApp => match StoreAndForward::decode(data.payload.as_ref()) {
             Ok(payload) => decode_and_trace("StoreForwardApp", payload),
             Err(e) => {
-                tracing::warn!(%e, "failed decoding StoreForwardApp");
+                tracing::warn!(%e, portnum = ?port, "decode failed");
             }
         },
         PortNum::RangeTestApp => match String::decode(data.payload.as_ref()) {
             Ok(payload) => decode_and_trace("RangeTestApp", payload),
             Err(e) => {
-                tracing::warn!(%e, "failed decoding RangeTestApp");
+                tracing::warn!(%e, portnum = ?port, "decode failed");
             }
         },
         PortNum::ZpsApp => {
@@ -307,25 +307,25 @@ fn trace_portnum(port: PortNum, data: &Data) {
         PortNum::TracerouteApp => match RouteDiscovery::decode(data.payload.as_ref()) {
             Ok(payload) => decode_and_trace("TracerouteApp", payload),
             Err(e) => {
-                tracing::warn!(%e, "failed decoding TracerouteApp");
+                tracing::warn!(%e, portnum = ?port, "decode failed");
             }
         },
         PortNum::AtakPlugin => match TakPacket::decode(data.payload.as_ref()) {
             Ok(payload) => decode_and_trace("AtakPlugin", payload),
             Err(e) => {
-                tracing::warn!(%e, "failed decoding AtakPlugin");
+                tracing::warn!(%e, portnum = ?port, "decode failed");
             }
         },
         PortNum::MapReportApp => match MapReport::decode(data.payload.as_ref()) {
             Ok(payload) => decode_and_trace("MapReportApp", payload),
             Err(e) => {
-                tracing::warn!(%e, "failed decoding MapReportApp");
+                tracing::warn!(%e, portnum = ?port, "decode failed");
             }
         },
         PortNum::PowerstressApp => match PowerStressMessage::decode(data.payload.as_ref()) {
             Ok(payload) => decode_and_trace("PowerstressApp", payload),
             Err(e) => {
-                tracing::warn!(%e, "failed decoding PowerstressApp");
+                tracing::warn!(%e, portnum = ?port, "decode failed");
             }
         },
         PortNum::PrivateApp => {
@@ -334,7 +334,7 @@ fn trace_portnum(port: PortNum, data: &Data) {
         PortNum::AtakForwarder => match TakPacket::decode(data.payload.as_ref()) {
             Ok(payload) => decode_and_trace("AtakForwarder", payload),
             Err(e) => {
-                tracing::warn!(%e, "failed decoding AtakForwarder");
+                tracing::warn!(%e, portnum = ?port, "decode failed");
             }
         },
         PortNum::Max => {
