@@ -197,7 +197,7 @@ async fn decode_payload(pkt: &MeshPacket, state: &Arc<GatewayState>, pool: &Pool
             }
         },
         PortNum::TelemetryApp => match Telemetry::decode(data.payload.as_ref()) {
-            Ok(telemetry) => decode_telemetry(pkt, telemetry, pool).await,
+            Ok(telemetry) => decode_telemetry(pkt, &telemetry, pool).await,
             Err(e) => {
                 tracing::warn!(%e, node_id = pkt.from, portnum = ?PortNum::TelemetryApp, "decode failed");
             }
@@ -368,13 +368,13 @@ fn trace_portnum(port: PortNum, data: &Data) {
 }
 
 /// Dispatches a telemetry variant to the matching database insert.
-async fn decode_telemetry(pkt: &MeshPacket, tm: Telemetry, pool: &Pool<Postgres>) {
+async fn decode_telemetry(pkt: &MeshPacket, tm: &Telemetry, pool: &Pool<Postgres>) {
     if let Some(data) = tm.variant {
         match data {
             Variant::DeviceMetrics(device_metrics) => {
                 #[cfg(feature = "trace")]
                 decode_and_trace("Telemetry/DeviceMetrics", device_metrics);
-                match devicemetrics::insert_dm(pkt, &tm, &device_metrics, pool).await {
+                match devicemetrics::insert_dm(pkt, tm, &device_metrics, pool).await {
                     Ok(_) => {
                         tracing::info!(table = "DeviceMetrics", node_id = pkt.from, "insert 1 row");
                     }
@@ -386,7 +386,7 @@ async fn decode_telemetry(pkt: &MeshPacket, tm: Telemetry, pool: &Pool<Postgres>
             Variant::EnvironmentMetrics(environment_metrics) => {
                 #[cfg(feature = "trace")]
                 decode_and_trace("Telemetry/EnvironmentMetrics", environment_metrics);
-                match environmentmetrics::insert(pkt, &tm, &environment_metrics, pool).await {
+                match environmentmetrics::insert(pkt, tm, &environment_metrics, pool).await {
                     Ok(_) => tracing::info!(
                         table = "EnvironmentMetrics",
                         node_id = pkt.from,
@@ -400,7 +400,7 @@ async fn decode_telemetry(pkt: &MeshPacket, tm: Telemetry, pool: &Pool<Postgres>
             Variant::AirQualityMetrics(air_quality_metrics) => {
                 #[cfg(feature = "trace")]
                 decode_and_trace("Telemetry/AirQualityMetrics", air_quality_metrics);
-                match airqualitymetrics::insert(pkt, &tm, &air_quality_metrics, pool).await {
+                match airqualitymetrics::insert(pkt, tm, &air_quality_metrics, pool).await {
                     Ok(_) => tracing::info!(
                         table = "AirQualityMetrics",
                         node_id = pkt.from,
@@ -414,7 +414,7 @@ async fn decode_telemetry(pkt: &MeshPacket, tm: Telemetry, pool: &Pool<Postgres>
             Variant::LocalStats(local_stats) => {
                 #[cfg(feature = "trace")]
                 decode_and_trace("Telemetry/LocalStats", local_stats);
-                match localstats::insert(pkt, &tm, &local_stats, pool).await {
+                match localstats::insert(pkt, tm, &local_stats, pool).await {
                     Ok(_) => {
                         tracing::info!(table = "LocalStats", node_id = pkt.from, "inserted 1 row");
                     }
@@ -426,7 +426,7 @@ async fn decode_telemetry(pkt: &MeshPacket, tm: Telemetry, pool: &Pool<Postgres>
             Variant::ErrorMetrics(error_metrics) => {
                 #[cfg(feature = "trace")]
                 decode_and_trace("Telemetry/ErrorMetrics", error_metrics);
-                match errormetrics::insert(pkt, &tm, &error_metrics, pool).await {
+                match errormetrics::insert(pkt, tm, &error_metrics, pool).await {
                     Ok(_) => {
                         tracing::info!(
                             table = "ErrorMetrics",
@@ -442,7 +442,7 @@ async fn decode_telemetry(pkt: &MeshPacket, tm: Telemetry, pool: &Pool<Postgres>
             Variant::PowerMetrics(power_metrics) => {
                 #[cfg(feature = "trace")]
                 decode_and_trace("Telemetry/PowerMetrics", power_metrics);
-                match powermetrics::insert(pkt, &tm, &power_metrics, pool).await {
+                match powermetrics::insert(pkt, tm, &power_metrics, pool).await {
                     Ok(_) => {
                         tracing::info!(
                             table = "PowerMetrics",
