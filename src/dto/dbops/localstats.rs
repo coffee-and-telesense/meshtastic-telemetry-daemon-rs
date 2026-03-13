@@ -1,16 +1,20 @@
 use crate::util::timestamp;
-use anyhow::Context;
+use anyhow::{Context as _, Error, Result};
 use meshtastic::protobufs::{LocalStats, MeshPacket, Telemetry};
-use sqlx::postgres::{PgQueryResult, types::Oid};
+use sqlx::{
+    Pool, Postgres,
+    postgres::{PgQueryResult, types::Oid},
+    query,
+};
 
 /// Insert a row into the `LocalStats` table from a `MeshPacket`
 pub(crate) async fn insert(
     pkt: &MeshPacket,
     tm: &Telemetry,
     ls: &LocalStats,
-    pool: &sqlx::Pool<sqlx::Postgres>,
-) -> anyhow::Result<PgQueryResult, anyhow::Error> {
-    sqlx::query!(
+    pool: &Pool<Postgres>,
+) -> Result<PgQueryResult, Error> {
+    query!(
         "
 INSERT INTO
   LocalStats (
@@ -64,6 +68,6 @@ VALUES
     )
     .execute(pool)
     .await
-    .map_err(anyhow::Error::from)
+    .map_err(Error::from)
     .context("Failed to insert row into LocalStats table")
 }

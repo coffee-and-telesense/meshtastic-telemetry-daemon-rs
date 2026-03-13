@@ -1,4 +1,5 @@
-use anyhow::{Context, Result, anyhow};
+use anyhow::{Context as _, Result, anyhow};
+use config::Config;
 use meshtastic::utils::stream::available_serial_ports;
 use microxdg::XdgApp;
 use serde::Deserialize;
@@ -9,7 +10,7 @@ use sqlx::{
 use std::{
     borrow::Cow,
     fs,
-    io::{self, BufRead},
+    io::{self, BufRead as _},
     time::Duration,
 };
 use tokio::sync::OnceCell;
@@ -123,7 +124,7 @@ impl<'a> Settings<'a> {
         }
 
         // Read the configuration
-        match config::Config::builder()
+        match Config::builder()
             .add_source(config::File::from(config_file))
             .build()
             .context("Failed to read config file")?
@@ -176,7 +177,7 @@ impl<'a> Settings<'a> {
     }
 
     /// Get the maximum connections value to bound in-flight tasks for received packets
-    pub(crate) fn get_max_connections(&self) -> usize {
+    pub(crate) const fn get_max_connections(&self) -> usize {
         self.postgres.max_connections as usize
     }
 }
@@ -184,7 +185,7 @@ impl<'a> Settings<'a> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use config::{Config, File, FileFormat};
+    use config::{File, FileFormat};
 
     #[test]
     fn test_deserialize_settings_valid_toml() -> Result<()> {

@@ -1,13 +1,14 @@
 use crate::util::config::DEPLOYMENT_LOCATION;
-use anyhow::{Context, Error};
+use anyhow::{Context as _, Error, Result};
 use meshtastic::protobufs::NodeInfo;
-use sqlx::postgres::{PgQueryResult, types::Oid};
+use sqlx::{
+    Pool, Postgres,
+    postgres::{PgQueryResult, types::Oid},
+    query,
+};
 
 /// Upsert (insert or update) a row in the `NodeInfo` table
-pub(crate) async fn upsert(
-    ni: &NodeInfo,
-    pool: &sqlx::Pool<sqlx::Postgres>,
-) -> anyhow::Result<PgQueryResult, anyhow::Error> {
+pub(crate) async fn upsert(ni: &NodeInfo, pool: &Pool<Postgres>) -> Result<PgQueryResult, Error> {
     if ni.user.is_none() {
         return Result::Err(Error::msg(
             "NodeInfo packet does not contain User information",
@@ -18,7 +19,7 @@ pub(crate) async fn upsert(
         .get()
         .context("Unable to get DEPLOYMENT_LOCATION in insert() for NodeInfo table")?;
 
-    sqlx::query!(
+    query!(
         "
 INSERT INTO NodeInfo (node_id, longname, shortname, hwmodel, deployment_location)
 VALUES ($1, $2, $3, $4, $5)
@@ -36,6 +37,6 @@ ON CONFLICT (node_id) DO UPDATE SET
     )
     .execute(pool)
     .await
-    .map_err(anyhow::Error::from)
+    .map_err(Error::from)
     .context("Failed to upsert row in NodeInfo table")
 }

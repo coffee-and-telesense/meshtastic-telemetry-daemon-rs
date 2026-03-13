@@ -11,7 +11,7 @@ use meshtastic::protobufs::{
     RouteDiscovery, Routing, StoreAndForward, TakPacket, Waypoint,
 };
 use meshtastic::{
-    Message,
+    Message as _,
     protobufs::{
         FromRadio, MeshPacket, NeighborInfo, NodeInfo, PortNum, Position, Telemetry, from_radio,
         mesh_packet, telemetry::Variant,

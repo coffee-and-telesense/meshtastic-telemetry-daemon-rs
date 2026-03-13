@@ -1,9 +1,13 @@
 use crate::util::timestamp;
-use anyhow::Context;
+use anyhow::{Context as _, Error, Result};
 use meshtastic::protobufs::{MeshPacket, NeighborInfo};
 use serde::Serialize;
 use serde_json::{Value, json};
-use sqlx::postgres::{PgQueryResult, types::Oid};
+use sqlx::{
+    Pool, Postgres,
+    postgres::{PgQueryResult, types::Oid},
+    query,
+};
 
 #[derive(Serialize)]
 struct Neighbor {
@@ -19,8 +23,8 @@ struct Neighbor {
 pub(crate) async fn insert(
     pkt: &MeshPacket,
     nbi: &NeighborInfo,
-    pool: &sqlx::Pool<sqlx::Postgres>,
-) -> anyhow::Result<PgQueryResult, anyhow::Error> {
+    pool: &Pool<Postgres>,
+) -> Result<PgQueryResult, Error> {
     let neighbors = nbi
         .neighbors
         .iter()
@@ -36,7 +40,7 @@ pub(crate) async fn insert(
         })
         .collect::<Vec<Value>>();
 
-    sqlx::query!(
+    query!(
         "
 INSERT INTO
   NeighborInfo (
@@ -66,6 +70,6 @@ VALUES
     )
     .execute(pool)
     .await
-    .map_err(anyhow::Error::from)
+    .map_err(Error::from)
     .context("Failed to insert row into NeighborInfo table")
 }

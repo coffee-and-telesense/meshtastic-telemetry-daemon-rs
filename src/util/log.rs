@@ -1,6 +1,8 @@
 #[cfg(not(feature = "journald"))]
 use tracing_subscriber::fmt::{layer, time::ChronoLocal};
-use tracing_subscriber::{EnvFilter, Layer, layer::SubscriberExt, util::SubscriberInitExt};
+use tracing_subscriber::{
+    EnvFilter, Layer as _, layer::SubscriberExt as _, util::SubscriberInitExt as _,
+};
 
 /// Initializes the global logger
 pub(crate) fn set_logger() {

@@ -1,9 +1,13 @@
 use crate::util::timestamp;
-use anyhow::Context;
+use anyhow::{Context as _, Error, Result};
 use meshtastic::protobufs::{ErrorMetrics, MeshPacket, Telemetry};
 use serde::Serialize;
 use serde_json::json;
-use sqlx::postgres::{PgQueryResult, types::Oid};
+use sqlx::{
+    Pool, Postgres,
+    postgres::{PgQueryResult, types::Oid},
+    query,
+};
 
 #[derive(Serialize)]
 struct Errors {
@@ -20,9 +24,9 @@ pub(crate) async fn insert(
     pkt: &MeshPacket,
     tm: &Telemetry,
     em: &ErrorMetrics,
-    pool: &sqlx::Pool<sqlx::Postgres>,
-) -> anyhow::Result<PgQueryResult, anyhow::Error> {
-    sqlx::query!(
+    pool: &Pool<Postgres>,
+) -> Result<PgQueryResult, Error> {
+    query!(
         "
 INSERT INTO
   ErrorMetrics (
@@ -71,6 +75,6 @@ VALUES
     )
     .execute(pool)
     .await
-    .map_err(anyhow::Error::from)
+    .map_err(Error::from)
     .context("Failed to insert row into ErrorMetrics table")
 }

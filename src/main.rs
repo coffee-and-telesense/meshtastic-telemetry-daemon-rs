@@ -12,7 +12,7 @@ use crate::util::config::DEPLOYMENT_LOCATION;
 #[cfg(feature = "log_perf")]
 use crate::util::log::log_perf;
 use crate::util::{config::Settings, log::set_logger, state::GatewayState};
-use anyhow::{Context, Error, Result, anyhow};
+use anyhow::{Context as _, Error, Result, anyhow};
 use meshtastic::api::StreamApi;
 use meshtastic::utils;
 #[cfg(feature = "mimalloc")]
@@ -21,7 +21,7 @@ use mimalloc::MiMalloc;
 use serde_json::to_string_pretty;
 use std::sync::Arc;
 use tokio::{signal::ctrl_c, sync::Semaphore};
-use tracing::Instrument;
+use tracing::Instrument as _;
 
 #[cfg(feature = "mimalloc")]
 #[global_allocator]

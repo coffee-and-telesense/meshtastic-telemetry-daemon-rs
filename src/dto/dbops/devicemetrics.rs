@@ -1,16 +1,20 @@
 use crate::util::timestamp;
-use anyhow::Context;
+use anyhow::{Context as _, Error, Result};
 use meshtastic::protobufs::{DeviceMetrics, FromRadio, MeshPacket, NodeInfo, Position, Telemetry};
-use sqlx::postgres::{PgQueryResult, types::Oid};
+use sqlx::{
+    Pool, Postgres,
+    postgres::{PgQueryResult, types::Oid},
+    query,
+};
 
 /// Insert a row into the `DeviceMetrics` table from a `MeshPacket`
 pub(crate) async fn insert_dm(
     pkt: &MeshPacket,
     tm: &Telemetry,
     dm: &DeviceMetrics,
-    pool: &sqlx::Pool<sqlx::Postgres>,
-) -> anyhow::Result<PgQueryResult, anyhow::Error> {
-    sqlx::query!(
+    pool: &Pool<Postgres>,
+) -> Result<PgQueryResult, Error> {
+    query!(
         "
 INSERT INTO
   DeviceMetrics (
@@ -43,7 +47,7 @@ VALUES
     )
     .execute(pool)
     .await
-    .map_err(anyhow::Error::from)
+    .map_err(Error::from)
     .context("Failed to insert row into DeviceMetrics table")
 }
 
@@ -51,9 +55,9 @@ VALUES
 pub(crate) async fn insert_pos(
     pkt: &MeshPacket,
     pos: &Position,
-    pool: &sqlx::Pool<sqlx::Postgres>,
-) -> anyhow::Result<PgQueryResult, anyhow::Error> {
-    sqlx::query!(
+    pool: &Pool<Postgres>,
+) -> Result<PgQueryResult, Error> {
+    query!(
         "
 INSERT INTO
   DeviceMetrics (
@@ -80,7 +84,7 @@ VALUES
     )
     .execute(pool)
     .await
-    .map_err(anyhow::Error::from)
+    .map_err(Error::from)
     .context("Failed to insert row into DeviceMetrics table")
 }
 
@@ -88,8 +92,8 @@ VALUES
 pub(crate) async fn upsert_mp(
     pkt: &MeshPacket,
     ni: &NodeInfo,
-    pool: &sqlx::Pool<sqlx::Postgres>,
-) -> anyhow::Result<PgQueryResult, anyhow::Error> {
+    pool: &Pool<Postgres>,
+) -> Result<PgQueryResult, Error> {
     // Destructure
     let (battery, voltage, channel_util, air_util) =
         ni.device_metrics.map_or((None, None, None, None), |d| {
@@ -104,7 +108,7 @@ pub(crate) async fn upsert_mp(
         .position
         .map_or((None, None), |d| (d.latitude_i, d.longitude_i));
 
-    sqlx::query!(
+    query!(
         "
 INSERT INTO DeviceMetrics (
     msg_id, node_id, time,
@@ -140,7 +144,7 @@ ON CONFLICT (msg_id) DO UPDATE SET
     )
     .execute(pool)
     .await
-    .map_err(anyhow::Error::from)
+    .map_err(Error::from)
     .context("Failed to upsert row in DeviceMetrics table from MeshPacket")
 }
 
@@ -148,8 +152,8 @@ ON CONFLICT (msg_id) DO UPDATE SET
 pub(crate) async fn upsert_fr(
     pkt: &FromRadio,
     ni: &NodeInfo,
-    pool: &sqlx::Pool<sqlx::Postgres>,
-) -> anyhow::Result<PgQueryResult, anyhow::Error> {
+    pool: &Pool<Postgres>,
+) -> Result<PgQueryResult, Error> {
     // Destructure
     let (battery, voltage, channel_util, air_util) =
         ni.device_metrics.map_or((None, None, None, None), |d| {
@@ -164,7 +168,7 @@ pub(crate) async fn upsert_fr(
         .position
         .map_or((None, None), |d| (d.latitude_i, d.longitude_i));
 
-    sqlx::query!(
+    query!(
         "
 INSERT INTO DeviceMetrics (
     msg_id, node_id, time,
@@ -200,6 +204,6 @@ ON CONFLICT (msg_id) DO UPDATE SET
     )
     .execute(pool)
     .await
-    .map_err(anyhow::Error::from)
+    .map_err(Error::from)
     .context("Failed to upsert row in DeviceMetrics table from serial")
 }
