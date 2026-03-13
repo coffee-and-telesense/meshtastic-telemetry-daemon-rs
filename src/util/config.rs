@@ -179,3 +179,83 @@ impl<'a> Settings<'a> {
         self.postgres.max_connections as usize
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use config::{Config, File, FileFormat};
+
+    #[test]
+    fn test_deserialize_settings_valid_toml() -> Result<()> {
+        let toml_content = r#"
+            [postgres]
+            user = "test_user"
+            password = "test_password"
+            port = 5432
+            host = "127.0.0.1"
+            dbname = "test_db"
+            max_connections = 20
+            min_connections = 2
+
+            [serial]
+            port = "/dev/ttyUSB0"
+
+            [deployment]
+            location = "Portland Gateway"
+        "#;
+
+        let config = Config::builder()
+            .add_source(File::from_str(toml_content, FileFormat::Toml))
+            .build()?; // Using `?` instead of `.expect()`
+
+        let settings: Settings = config.try_deserialize()?; // Using `?` here too
+
+        // Assert Postgres configurations
+        assert_eq!(settings.postgres.user, "test_user");
+        assert_eq!(settings.postgres.password, "test_password");
+        assert_eq!(settings.postgres.port, 5432);
+        assert_eq!(settings.postgres.host, "127.0.0.1");
+        assert_eq!(settings.postgres.dbname, "test_db");
+        assert_eq!(settings.postgres.max_connections, 20);
+        assert_eq!(settings.postgres.min_connections, 2);
+
+        // Assert Serial configurations
+        assert_eq!(settings.serial.port, "/dev/ttyUSB0");
+        assert_eq!(settings.get_serial_port()?, "/dev/ttyUSB0");
+
+        // Assert Deployment configurations
+        assert_eq!(settings.deployment.location, "Portland Gateway");
+        assert_eq!(settings.get_max_connections(), 20);
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_deserialize_settings_missing_serial_port() -> Result<()> {
+        let toml_content = r#"
+            [postgres]
+            user = "test_user"
+            password = "test_password"
+            port = 5432
+            host = "127.0.0.1"
+            dbname = "test_db"
+            max_connections = 10
+            min_connections = 1
+
+            [serial]
+            port = ""
+
+            [deployment]
+            location = "Remote Node"
+        "#;
+
+        let config = Config::builder()
+            .add_source(File::from_str(toml_content, FileFormat::Toml))
+            .build()?;
+
+        let settings: Settings = config.try_deserialize()?;
+        assert!(settings.serial.port.is_empty());
+
+        Ok(())
+    }
+}
