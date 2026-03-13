@@ -7,9 +7,9 @@ use std::{
         HashMap,
         hash_map::Entry::{Occupied, Vacant},
     },
-    fmt::Display,
+    fmt::{self, Display, Formatter},
     sync::{
-        RwLock,
+        PoisonError, RwLock,
         atomic::{AtomicBool, AtomicU32, AtomicUsize, Ordering::Relaxed},
     },
 };
@@ -53,12 +53,12 @@ impl Default for GatewayState {
 }
 
 impl Display for GatewayState {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         f.write_str("Counts:")?;
         for (id, node) in self
             .nodes
             .read()
-            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .unwrap_or_else(PoisonError::into_inner)
             .iter()
             .peekable()
         {
@@ -96,7 +96,7 @@ impl GatewayState {
         if let Some(n) = self
             .nodes
             .read()
-            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .unwrap_or_else(PoisonError::into_inner)
             .get(&node_id)
         {
             n.rx_count.fetch_add(1, Relaxed);
@@ -123,7 +123,7 @@ impl GatewayState {
         match self
             .nodes
             .write()
-            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .unwrap_or_else(PoisonError::into_inner)
             .entry(node_id)
         {
             Vacant(e) => {

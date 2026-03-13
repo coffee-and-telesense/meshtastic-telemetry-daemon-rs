@@ -1,7 +1,7 @@
 use crate::util::timestamp;
 use anyhow::Context;
 use meshtastic::protobufs::{AirQualityMetrics, MeshPacket, Telemetry};
-use sqlx::postgres::types::Oid;
+use sqlx::postgres::{PgQueryResult, types::Oid};
 
 /// Insert a row into the `AirQualityMetrics` table from a `MeshPacket`
 pub(crate) async fn insert(
@@ -9,7 +9,7 @@ pub(crate) async fn insert(
     tm: &Telemetry,
     aqm: &AirQualityMetrics,
     pool: &sqlx::Pool<sqlx::Postgres>,
-) -> anyhow::Result<sqlx::postgres::PgQueryResult, anyhow::Error> {
+) -> anyhow::Result<PgQueryResult, anyhow::Error> {
     sqlx::query!(
         "
 INSERT INTO

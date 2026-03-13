@@ -1,13 +1,13 @@
 use crate::util::config::DEPLOYMENT_LOCATION;
 use anyhow::{Context, Error};
 use meshtastic::protobufs::NodeInfo;
-use sqlx::postgres::types::Oid;
+use sqlx::postgres::{PgQueryResult, types::Oid};
 
 /// Upsert (insert or update) a row in the `NodeInfo` table
 pub(crate) async fn upsert(
     ni: &NodeInfo,
     pool: &sqlx::Pool<sqlx::Postgres>,
-) -> anyhow::Result<sqlx::postgres::PgQueryResult, anyhow::Error> {
+) -> anyhow::Result<PgQueryResult, anyhow::Error> {
     if ni.user.is_none() {
         return Result::Err(Error::msg(
             "NodeInfo packet does not contain User information",

@@ -1,3 +1,5 @@
+#[cfg(not(feature = "journald"))]
+use tracing_subscriber::fmt::{layer, time::ChronoLocal};
 use tracing_subscriber::{EnvFilter, Layer, layer::SubscriberExt, util::SubscriberInitExt};
 
 /// Initializes the global logger
@@ -16,9 +18,9 @@ pub(crate) fn set_logger() {
 
     // Standard output when not using journald
     #[cfg(not(feature = "journald"))]
-    let fmt_layer = tracing_subscriber::fmt::layer()
+    let fmt_layer = layer()
         .with_target(false)
-        .with_timer(tracing_subscriber::fmt::time::ChronoLocal::rfc_3339())
+        .with_timer(ChronoLocal::rfc_3339())
         .with_filter(app_filter);
 
     // Direct journald integration — structured fields preserved

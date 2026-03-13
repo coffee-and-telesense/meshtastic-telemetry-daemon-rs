@@ -3,7 +3,7 @@ use anyhow::Context;
 use meshtastic::protobufs::{ErrorMetrics, MeshPacket, Telemetry};
 use serde::Serialize;
 use serde_json::json;
-use sqlx::postgres::types::Oid;
+use sqlx::postgres::{PgQueryResult, types::Oid};
 
 #[derive(Serialize)]
 struct Errors {
@@ -21,7 +21,7 @@ pub(crate) async fn insert(
     tm: &Telemetry,
     em: &ErrorMetrics,
     pool: &sqlx::Pool<sqlx::Postgres>,
-) -> anyhow::Result<sqlx::postgres::PgQueryResult, anyhow::Error> {
+) -> anyhow::Result<PgQueryResult, anyhow::Error> {
     sqlx::query!(
         "
 INSERT INTO

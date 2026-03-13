@@ -10,6 +10,7 @@ use std::{
     borrow::Cow,
     fs,
     io::{self, BufRead},
+    time::Duration,
 };
 use tokio::sync::OnceCell;
 
@@ -54,7 +55,7 @@ impl PostgresConnection<'_> {
         PgPoolOptions::new()
             .max_connections(self.max_connections)
             .min_connections(self.min_connections)
-            .acquire_timeout(std::time::Duration::from_secs(5))
+            .acquire_timeout(Duration::from_secs(5))
             .connect_with(conn)
             .await
             .map_err(anyhow::Error::from)

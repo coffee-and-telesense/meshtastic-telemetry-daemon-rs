@@ -1,7 +1,7 @@
 use crate::util::timestamp;
 use anyhow::Context;
 use meshtastic::protobufs::{DeviceMetrics, FromRadio, MeshPacket, NodeInfo, Position, Telemetry};
-use sqlx::postgres::types::Oid;
+use sqlx::postgres::{PgQueryResult, types::Oid};
 
 /// Insert a row into the `DeviceMetrics` table from a `MeshPacket`
 pub(crate) async fn insert_dm(
@@ -9,7 +9,7 @@ pub(crate) async fn insert_dm(
     tm: &Telemetry,
     dm: &DeviceMetrics,
     pool: &sqlx::Pool<sqlx::Postgres>,
-) -> anyhow::Result<sqlx::postgres::PgQueryResult, anyhow::Error> {
+) -> anyhow::Result<PgQueryResult, anyhow::Error> {
     sqlx::query!(
         "
 INSERT INTO
@@ -52,7 +52,7 @@ pub(crate) async fn insert_pos(
     pkt: &MeshPacket,
     pos: &Position,
     pool: &sqlx::Pool<sqlx::Postgres>,
-) -> anyhow::Result<sqlx::postgres::PgQueryResult, anyhow::Error> {
+) -> anyhow::Result<PgQueryResult, anyhow::Error> {
     sqlx::query!(
         "
 INSERT INTO
@@ -89,7 +89,7 @@ pub(crate) async fn upsert_mp(
     pkt: &MeshPacket,
     ni: &NodeInfo,
     pool: &sqlx::Pool<sqlx::Postgres>,
-) -> anyhow::Result<sqlx::postgres::PgQueryResult, anyhow::Error> {
+) -> anyhow::Result<PgQueryResult, anyhow::Error> {
     // Destructure
     let (battery, voltage, channel_util, air_util) =
         ni.device_metrics.map_or((None, None, None, None), |d| {
@@ -149,7 +149,7 @@ pub(crate) async fn upsert_fr(
     pkt: &FromRadio,
     ni: &NodeInfo,
     pool: &sqlx::Pool<sqlx::Postgres>,
-) -> anyhow::Result<sqlx::postgres::PgQueryResult, anyhow::Error> {
+) -> anyhow::Result<PgQueryResult, anyhow::Error> {
     // Destructure
     let (battery, voltage, channel_util, air_util) =
         ni.device_metrics.map_or((None, None, None, None), |d| {

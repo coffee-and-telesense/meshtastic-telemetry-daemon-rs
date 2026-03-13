@@ -3,7 +3,7 @@ use anyhow::Context;
 use meshtastic::protobufs::{MeshPacket, NeighborInfo};
 use serde::Serialize;
 use serde_json::{Value, json};
-use sqlx::postgres::types::Oid;
+use sqlx::postgres::{PgQueryResult, types::Oid};
 
 #[derive(Serialize)]
 struct Neighbor {
@@ -20,7 +20,7 @@ pub(crate) async fn insert(
     pkt: &MeshPacket,
     nbi: &NeighborInfo,
     pool: &sqlx::Pool<sqlx::Postgres>,
-) -> anyhow::Result<sqlx::postgres::PgQueryResult, anyhow::Error> {
+) -> anyhow::Result<PgQueryResult, anyhow::Error> {
     let neighbors = nbi
         .neighbors
         .iter()

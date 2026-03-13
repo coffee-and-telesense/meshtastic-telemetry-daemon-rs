@@ -20,7 +20,7 @@ use mimalloc::MiMalloc;
 #[cfg(feature = "print-packets")]
 use serde_json::to_string_pretty;
 use std::sync::Arc;
-use tokio::sync::Semaphore;
+use tokio::{signal::ctrl_c, sync::Semaphore};
 use tracing::Instrument;
 
 #[cfg(feature = "mimalloc")]
@@ -90,7 +90,7 @@ async fn main() -> Result<(), Error> {
     // through systemctl or other means
     loop {
         tokio::select! {
-            _ = tokio::signal::ctrl_c() => {
+            _ = ctrl_c() => {
                 tracing::warn!("Received SIGINT");
                 break;
             }
