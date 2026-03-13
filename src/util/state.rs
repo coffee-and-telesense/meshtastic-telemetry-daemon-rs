@@ -153,6 +153,8 @@ impl GatewayState {
 
 #[cfg(test)]
 mod tests {
+    use anyhow::Ok;
+
     use super::*;
 
     fn test_user(long: &str, short: &str) -> User {
@@ -172,11 +174,12 @@ mod tests {
     }
 
     #[test]
-    fn increment_known_node_returns_true() {
+    fn increment_known_node_returns_true() -> Result<()> {
         let state = GatewayState::new();
         let user = test_user("TestNode", "TN");
-        let _ = state.insert(1, &user);
+        state.insert(1, &user)?;
         assert!(state.increment_count(1));
+        Ok(())
     }
 
     #[test]
@@ -186,45 +189,50 @@ mod tests {
     }
 
     #[test]
-    fn any_recvd_true_after_increment_then_resets() {
+    fn any_recvd_true_after_increment_then_resets() -> Result<()> {
         let state = GatewayState::new();
         let user = test_user("TestNode", "TN");
-        let _ = state.insert(1, &user);
+        state.insert(1, &user)?;
         state.increment_count(1);
         assert!(state.any_recvd()); // first call: true
         assert!(!state.any_recvd()); // second call: reset to false
+        Ok(())
     }
 
     #[test]
-    fn insert_new_node_returns_true() {
+    fn insert_new_node_returns_true() -> Result<()> {
         let state = GatewayState::new();
         let user = test_user("NodeA", "NA");
-        state.insert(1, &user).unwrap();
+        state.insert(1, &user)?;
+        Ok(())
     }
 
     #[test]
-    fn insert_same_data_returns_false() {
+    fn insert_same_data_returns_false() -> Result<()> {
         let state = GatewayState::new();
         let user = test_user("NodeA", "NA");
-        let _ = state.insert(1, &user);
+        state.insert(1, &user)?;
         assert!(state.insert(1, &user).is_err()); // no change
+        Ok(())
     }
 
     #[test]
-    fn insert_changed_data_returns_true() {
+    fn insert_changed_data_returns_true() -> Result<()> {
         let state = GatewayState::new();
-        let _ = state.insert(1, &test_user("NodeA", "NA"));
-        state.insert(1, &test_user("NodeB", "NB")).unwrap(); // changed
+        state.insert(1, &test_user("NodeA", "NA"))?;
+        state.insert(1, &test_user("NodeB", "NB"))?; // changed
+        Ok(())
     }
 
     #[test]
-    fn serial_number_roundtrip() {
+    fn serial_number_roundtrip() -> Result<()> {
         let state = GatewayState::new();
         state.set_serial_number(42);
         // Verify via Display output containing "*serial"
-        let _ = state.insert(42, &test_user("Serial", "SR"));
+        state.insert(42, &test_user("Serial", "SR"))?;
         let display = format!("{state}");
         assert!(display.contains("*serial"));
+        Ok(())
     }
 
     #[test]

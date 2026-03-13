@@ -36,17 +36,19 @@ pub(crate) fn timestamp(epoch: u32) -> NaiveDateTime {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use anyhow::{Result, anyhow};
 
     #[test]
-    fn valid_epoch_returns_correct_datetime() {
+    fn valid_epoch_returns_correct_datetime() -> Result<()> {
         // 2025-01-01 12:00:01 UTC
         let dt = timestamp(1_735_689_601);
         assert_eq!(
             dt,
             DateTime::from_timestamp(1_735_689_601, 0)
-                .unwrap()
+                .ok_or(anyhow!("Error creating DateTime"))?
                 .naive_utc()
         );
+        Ok(())
     }
 
     #[test]

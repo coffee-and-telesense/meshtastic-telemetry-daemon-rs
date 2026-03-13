@@ -16,7 +16,7 @@ pub(crate) async fn upsert(
 
     let loc = DEPLOYMENT_LOCATION
         .get()
-        .expect("Unable to get DEPLOYMENT_LOCATION in insert() for NodeInfo table");
+        .context("Unable to get DEPLOYMENT_LOCATION in insert() for NodeInfo table")?;
 
     sqlx::query!(
         "

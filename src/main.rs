@@ -38,10 +38,11 @@ const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 #[tokio::main(flavor = "multi_thread")]
 async fn main() -> Result<(), Error> {
-    let settings = Settings::new();
-
     // Set the logger
     set_logger();
+
+    // Read settings
+    let settings = Settings::new().context("Error initializing Settings")?;
 
     // Create the gateway's state object
     let state = Arc::new(GatewayState::new());
@@ -54,7 +55,9 @@ async fn main() -> Result<(), Error> {
 
     // Connect to serial Meshtastic
     let stream_api = StreamApi::new();
-    let entered_port = settings.get_serial_port();
+    let entered_port = settings
+        .get_serial_port()
+        .context("Failed to get serial port")?;
     let serial_stream =
         utils::stream::build_serial_stream(entered_port.to_string(), None, None, None)
             .with_context(|| format!("Failed to build serial stream for {entered_port}"))?;
@@ -71,15 +74,11 @@ async fn main() -> Result<(), Error> {
     let semaphore = Arc::new(Semaphore::new(max_tasks));
 
     // Set the global deployment location string
-    match DEPLOYMENT_LOCATION.set(Box::leak(
-        settings.deployment.location.into_owned().into_boxed_str(),
-    )) {
-        Ok(()) => {}
-        Err(e) => {
-            tracing::error!(%e, "DEPLOYMENT_LOCATION initialized twice");
-            return Result::Err(anyhow!(e));
-        }
-    }
+    DEPLOYMENT_LOCATION
+        .set(Box::leak(
+            settings.deployment.location.into_owned().into_boxed_str(),
+        ))
+        .context("DEPLOYMENT_LOCATION initialized twice")?;
 
     // Output the version of the daemon to the logger
     tracing::info!("Daemon version: {VERSION}");

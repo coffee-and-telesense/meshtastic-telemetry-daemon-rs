@@ -1,4 +1,4 @@
-use anyhow::{Context, Result};
+use anyhow::{Context, Result, anyhow};
 use meshtastic::utils::stream::available_serial_ports;
 use microxdg::XdgApp;
 use serde::Deserialize;
@@ -89,81 +89,48 @@ pub(crate) struct Settings<'a> {
 
 impl<'a> Settings<'a> {
     /// Reads the config file and returns a parsed `Settings` instance
-    ///
-    /// # Panics
-    /// Will panic if the configuration file or directory cannot be read or created
-    pub(crate) fn new() -> Self {
+    pub(crate) fn new() -> Result<Self> {
         // Create the XDG app while also setting a global static APP
-        match APP.set(
-            match XdgApp::new("meshtastic_telemetry")
-                .context("Unable to initialize meshtastic_telemetry XDG Application")
-            {
-                Ok(x) => x,
-                Err(e) => panic!("{e}"),
-            },
-        ) {
-            Ok(()) => (),
-            Err(e) => panic!("{e}"),
-        }
+        APP.set(
+            XdgApp::new("meshtastic_telemetry")
+                .context("Unable to initialize meshtastic_telemetry XDG Application")?,
+        )?;
 
         // Check the config directory, if it does not exist then create it
-        let config_dir = match APP
+        let config_dir = APP
             .get()
-            .expect("APP OnceCell not initialized before use")
+            .context("XDG app initialized twice")?
             .app_config()
-            .context("Unable to find meshtastic_telemetry XDG configuration directory")
-        {
-            Ok(c) => c,
-            Err(e) => panic!("{e}"),
-        };
-        match config_dir.try_exists() {
-            Ok(b) => {
-                if !b {
-                    match fs::create_dir(config_dir.as_path()) {
-                        Ok(()) => (),
-                        Err(e) => panic!("{e}"),
-                    }
-                }
-            }
-            Err(e) => panic!("{e}"),
+            .context("Unable to find meshtastic_telemetry XDG configuration directory")?;
+        if !config_dir.try_exists()? {
+            fs::create_dir(config_dir.as_path())?;
         }
 
         // Check the config directory for a `config.toml` file, if it does not exist then create it
-        let config_file = match APP
+        let config_file = APP
             .get()
-            .expect("APP OnceCell not initialized before use")
+            .context("XDG app initialized twice")?
             .app_config_file("config.toml")
             .with_context(|| {
                 format!(
                     "Failed to find meshtastic_telemetry config.toml in {}",
                     config_dir.display()
                 )
-            }) {
-            Ok(c) => c,
-            Err(e) => panic!("{e}"),
-        };
-        match config_file.try_exists() {
-            Ok(b) => {
-                if !b {
-                    match fs::write(config_file.as_path(), EXAMPLE_CONFIG) {
-                        Ok(()) => (),
-                        Err(e) => panic!("{e}"),
-                    }
-                }
-            }
-            Err(e) => panic!("{e}"),
+            })?;
+        if !config_file.try_exists()? {
+            fs::write(config_file.as_path(), EXAMPLE_CONFIG)?;
         }
 
         // Read the configuration
         match config::Config::builder()
             .add_source(config::File::from(config_file))
             .build()
-            .context("Failed to read config file")
+            .context("Failed to read config file")?
+            .try_deserialize()
+            .context("Error deserializing config")
         {
-            Ok(rv) => rv.try_deserialize().expect("Error deserializing config"),
-            Err(e) => {
-                panic!("{e}");
-            }
+            Ok(c) => Ok(c),
+            Err(e) => Err(anyhow!(e)),
         }
     }
 
@@ -172,7 +139,7 @@ impl<'a> Settings<'a> {
     /// # Panics
     /// This panics if a serial port is not provided by the user in the case that the config file does
     /// not provide a serial port path
-    pub(crate) fn get_serial_port(&'a self) -> Cow<'a, str> {
+    pub(crate) fn get_serial_port(&'a self) -> Result<Cow<'a, str>> {
         if self.serial.port.is_empty() {
             tracing::warn!("Prompting user for serial port instead");
             match available_serial_ports().context("Failed to enumerate list of serial ports") {
@@ -189,17 +156,16 @@ impl<'a> Settings<'a> {
                 .lock()
                 .lines()
                 .next()
-                .expect("Failed to find next line")
-                .context("Could not read from stdin")
+                .context("Could not read from stdin")?
             {
-                Ok(sp) => Cow::Owned(sp),
+                Ok(sp) => Ok(Cow::Owned(sp)),
                 Err(e) => {
-                    eprintln!("No serial port provided by user");
-                    panic!("{e}");
+                    tracing::error!("No serial port provided by user");
+                    Err(anyhow!(e))
                 }
             }
         } else {
-            Cow::Borrowed(&self.serial.port)
+            Ok(Cow::Borrowed(&self.serial.port))
         }
     }
 
