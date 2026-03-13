@@ -14,7 +14,7 @@ use std::{
 
 /// Local node type storing only the information we care about from `NodeInfo` table
 #[derive(Debug)]
-pub struct NodeMeta {
+pub(crate) struct NodeMeta {
     /// Long name of the node
     long_name: String,
     /// Short name of the node
@@ -30,7 +30,7 @@ pub struct NodeMeta {
 /// We need some state information for the serial vs mesh packet resolution of conflicts
 /// It is a necessary evil unfortunately.
 #[derive(Debug)]
-pub struct GatewayState {
+pub(crate) struct GatewayState {
     /// Our hashmap of known nodes
     nodes: RwLock<HashMap<u32, NodeMeta>>,
     /// Connected node number
@@ -84,12 +84,12 @@ impl Display for GatewayState {
 impl GatewayState {
     /// Creates an empty gateway state with no known nodes.
     #[must_use]
-    pub fn new() -> Self {
+    pub(crate) fn new() -> Self {
         Self::default()
     }
 
     /// Increment the `rx_count` of a given node
-    pub fn increment_count(&self, node_id: u32) -> bool {
+    pub(crate) fn increment_count(&self, node_id: u32) -> bool {
         // Lock is only held for an atomic instruction, so it is short
         if let Some(n) = self
             .nodes
@@ -106,18 +106,18 @@ impl GatewayState {
 
     /// Returns whether any packets were received since the last call, then resets the flag.
     #[inline]
-    pub fn any_recvd(&self) -> bool {
+    pub(crate) fn any_recvd(&self) -> bool {
         self.any_recv.swap(false, Relaxed)
     }
 
     /// Sets the node number of the locally-connected serial device.
     #[inline]
-    pub fn set_serial_number(&self, num: u32) {
+    pub(crate) fn set_serial_number(&self, num: u32) {
         self.serial_node.store(num, Relaxed);
     }
 
     /// Insert a new node into the state
-    pub fn insert(&self, node_id: u32, user: &User) -> Result<()> {
+    pub(crate) fn insert(&self, node_id: u32, user: &User) -> Result<()> {
         match self
             .nodes
             .write()

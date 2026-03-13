@@ -23,7 +23,11 @@ use std::fmt::Debug;
 use std::sync::Arc;
 
 /// Dispatches a `FromRadio` packet to the appropriate database insert or upsert.
-pub async fn process_packet(pkt: &FromRadio, state: &Arc<GatewayState>, pool: &Pool<Postgres>) {
+pub(crate) async fn process_packet(
+    pkt: &FromRadio,
+    state: &Arc<GatewayState>,
+    pool: &Pool<Postgres>,
+) {
     if let Some(pv) = &pkt.payload_variant {
         match pv {
             from_radio::PayloadVariant::Packet(mesh_packet) => {

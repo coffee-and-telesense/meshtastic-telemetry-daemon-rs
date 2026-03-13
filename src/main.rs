@@ -1,4 +1,3 @@
-#![feature(stmt_expr_attributes)]
 #![warn(missing_docs)]
 #![expect(
     clippy::multiple_crate_versions,

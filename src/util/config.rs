@@ -71,20 +71,20 @@ struct SerialConnection<'a> {
 
 /// Struct representing configured deployment information, like location
 #[derive(Debug, Deserialize)]
-pub struct DeploymentSettings<'a> {
+pub(crate) struct DeploymentSettings<'a> {
     /// The name of this group of nodes
     pub location: Cow<'a, str>,
 }
 
 /// Settings struct that parses a config and sets up
 #[derive(Debug, Deserialize)]
-pub struct Settings<'a> {
+pub(crate) struct Settings<'a> {
     /// The Postgres connection config
     postgres: PostgresConnection<'a>,
     /// The serial connection to a Meshtastic node config
     serial: SerialConnection<'a>,
     /// The deployment config
-    pub deployment: DeploymentSettings<'a>,
+    pub(crate) deployment: DeploymentSettings<'a>,
 }
 
 impl<'a> Settings<'a> {
