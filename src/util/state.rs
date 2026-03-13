@@ -1,5 +1,7 @@
+use crate::util::config::DEPLOYMENT_LOCATION;
 use anyhow::{Error, Result};
 use meshtastic::protobufs::User;
+use sqlx::{Pool, Postgres};
 use std::{
     collections::{
         HashMap,
@@ -148,6 +150,46 @@ impl GatewayState {
                 Ok(())
             }
         }
+    }
+
+    /// Get nodes from preexisting `PostgreSQL` table
+    pub(crate) async fn load_from_db(&self, db: &Pool<Postgres>) -> Result<()> {
+        let rows = sqlx::query!(
+            "
+SELECT
+    node_id,
+    longname,
+    shortname,
+    hwmodel
+FROM nodeinfo
+WHERE
+    deployment_location = $1
+    AND longname IS NOT NULL
+    AND shortname IS NOT NULL
+    AND hwmodel IS NOT NULL
+    ",
+            DEPLOYMENT_LOCATION.get()
+        )
+        .fetch_all(db)
+        .await?;
+
+        for row in rows {
+            // Reconstruct a minimal User and insert into GatewayState
+            match self.insert(
+                row.node_id.0,
+                &User {
+                    long_name: row.longname,
+                    short_name: row.shortname,
+                    hw_model: row.hwmodel,
+                    id: format!("!{:08x}", row.node_id.0),
+                    ..Default::default()
+                },
+            ) {
+                Ok(()) => tracing::trace!("Added {} to GatewayState", row.node_id.0),
+                Err(e) => tracing::warn!(%e),
+            }
+        }
+        Ok(())
     }
 }
 
