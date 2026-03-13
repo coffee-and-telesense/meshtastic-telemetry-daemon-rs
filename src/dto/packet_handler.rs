@@ -34,31 +34,27 @@ pub(crate) async fn process_packet(
                 decode_payload(mesh_packet, state, pool).await;
             }
             from_radio::PayloadVariant::NodeInfo(node_info) => {
-                //TODO: collapse if statement, account for the position/devicemetrics as well
-                // only insert if user is some
-                if node_info.user.is_some() {
-                    let (dm_result, ni_result) = tokio::join!(
-                        devicemetrics::upsert_fr(pkt, node_info, pool),
-                        nodeinfo::upsert(node_info, pool),
-                    );
-                    match dm_result {
-                        Ok(_) => {
-                            tracing::info!(table = "DeviceMetrics", "upserted 1 row");
-                        }
-                        Err(e) => tracing::error!(%e, table = "DeviceMetrics", "upsert failed"),
+                let (dm_result, ni_result) = tokio::join!(
+                    devicemetrics::upsert_fr(pkt, node_info, pool),
+                    nodeinfo::upsert(node_info, pool),
+                );
+                match dm_result {
+                    Ok(_) => {
+                        tracing::info!(table = "DeviceMetrics", "upserted 1 row");
                     }
+                    Err(e) => tracing::error!(%e, table = "DeviceMetrics", "upsert failed"),
+                }
 
-                    match ni_result {
-                        Ok(_) => tracing::info!(table = "NodeInfo", "upserted 1 row"),
-                        Err(e) => tracing::error!(%e, table = "NodeInfo", "upsert failed"),
-                    }
-                    // insert into GatewayState
-                    #[cfg(feature = "debug")]
-                    if let Some(user) = &node_info.user {
-                        match state.insert(node_info.num, user) {
-                            Ok(()) => tracing::trace!("Added {} to GatewayState", node_info.num),
-                            Err(e) => tracing::warn!(%e),
-                        }
+                match ni_result {
+                    Ok(_) => tracing::info!(table = "NodeInfo", "upserted 1 row"),
+                    Err(e) => tracing::error!(%e, table = "NodeInfo", "upsert failed"),
+                }
+                // insert into GatewayState
+                #[cfg(feature = "debug")]
+                if let Some(user) = &node_info.user {
+                    match state.insert(node_info.num, user) {
+                        Ok(()) => tracing::trace!("Added {} to GatewayState", node_info.num),
+                        Err(e) => tracing::warn!(%e),
                     }
                 }
             }
