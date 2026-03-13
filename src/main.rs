@@ -12,7 +12,7 @@ use crate::util::config::DEPLOYMENT_LOCATION;
 #[cfg(feature = "log_perf")]
 use crate::util::log::log_perf;
 use crate::util::{config::Settings, log::set_logger, state::GatewayState};
-use anyhow::{Context, Result};
+use anyhow::{Context, Error, Result, anyhow};
 use meshtastic::api::StreamApi;
 use meshtastic::protobufs::User;
 use meshtastic::utils;
@@ -37,7 +37,7 @@ pub(crate) mod util;
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 #[tokio::main(flavor = "multi_thread")]
-async fn main() -> Result<(), anyhow::Error> {
+async fn main() -> Result<(), Error> {
     let settings = Settings::new();
 
     // Set the logger
@@ -71,11 +71,15 @@ async fn main() -> Result<(), anyhow::Error> {
     let semaphore = Arc::new(Semaphore::new(max_tasks));
 
     // Set the global deployment location string
-    DEPLOYMENT_LOCATION
-        .set(Box::leak(
-            settings.deployment.location.into_owned().into_boxed_str(),
-        ))
-        .expect("DEPLOYMENT_LOCATION initialized twice");
+    match DEPLOYMENT_LOCATION.set(Box::leak(
+        settings.deployment.location.into_owned().into_boxed_str(),
+    )) {
+        Ok(()) => {}
+        Err(e) => {
+            tracing::error!(%e, "DEPLOYMENT_LOCATION initialized twice");
+            return Result::Err(anyhow!(e));
+        }
+    }
 
     // Output the version of the daemon to the logger
     tracing::info!("Daemon version: {VERSION}");
@@ -127,7 +131,13 @@ WHERE
             }
             msg = decoded_listener.recv() => {
                 if let Some(from_radio) = msg {
-                    let permit = Arc::clone(&semaphore).acquire_owned().await.expect("Could not acquire an owned clone of the semaphore");
+                    let permit = match Arc::clone(&semaphore).acquire_owned().await {
+                        Ok(p) => p,
+                        Err(e) => {
+                            tracing::error!(%e, "Could not acquire an owned clone of the semaphore");
+                            return Result::Err(anyhow!(e));
+                        },
+                    };
                     let s = Arc::clone(&state);
                     let pool = postgres_db.clone();
                     let span = tracing::info_span!("packet", from = from_radio.id);
