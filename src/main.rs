@@ -38,7 +38,7 @@ const VERSION: &str = env!("CARGO_PKG_VERSION");
 #[tokio::main(flavor = "multi_thread")]
 async fn main() -> Result<(), Error> {
     // Set the logger
-    set_logger();
+    set_logger()?;
 
     // Read settings
     let settings = Settings::new().context("Error initializing Settings")?;

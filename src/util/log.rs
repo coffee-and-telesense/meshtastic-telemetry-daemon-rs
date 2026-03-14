@@ -1,3 +1,6 @@
+#[cfg(feature = "journald")]
+use anyhow::Context as _;
+use anyhow::Result;
 #[cfg(not(feature = "journald"))]
 use tracing_subscriber::fmt::{layer, time::ChronoLocal};
 use tracing_subscriber::{
@@ -5,7 +8,11 @@ use tracing_subscriber::{
 };
 
 /// Initializes the global logger
-pub(crate) fn set_logger() {
+#[expect(
+    clippy::unnecessary_wraps,
+    reason = "Conditional compilation uses Result for journald feature"
+)]
+pub(crate) fn set_logger() -> Result<()> {
     let app_filter = EnvFilter::try_from_default_env().unwrap_or_else(|_| {
         if cfg!(feature = "trace") {
             EnvFilter::new("trace")
@@ -28,7 +35,7 @@ pub(crate) fn set_logger() {
     // Direct journald integration — structured fields preserved
     #[cfg(feature = "journald")]
     let journald = tracing_journald::layer()
-        .expect("failed to connect to journald")
+        .context("Failed to connect to journald")?
         .with_filter(app_filter);
 
     #[cfg(feature = "tokio-console")]
@@ -47,6 +54,8 @@ pub(crate) fn set_logger() {
     // Fallback: standard output with timestamps, no tokio-console or journald
     #[cfg(not(any(feature = "journald", feature = "tokio-console")))]
     registry.with(fmt_layer).init();
+
+    Ok(())
 }
 
 /// Logs tokio runtime metrics (workers, alive tasks, queue depth).

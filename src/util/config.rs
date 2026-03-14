@@ -277,7 +277,7 @@ mod tests {
             .build()?;
 
         // Attempting to deserialize should fail
-        let settings: std::result::Result<Settings, _> = config_res.try_deserialize();
+        let settings: Result<Settings, _> = config_res.try_deserialize();
         assert!(
             settings.is_err(),
             "Should fail when missing postgres config"
@@ -309,7 +309,7 @@ mod tests {
             .add_source(File::from_str(toml_content, FileFormat::Toml))
             .build()?;
 
-        let settings: std::result::Result<Settings, _> = config_res.try_deserialize();
+        let settings: Result<Settings, _> = config_res.try_deserialize();
         assert!(settings.is_err(), "Should fail when port is not an integer");
         Ok(())
     }
