@@ -1,3 +1,4 @@
+#![forbid(unsafe_code)]
 #![warn(missing_docs)]
 #![expect(
     clippy::multiple_crate_versions,
