@@ -74,9 +74,7 @@ async fn main() -> Result<(), Error> {
 
     // Set the global deployment location string
     DEPLOYMENT_LOCATION
-        .set(Box::leak(
-            settings.deployment.location.into_owned().into_boxed_str(),
-        ))
+        .set(settings.deployment.location.into_owned())
         .context("DEPLOYMENT_LOCATION initialized twice")?;
 
     // Output the version of the daemon to the logger
@@ -100,7 +98,7 @@ async fn main() -> Result<(), Error> {
                         Ok(p) => p,
                         Err(e) => {
                             tracing::error!(%e, "Could not acquire an owned clone of the semaphore");
-                            return Result::Err(anyhow!(e));
+                            return Err(anyhow!(e));
                         },
                     };
                     let s = Arc::clone(&state);
@@ -136,7 +134,7 @@ async fn main() -> Result<(), Error> {
     }
 
     tracing::info!("Waiting for in-flight tasks to finish...");
-    let _shutdown_lock = semaphore.acquire_many(max_tasks as u32).await;
+    let _shutdown_lock = semaphore.acquire_many(u32::try_from(max_tasks)?).await;
     tracing::info!("All tasks finished.");
 
     // Called when either the radio is disconnected or the daemon receives

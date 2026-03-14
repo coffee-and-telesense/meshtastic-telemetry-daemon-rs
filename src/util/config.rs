@@ -16,7 +16,7 @@ use std::{
 use tokio::sync::OnceCell;
 
 /// Deployment location constant to initialize with config value
-pub(crate) static DEPLOYMENT_LOCATION: OnceCell<&'static str> = OnceCell::const_new();
+pub(crate) static DEPLOYMENT_LOCATION: OnceCell<String> = OnceCell::const_new();
 
 /// Example config file to write in case one cannot be found
 static EXAMPLE_CONFIG: &[u8] = include_bytes!("example_config.toml");

@@ -20,14 +20,9 @@ use meshtastic::{
 use sqlx::{Pool, Postgres};
 #[cfg(feature = "trace")]
 use std::fmt::Debug;
-use std::sync::Arc;
 
 /// Dispatches a `FromRadio` packet to the appropriate database insert or upsert.
-pub(crate) async fn process_packet(
-    pkt: &FromRadio,
-    state: &Arc<GatewayState>,
-    pool: &Pool<Postgres>,
-) {
+pub(crate) async fn process_packet(pkt: &FromRadio, state: &GatewayState, pool: &Pool<Postgres>) {
     if let Some(pv) = &pkt.payload_variant {
         match pv {
             from_radio::PayloadVariant::Packet(mesh_packet) => {
@@ -132,7 +127,7 @@ fn decode_and_trace<P: Debug>(ptype: &str, payload: P) {
 }
 
 /// Decodes a `MeshPacket` payload and inserts the result into the database.
-async fn decode_payload(pkt: &MeshPacket, state: &Arc<GatewayState>, pool: &Pool<Postgres>) {
+async fn decode_payload(pkt: &MeshPacket, state: &GatewayState, pool: &Pool<Postgres>) {
     // Count received packets in debug builds for period reporting in logs
     #[cfg(feature = "debug")]
     {
