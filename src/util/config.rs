@@ -8,42 +8,41 @@ use sqlx::{
     postgres::{PgConnectOptions, PgPoolOptions},
 };
 use std::{
-    borrow::Cow,
     fs,
     io::{self, BufRead as _},
+    sync::OnceLock,
     time::Duration,
 };
-use tokio::sync::OnceCell;
 
 /// Deployment location constant to initialize with config value
-pub(crate) static DEPLOYMENT_LOCATION: OnceCell<String> = OnceCell::const_new();
+pub(crate) static DEPLOYMENT_LOCATION: OnceLock<String> = OnceLock::new();
 
 /// Example config file to write in case one cannot be found
 static EXAMPLE_CONFIG: &[u8] = include_bytes!("example_config.toml");
 
 /// XDG application handle for finding config paths.
-static APP: OnceCell<XdgApp> = OnceCell::const_new();
+static APP: OnceLock<XdgApp> = OnceLock::new();
 
 /// Struct representing a Postgres connection's settings
 #[derive(Debug, Deserialize)]
-struct PostgresConnection<'a> {
+struct PostgresConnection {
     /// Username for Postgres db
-    user: Cow<'a, str>,
+    user: String,
     /// Password for Postgres db
-    password: Cow<'a, str>,
+    password: String,
     /// Port for Postgres db
     port: u16,
     /// Hostname of Postgres db
-    host: Cow<'a, str>,
+    host: String,
     /// Database name for Postgres db
-    dbname: Cow<'a, str>,
+    dbname: String,
     /// Maximum connection workers for db connection and half of incoming packets bound (max 32)
     max_connections: u32,
     /// Minimum connection workers for db connection
     min_connections: u32,
 }
 
-impl PostgresConnection<'_> {
+impl PostgresConnection {
     /// Creates a `PostgreSQL` connection pool from these settings
     async fn setup(&self) -> Result<PgPool> {
         let conn = PgConnectOptions::new()
@@ -65,38 +64,39 @@ impl PostgresConnection<'_> {
 
 /// Struct representing a connection to a serial port's settings
 #[derive(Debug, Deserialize)]
-struct SerialConnection<'a> {
+struct SerialConnection {
     /// The path to the serial port of a connected Meshtastic node, if left
     /// blank the user is prompted for the path out of a list of possible paths
-    port: Cow<'a, str>,
+    port: String,
 }
 
 /// Struct representing configured deployment information, like location
 #[derive(Debug, Deserialize)]
-pub(crate) struct DeploymentSettings<'a> {
+pub(crate) struct DeploymentSettings {
     /// The name of this group of nodes
-    pub location: Cow<'a, str>,
+    pub location: String,
 }
 
 /// Settings struct that parses a config and sets up
 #[derive(Debug, Deserialize)]
-pub(crate) struct Settings<'a> {
+pub(crate) struct Settings {
     /// The Postgres connection config
-    postgres: PostgresConnection<'a>,
+    postgres: PostgresConnection,
     /// The serial connection to a Meshtastic node config
-    serial: SerialConnection<'a>,
+    serial: SerialConnection,
     /// The deployment config
-    pub(crate) deployment: DeploymentSettings<'a>,
+    pub(crate) deployment: DeploymentSettings,
 }
 
-impl<'a> Settings<'a> {
+impl Settings {
     /// Reads the config file and returns a parsed `Settings` instance
     pub(crate) fn new() -> Result<Self> {
         // Create the XDG app while also setting a global static APP
         APP.set(
             XdgApp::new("meshtastic_telemetry")
                 .context("Unable to initialize meshtastic_telemetry XDG Application")?,
-        )?;
+        )
+        .map_err(|e| anyhow!("Error setting XdgApp: {e:?}"))?;
 
         // Check the config directory, if it does not exist then create it
         let config_dir = APP
@@ -141,7 +141,7 @@ impl<'a> Settings<'a> {
     /// # Panics
     /// This panics if a serial port is not provided by the user in the case that the config file does
     /// not provide a serial port path
-    pub(crate) fn get_serial_port(&'a self) -> Result<Cow<'a, str>> {
+    pub(crate) fn get_serial_port(&self) -> Result<String> {
         if self.serial.port.is_empty() {
             tracing::warn!("Prompting user for serial port instead");
             match available_serial_ports().context("Failed to enumerate list of serial ports") {
@@ -160,14 +160,14 @@ impl<'a> Settings<'a> {
                 .next()
                 .context("Could not read from stdin")?
             {
-                Ok(sp) => Ok(Cow::Owned(sp)),
+                Ok(sp) => Ok(sp),
                 Err(e) => {
                     tracing::error!("No serial port provided by user");
                     Err(anyhow!(e))
                 }
             }
         } else {
-            Ok(Cow::Borrowed(&self.serial.port))
+            Ok(self.serial.port.clone())
         }
     }
 

@@ -57,9 +57,9 @@ async fn main() -> Result<(), Error> {
     let entered_port = settings
         .get_serial_port()
         .context("Failed to get serial port")?;
-    let serial_stream =
-        utils::stream::build_serial_stream(entered_port.to_string(), None, None, None)
-            .with_context(|| format!("Failed to build serial stream for {entered_port}"))?;
+    let dbg_entered_port = entered_port.clone();
+    let serial_stream = utils::stream::build_serial_stream(entered_port, None, None, None)
+        .with_context(|| format!("Failed to build serial stream for {dbg_entered_port}"))?;
     let (mut decoded_listener, stream_api) = stream_api.connect(serial_stream).await;
 
     let config_id = utils::generate_rand_id();
@@ -74,8 +74,8 @@ async fn main() -> Result<(), Error> {
 
     // Set the global deployment location string
     DEPLOYMENT_LOCATION
-        .set(settings.deployment.location.into_owned())
-        .context("DEPLOYMENT_LOCATION initialized twice")?;
+        .set(settings.deployment.location)
+        .map_err(|e| anyhow!("DEPLOYMENT_LOCATION initialized twice: {e}"))?;
 
     // Output the version of the daemon to the logger
     tracing::info!("Daemon version: {VERSION}");

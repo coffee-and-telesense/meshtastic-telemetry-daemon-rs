@@ -60,7 +60,6 @@ impl Display for GatewayState {
             .read()
             .unwrap_or_else(PoisonError::into_inner)
             .iter()
-            .peekable()
         {
             f.write_str("\n")?;
 
