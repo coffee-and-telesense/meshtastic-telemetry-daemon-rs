@@ -283,4 +283,61 @@ mod tests {
         state.increment_count(999); // unknown
         assert!(!state.any_recvd()); // should still be false
     }
+
+    #[test]
+    fn display_formats_multiple_nodes_correctly() -> Result<()> {
+        let state = GatewayState::new();
+        state.insert(1, &test_user("Node1", "N1"))?;
+        state.insert(2, &test_user("Node2", "N2"))?;
+
+        // Set Node 1 as the serial node, and simulate Node 2 receiving 5 packets
+        state.set_serial_number(1);
+        for _ in 0..5 {
+            state.increment_count(2);
+        }
+
+        let output = format!("{state}");
+
+        // Assert the header and specific text formatting
+        assert!(output.contains("Counts:"));
+        assert!(output.contains("*serial"));
+        assert!(output.contains("Node1"));
+        assert!(output.contains("Node2"));
+        assert!(output.contains("5 packets received")); // Node 2
+        assert!(output.contains("0 packets received")); // Node 1
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn concurrent_increments_are_thread_safe() -> Result<()> {
+        use std::sync::Arc;
+
+        // Wrap state in Arc to share across tokio tasks
+        let state = Arc::new(GatewayState::new());
+        state.insert(100, &test_user("Concurrent", "CON"))?;
+
+        let mut handles = vec![];
+
+        // Spawn 10 async tasks, each incrementing the counter 100 times
+        for _ in 0..10 {
+            let state_clone = Arc::clone(&state);
+            handles.push(tokio::spawn(async move {
+                for _ in 0..100 {
+                    state_clone.increment_count(100);
+                }
+            }));
+        }
+
+        // Await all spawned tasks. We use `?` because tokio's JoinError
+        // automatically converts into our anyhow::Result!
+        for handle in handles {
+            handle.await?;
+        }
+
+        // We should have exactly 1000 packets counted without race conditions
+        let output = format!("{state}");
+        assert!(output.contains("1000 packets received"));
+        assert!(state.any_recvd());
+        Ok(())
+    }
 }

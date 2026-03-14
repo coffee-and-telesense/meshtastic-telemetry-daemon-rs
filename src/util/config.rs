@@ -260,4 +260,57 @@ mod tests {
 
         Ok(())
     }
+
+    #[test]
+    fn test_deserialize_settings_missing_postgres_fails() -> Result<()> {
+        // TOML is completely missing the [postgres] block
+        let toml_content = r#"
+            [serial]
+            port = "/dev/ttyUSB0"
+
+            [deployment]
+            location = "Portland Gateway"
+        "#;
+
+        let config_res = Config::builder()
+            .add_source(File::from_str(toml_content, FileFormat::Toml))
+            .build()?;
+
+        // Attempting to deserialize should fail
+        let settings: std::result::Result<Settings, _> = config_res.try_deserialize();
+        assert!(
+            settings.is_err(),
+            "Should fail when missing postgres config"
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn test_deserialize_settings_invalid_port_type_fails() -> Result<()> {
+        // TOML has a string where an integer port is expected
+        let toml_content = r#"
+            [postgres]
+            user = "test_user"
+            password = "test_password"
+            port = "NOT_A_NUMBER"
+            host = "127.0.0.1"
+            dbname = "test_db"
+            max_connections = 20
+            min_connections = 2
+
+            [serial]
+            port = "/dev/ttyUSB0"
+
+            [deployment]
+            location = "Portland Gateway"
+        "#;
+
+        let config_res = Config::builder()
+            .add_source(File::from_str(toml_content, FileFormat::Toml))
+            .build()?;
+
+        let settings: std::result::Result<Settings, _> = config_res.try_deserialize();
+        assert!(settings.is_err(), "Should fail when port is not an integer");
+        Ok(())
+    }
 }
