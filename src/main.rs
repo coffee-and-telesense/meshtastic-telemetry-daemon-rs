@@ -135,6 +135,10 @@ async fn main() -> Result<(), Error> {
         }
     }
 
+    tracing::info!("Waiting for in-flight tasks to finish...");
+    let _shutdown_lock = semaphore.acquire_many(max_tasks as u32).await;
+    tracing::info!("All tasks finished.");
+
     // Called when either the radio is disconnected or the daemon receives
     // a SIGTERM or SIGKILL signal from systemctl or by other means
     match stream_api.disconnect().await {
