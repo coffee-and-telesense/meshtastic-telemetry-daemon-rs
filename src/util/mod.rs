@@ -1,3 +1,5 @@
+//! Various utilities for the daemon
+
 use chrono::{DateTime, NaiveDateTime, Utc};
 
 /// Config file interaction module
@@ -13,13 +15,6 @@ pub(crate) mod state;
 /// back to the daemon's wall clock. This filters out uninitialized devices that report epoch 0
 /// or small values from their RTC.
 const MIN_VALID_EPOCH: u32 = 1_735_689_600;
-
-/// Maximum concurrent packet-processing tasks.
-///
-/// Bounded to twice the DB pool size (so tasks can overlap decode
-/// and I/O) but capped at 32 to prevent memory pressure on
-/// embedded targets like `BeagleBone` an`OpenWRT`.
-pub(crate) const MAX_INFLIGHT_TASKS: usize = 32;
 
 /// Create a timestamp from a given epoch `u32`
 #[inline]

@@ -1,17 +1,18 @@
+//! Config handling and serial port prompting
+
 use anyhow::{Context as _, Result, anyhow};
 use config::Config;
-use meshtastic::utils::stream::available_serial_ports;
+use diesel::{
+    pg::PgConnection,
+    r2d2::{ConnectionManager, Pool},
+};
+use embedded_nano_mesh_linux_io::serialport::available_ports;
 use microxdg::XdgApp;
 use serde::Deserialize;
-use sqlx::{
-    PgPool,
-    postgres::{PgConnectOptions, PgPoolOptions},
-};
 use std::{
     fs,
-    io::{self, BufRead as _},
+    io::{BufRead as _, stdin},
     sync::OnceLock,
-    time::Duration,
 };
 
 /// Deployment location constant to initialize with config value
@@ -22,6 +23,9 @@ static EXAMPLE_CONFIG: &[u8] = include_bytes!("example_config.toml");
 
 /// XDG application handle for finding config paths.
 static APP: OnceLock<XdgApp> = OnceLock::new();
+
+/// Type alias for `PostgreSQL` connection pool
+pub(crate) type PgPool = Pool<ConnectionManager<PgConnection>>;
 
 /// Struct representing a Postgres connection's settings
 #[derive(Debug, Deserialize)]
@@ -44,20 +48,16 @@ struct PostgresConnection {
 
 impl PostgresConnection {
     /// Creates a `PostgreSQL` connection pool from these settings
-    async fn setup(&self) -> Result<PgPool> {
-        let conn = PgConnectOptions::new()
-            .username(&self.user)
-            .password(&self.password)
-            .host(&self.host)
-            .port(self.port)
-            .database(&self.dbname);
-
-        PgPoolOptions::new()
-            .max_connections(self.max_connections)
-            .min_connections(self.min_connections)
-            .acquire_timeout(Duration::from_secs(5))
-            .connect_with(conn)
-            .await
+    fn setup(&self) -> Result<PgPool> {
+        let url = format!(
+            "postgres://{}:{}@{}:{}/{}",
+            self.user, self.password, self.host, self.port, self.dbname
+        );
+        let manager = ConnectionManager::<PgConnection>::new(url);
+        Pool::builder()
+            .max_size(self.max_connections)
+            .min_idle(Some(self.min_connections))
+            .build(manager)
             .map_err(anyhow::Error::from)
     }
 }
@@ -144,7 +144,7 @@ impl Settings {
     pub(crate) fn get_serial_port(&self) -> Result<String> {
         if self.serial.port.is_empty() {
             tracing::warn!("Prompting user for serial port instead");
-            match available_serial_ports().context("Failed to enumerate list of serial ports") {
+            match available_ports().context("Failed to enumerate list of serial ports") {
                 Ok(ap) => println!("Available ports: {ap:?}"),
                 Err(e) => {
                     tracing::error!(%e);
@@ -152,8 +152,7 @@ impl Settings {
                 }
             }
             println!("Enter the name of a port to connect to:");
-
-            let stdin = io::stdin();
+            let stdin = stdin();
             match stdin
                 .lock()
                 .lines()
@@ -172,13 +171,8 @@ impl Settings {
     }
 
     /// Sets up a Postgres connection
-    pub(crate) async fn setup_postgres(&self) -> Result<PgPool> {
-        self.postgres.setup().await
-    }
-
-    /// Get the maximum connections value to bound in-flight tasks for received packets
-    pub(crate) const fn get_max_connections(&self) -> usize {
-        self.postgres.max_connections as usize
+    pub(crate) fn setup_postgres(&self) -> Result<PgPool> {
+        self.postgres.setup()
     }
 }
 
@@ -227,7 +221,6 @@ mod tests {
 
         // Assert Deployment configurations
         assert_eq!(settings.deployment.location, "Portland Gateway");
-        assert_eq!(settings.get_max_connections(), 20);
 
         Ok(())
     }
