@@ -281,15 +281,15 @@ mod tests {
         Ok(())
     }
 
+    #[test]
     fn concurrent_increments_are_thread_safe() -> Result<()> {
         use std::sync::Arc;
         use std::thread;
 
-        // Wrap state in Arc to share across tokio tasks
         let state = Arc::new(GatewayState::new());
         state.insert(100, "Concurrent")?;
 
-        // Spawn 10 threads, each incrementing the counter 100 times
+        // Spawn 10 threads, each increments the counter 100 times
         let handles: Vec<_> = (0..10)
             .map(|_| {
                 let s = Arc::clone(&state);
@@ -302,7 +302,8 @@ mod tests {
             .collect();
 
         for h in handles {
-            h.join().map_err(|_| Error::msg("thread panicked"))?;
+            h.join()
+                .map_err(|e| Error::msg(format!("thread panicked {e:?}")))?;
         }
 
         // We should have exactly 1000 packets counted without race conditions

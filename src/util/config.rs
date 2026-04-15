@@ -6,13 +6,18 @@ use diesel::{
     pg::PgConnection,
     r2d2::{ConnectionManager, Pool},
 };
-use embedded_nano_mesh_linux_io::serialport::available_ports;
+use embedded_nano_mesh::{ExactAddressType, Node, NodeConfig};
+use embedded_nano_mesh_linux_io::{
+    LinuxIO,
+    serialport::{self, available_ports},
+};
 use microxdg::XdgApp;
 use serde::Deserialize;
 use std::{
     fs,
     io::{BufRead as _, stdin},
     sync::OnceLock,
+    time::Instant,
 };
 
 /// Deployment location constant to initialize with config value
@@ -68,6 +73,8 @@ struct SerialConnection {
     /// The path to the serial port of a connected Meshtastic node, if left
     /// blank the user is prompted for the path out of a list of possible paths
     port: String,
+    /// Baud rate for the serial port
+    baud: u32,
 }
 
 /// Struct representing configured deployment information, like location
@@ -137,15 +144,16 @@ impl Settings {
     }
 
     /// Returns the configured serial port, prompting the user interactively if none is set.
-    ///
-    /// # Panics
-    /// This panics if a serial port is not provided by the user in the case that the config file does
-    /// not provide a serial port path
-    pub(crate) fn get_serial_port(&self) -> Result<String> {
+    fn get_serial_port(&self) -> Result<String> {
         if self.serial.port.is_empty() {
+            tracing::warn!("No serial port provided by the configuration");
             tracing::warn!("Prompting user for serial port instead");
             match available_ports().context("Failed to enumerate list of serial ports") {
-                Ok(ap) => println!("Available ports: {ap:?}"),
+                Ok(ap) => {
+                    // Filter for only `UsbPort` types
+                    let usb_ports: Vec<String> = ap.into_iter().map(|p| p.port_name).collect();
+                    println!("Available ports: {usb_ports:?}");
+                }
                 Err(e) => {
                     tracing::error!(%e);
                     tracing::warn!("User will input their own serial port");
@@ -168,6 +176,39 @@ impl Settings {
         } else {
             Ok(self.serial.port.clone())
         }
+    }
+
+    /// Sets up a serial port connection to a node
+    pub(crate) fn setup_serial(&self, program_start_time: Instant) -> Result<(Node, LinuxIO)> {
+        let mut serial =
+            LinuxIO::new(serialport::new(self.get_serial_port()?, self.serial.baud).open_native()?);
+
+        //TODO: make below configurable
+        let mut node = Node::new(NodeConfig {
+            device_address: ExactAddressType::new(1)
+                .expect("Failed to create ExactAddressType for Serial Mesh interface"),
+            listen_period: 150u32,
+        });
+
+        node.update(
+            &mut serial,
+            u32::try_from(
+                Instant::now()
+                    .duration_since(program_start_time)
+                    .as_millis(),
+            )?,
+        )
+        .map_err(|e| {
+            if e.is_receive_queue_full {
+                anyhow!("Receive queue is full")
+            } else if e.is_transit_queue_full {
+                anyhow!("Transit queue is full")
+            } else {
+                anyhow!("Unknown NodeUpdateError occurred")
+            }
+        })?;
+
+        Ok((node, serial))
     }
 
     /// Sets up a Postgres connection

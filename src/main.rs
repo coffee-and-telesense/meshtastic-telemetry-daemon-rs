@@ -14,6 +14,7 @@ use crate::util::{
 use anyhow::{Context as _, Error, Result, anyhow};
 #[cfg(feature = "mimalloc")]
 use mimalloc::MiMalloc;
+use std::time::Instant;
 
 #[cfg(feature = "mimalloc")]
 #[global_allocator]
@@ -32,11 +33,17 @@ const VERSION: &str = env!("CARGO_PKG_VERSION");
 const CHANNEL_BOUND: usize = 32;
 
 fn main() -> Result<(), Error> {
+    // Program start time needed for embedded_nano_mesh serial driver
+    let program_start_time = Instant::now();
+
     // Set the logger
     set_logger()?;
 
     // Read settings
     let settings = Settings::new().context("Error initializing Settings")?;
+
+    // Setup serial connection
+    let (mut node, mut serial) = settings.setup_serial(program_start_time)?;
 
     // Create the gateway's state object
     // let state = Arc::new(GatewayState::new());
@@ -56,6 +63,36 @@ fn main() -> Result<(), Error> {
 
     // Load the already filled in nodeinfo tables to the state
     // state.load_from_db(&postgres_db)?;
+
+    loop {
+        if let Some(packet) = node.receive() {}
+
+        match node
+            .update(
+                &mut serial,
+                u32::try_from(
+                    Instant::now()
+                        .duration_since(program_start_time)
+                        .as_millis(),
+                )
+                .context("Could not convert Instant duration_since millis to u32")?,
+            )
+            .map_err(|e| {
+                if e.is_receive_queue_full {
+                    anyhow!("Receive queue is full")
+                } else if e.is_transit_queue_full {
+                    anyhow!("Transit queue is full")
+                } else {
+                    anyhow!("Unknown NodeUpdateError occurred")
+                }
+            }) {
+            Ok(()) => (),
+            Err(e) => {
+                tracing::error!("{e}");
+                return Err(e);
+            }
+        }
+    }
 
     Ok(())
 }

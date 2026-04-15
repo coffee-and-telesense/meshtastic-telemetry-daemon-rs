@@ -16,6 +16,7 @@ min_connections = 1
 # The path to the serial port of a connected Meshtastic node, if left blank the
 # user is prompted for the path out of a list of possible paths
 port = ""
+baud = 9600
 
 [deployment]
 # The name of this group of nodes
