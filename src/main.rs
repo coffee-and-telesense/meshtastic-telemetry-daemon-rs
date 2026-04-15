@@ -5,7 +5,7 @@
     reason = "diesel and config pull different version of core deps"
 )]
 
-//! Meshtastic to `PostgreSQL` database daemon
+//! `embedded_nano_mesh` to `PostgreSQL` database daemon
 
 use crate::util::{
     config::{DEPLOYMENT_LOCATION, PgPool, Settings},
@@ -45,7 +45,7 @@ fn main() -> Result<(), Error> {
     let settings = Settings::new().context("Error initializing Settings")?;
 
     // Setup serial connection
-    let (mut node, mut serial) = settings.setup_serial(program_start_time)?;
+    let (mut node, mut serial) = settings.setup_serial()?;
 
     // Create the gateway's state object
     let state = Arc::new(GatewayState::new());
@@ -72,17 +72,16 @@ fn main() -> Result<(), Error> {
             //TODO: Dispatch to INSERT function thread pool
         }
 
-        //TODO: investigate the following
-        // The `update` function current_time wraps at 49 days, so is that a problem?
+        #[expect(
+            clippy::cast_possible_truncation,
+            reason = "Truncating is expected behavior here, we want the lower 32 bits"
+        )]
         match node
             .update(
                 &mut serial,
-                u32::try_from(
-                    Instant::now()
-                        .duration_since(program_start_time)
-                        .as_millis(),
-                )
-                .context("Could not convert Instant duration_since millis to u32")?,
+                Instant::now()
+                    .duration_since(program_start_time)
+                    .as_millis() as u32,
             )
             .map_err(to_anyhow_err)
         {

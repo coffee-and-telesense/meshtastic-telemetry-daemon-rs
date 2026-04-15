@@ -17,7 +17,6 @@ use std::{
     fs,
     io::{BufRead as _, stdin},
     sync::OnceLock,
-    time::Instant,
 };
 
 /// Deployment location constant to initialize with config value
@@ -179,7 +178,7 @@ impl Settings {
     }
 
     /// Sets up a serial port connection to a node
-    pub(crate) fn setup_serial(&self, program_start_time: Instant) -> Result<(Node, LinuxIO)> {
+    pub(crate) fn setup_serial(&self) -> Result<(Node, LinuxIO)> {
         let serial =
             LinuxIO::new(serialport::new(self.get_serial_port()?, self.serial.baud).open_native()?);
         //TODO: make device_address and listen_period
