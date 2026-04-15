@@ -180,33 +180,16 @@ impl Settings {
 
     /// Sets up a serial port connection to a node
     pub(crate) fn setup_serial(&self, program_start_time: Instant) -> Result<(Node, LinuxIO)> {
-        let mut serial =
+        let serial =
             LinuxIO::new(serialport::new(self.get_serial_port()?, self.serial.baud).open_native()?);
-
-        //TODO: make below configurable
-        let mut node = Node::new(NodeConfig {
-            device_address: ExactAddressType::new(1)
-                .expect("Failed to create ExactAddressType for Serial Mesh interface"),
+        //TODO: make device_address and listen_period
+        let device_addr = ExactAddressType::new(1).ok_or(anyhow!(
+            "Failed to create ExactAddressType for Serial Mesh interface"
+        ))?;
+        let node = Node::new(NodeConfig {
+            device_address: device_addr,
             listen_period: 150u32,
         });
-
-        node.update(
-            &mut serial,
-            u32::try_from(
-                Instant::now()
-                    .duration_since(program_start_time)
-                    .as_millis(),
-            )?,
-        )
-        .map_err(|e| {
-            if e.is_receive_queue_full {
-                anyhow!("Receive queue is full")
-            } else if e.is_transit_queue_full {
-                anyhow!("Transit queue is full")
-            } else {
-                anyhow!("Unknown NodeUpdateError occurred")
-            }
-        })?;
 
         Ok((node, serial))
     }
@@ -236,6 +219,7 @@ mod tests {
 
             [serial]
             port = "/dev/ttyUSB0"
+            baud = 9600
 
             [deployment]
             location = "Portland Gateway"
@@ -280,6 +264,7 @@ mod tests {
 
             [serial]
             port = ""
+            baud = 9600
 
             [deployment]
             location = "Remote Node"

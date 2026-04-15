@@ -10,11 +10,13 @@
 use crate::util::{
     config::{DEPLOYMENT_LOCATION, PgPool, Settings},
     log::set_logger,
+    state::GatewayState,
+    to_anyhow_err,
 };
 use anyhow::{Context as _, Error, Result, anyhow};
 #[cfg(feature = "mimalloc")]
 use mimalloc::MiMalloc;
-use std::time::Instant;
+use std::{sync::Arc, time::Instant};
 
 #[cfg(feature = "mimalloc")]
 #[global_allocator]
@@ -46,7 +48,7 @@ fn main() -> Result<(), Error> {
     let (mut node, mut serial) = settings.setup_serial(program_start_time)?;
 
     // Create the gateway's state object
-    // let state = Arc::new(GatewayState::new());
+    let state = Arc::new(GatewayState::new());
 
     // Create PostgreSQL connection
     let postgres_db: PgPool = settings
@@ -64,9 +66,14 @@ fn main() -> Result<(), Error> {
     // Load the already filled in nodeinfo tables to the state
     // state.load_from_db(&postgres_db)?;
 
+    //TODO: handle Ctrl+C and other interrupts of serial connection
     loop {
-        if let Some(packet) = node.receive() {}
+        if let Some(packet) = node.receive() {
+            //TODO: Dispatch to INSERT function thread pool
+        }
 
+        //TODO: investigate the following
+        // The `update` function current_time wraps at 49 days, so is that a problem?
         match node
             .update(
                 &mut serial,
@@ -77,15 +84,8 @@ fn main() -> Result<(), Error> {
                 )
                 .context("Could not convert Instant duration_since millis to u32")?,
             )
-            .map_err(|e| {
-                if e.is_receive_queue_full {
-                    anyhow!("Receive queue is full")
-                } else if e.is_transit_queue_full {
-                    anyhow!("Transit queue is full")
-                } else {
-                    anyhow!("Unknown NodeUpdateError occurred")
-                }
-            }) {
+            .map_err(to_anyhow_err)
+        {
             Ok(()) => (),
             Err(e) => {
                 tracing::error!("{e}");

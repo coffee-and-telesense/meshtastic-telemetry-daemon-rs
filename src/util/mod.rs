@@ -1,6 +1,8 @@
 //! Various utilities for the daemon
 
+use anyhow::{Error, anyhow};
 use chrono::{DateTime, NaiveDateTime, Utc};
+use embedded_nano_mesh::NodeUpdateError;
 
 /// Config file interaction module
 pub(crate) mod config;
@@ -25,6 +27,20 @@ pub(crate) fn timestamp(epoch: u32) -> NaiveDateTime {
             .map_or_else(|| Utc::now().naive_utc(), |dt| dt.naive_utc())
     } else {
         Utc::now().naive_utc()
+    }
+}
+
+/// Map `NodeUpdateError` to `anyhow::Error`
+#[inline]
+pub(crate) fn to_anyhow_err(err: NodeUpdateError) -> Error {
+    // Consume and drop the value before converting
+    let e = err;
+    if e.is_receive_queue_full {
+        anyhow!("Receive queue is full")
+    } else if e.is_transit_queue_full {
+        anyhow!("Transit queue is full")
+    } else {
+        anyhow!("Unknown NodeUpdateError occurred")
     }
 }
 
