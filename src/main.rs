@@ -7,16 +7,32 @@
 
 //! `embedded_nano_mesh` to `PostgreSQL` database daemon
 
-use crate::util::{
-    config::{DEPLOYMENT_LOCATION, PgPool, Settings},
-    log::set_logger,
-    state::GatewayState,
-    to_anyhow_err,
+use crate::{
+    dto::db_writer,
+    util::{
+        config::{DEPLOYMENT_LOCATION, PgPool, Settings},
+        log::set_logger,
+        state::GatewayState,
+        to_anyhow_err,
+    },
 };
 use anyhow::{Context as _, Error, Result, anyhow};
+use embedded_nano_mesh::PacketDataBytes;
 #[cfg(feature = "mimalloc")]
 use mimalloc::MiMalloc;
-use std::{sync::Arc, time::Instant};
+use signal_hook::{
+    consts::{SIGINT, SIGTERM},
+    flag::register,
+};
+use std::{
+    sync::{
+        Arc,
+        atomic::{AtomicBool, Ordering::Relaxed},
+        mpsc,
+    },
+    thread,
+    time::Instant,
+};
 
 #[cfg(feature = "mimalloc")]
 #[global_allocator]
@@ -66,10 +82,33 @@ fn main() -> Result<(), Error> {
     // Load the already filled in nodeinfo tables to the state
     // state.load_from_db(&postgres_db)?;
 
-    //TODO: handle Ctrl+C and other interrupts of serial connection
-    loop {
-        if let Some(packet) = node.receive() {
-            //TODO: Dispatch to INSERT function thread pool
+    // Channel for sending packets to database handler from serial
+    let (tx, rx) = mpsc::sync_channel::<PacketDataBytes>(CHANNEL_BOUND);
+
+    // Database writer thread
+    let db_state = Arc::clone(&state);
+    let db_pool = postgres_db;
+    let db_thread = thread::spawn(move || {
+        db_writer(rx, db_pool, db_state);
+    });
+
+    // Handle signals
+    let shutdown = Arc::new(AtomicBool::new(false));
+    register(SIGINT, Arc::clone(&shutdown)).context("Failed to register SIGINT handler")?;
+    register(SIGTERM, Arc::clone(&shutdown)).context("Failed to register SIGTERM handler")?;
+
+    // Receive packets over serial loop
+    while !shutdown.load(Relaxed) {
+        if let Some(packet) = node.receive()
+            && packet.get_spec_state() == embedded_nano_mesh::PacketState::Normal
+        {
+            match tx
+                .send(packet.data)
+                .context("Failed to send packet data over channel")
+            {
+                Ok(()) => (),
+                Err(e) => tracing::error!(%e),
+            }
         }
 
         #[expect(
@@ -92,6 +131,15 @@ fn main() -> Result<(), Error> {
             }
         }
     }
+
+    // Logging around shutdown
+    tracing::warn!("Shutdown signal received");
+    drop(tx);
+    tracing::info!("Waiting for in-flight database writes to complete...");
+    if let Err(e) = db_thread.join() {
+        tracing::error!("Database writer thread panicked: {e:?}");
+    }
+    tracing::info!("Clean shutdown complete");
 
     Ok(())
 }

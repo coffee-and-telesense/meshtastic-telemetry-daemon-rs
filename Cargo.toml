@@ -29,8 +29,6 @@ tracing-journald = { version = "0.3", optional = true }
 microxdg = { version = "0.2" }
 # Serialize/deserialize, add deriving trait
 serde = { version = "1.0", default-features = false, features = ["derive"] }
-# Serialize/deserialze json, mainly print debugging
-serde_json = { version = "1.0", default-features = false, features = ["std"] }
 # Postgres connection (with pool)
 diesel = { version = "2.3", features = ["chrono", "postgres", "r2d2"] }
 # Alternative memory allocator
@@ -38,13 +36,14 @@ mimalloc = { version = "0.1", features = ["v3"], optional = true }
 # Mesh packets
 embedded-nano-mesh = { version = "2.1" }
 embedded-nano-mesh-linux-io = { version = "0.1" }
+# Hook into signals
+signal-hook = "0.4"
 
 [features]
 default = ["debug", "mimalloc"]
 
 # Debugging features
 debug = ["anyhow/std", "anyhow/backtrace"] # Print state and backtraces
-print-packets = []                         # Pretty print packets
 journald = ["dep:tracing-journald"]        # Just `journalctl` to log messages
 
 # Verbose packet logging
