@@ -16,15 +16,16 @@ anyhow = { version = "1.0", default-features = false }
 # Handle clocks, no wasm. "now" enables "std"
 chrono = { version = "0.4", default-features = false, features = ["now"] }
 # Handle config reading
-config = { version = "0.15", default-features = false, features = ["toml"] }
+toml-spanner = { version = "1.0.2", features = ["derive"] }
 # Logger
 tracing = { version = "0.1" }
-tracing-subscriber = { version = "0.3", features = ["chrono", "fmt"] }
+tracing-subscriber = { version = "0.3", default-features = false, features = [
+  "chrono",
+  "fmt",
+] }
 tracing-journald = { version = "0.3", optional = true }
 # Config directory handling
 microxdg = { version = "0.2" }
-# Serialize/deserialize, add deriving trait
-serde = { version = "1.0", default-features = false, features = ["derive"] }
 # Postgres connection (with pool)
 diesel = { version = "2.3", features = ["chrono", "postgres", "r2d2"] }
 # Alternative memory allocator

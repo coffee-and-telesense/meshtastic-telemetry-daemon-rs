@@ -1,7 +1,6 @@
 //! Config handling and serial port prompting
 
 use anyhow::{Context as _, Result, anyhow};
-use config::Config;
 use diesel::{
     pg::PgConnection,
     r2d2::{ConnectionManager, Pool},
@@ -12,12 +11,12 @@ use embedded_nano_mesh_linux_io::{
     serialport::{self, available_ports},
 };
 use microxdg::XdgApp;
-use serde::Deserialize;
 use std::{
     fs,
     io::{BufRead as _, stdin},
     sync::OnceLock,
 };
+use toml_spanner::{Toml, from_str};
 
 /// Deployment location constant to initialize with config value
 pub(crate) static DEPLOYMENT_LOCATION: OnceLock<String> = OnceLock::new();
@@ -32,7 +31,7 @@ static APP: OnceLock<XdgApp> = OnceLock::new();
 pub(crate) type PgPool = Pool<ConnectionManager<PgConnection>>;
 
 /// Struct representing a Postgres connection's settings
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Toml)]
 struct PostgresConnection {
     /// Username for Postgres db
     user: String,
@@ -67,7 +66,7 @@ impl PostgresConnection {
 }
 
 /// Struct representing a connection to a serial port's settings
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Toml)]
 struct SerialConnection {
     /// The path to the serial port of a connected Meshtastic node, if left
     /// blank the user is prompted for the path out of a list of possible paths
@@ -81,14 +80,14 @@ struct SerialConnection {
 }
 
 /// Struct representing configured deployment information, like location
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Toml)]
 pub(crate) struct DeploymentSettings {
     /// The name of this group of nodes
     pub location: String,
 }
 
 /// Settings struct that parses a config and sets up
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Toml)]
 pub(crate) struct Settings {
     /// The Postgres connection config
     postgres: PostgresConnection,
@@ -134,16 +133,11 @@ impl Settings {
         }
 
         // Read the configuration
-        match Config::builder()
-            .add_source(config::File::from(config_file))
-            .build()
-            .context("Failed to read config file")?
-            .try_deserialize()
+        let contents = fs::read_to_string(&config_file)
+            .with_context(|| format!("Failed to read config file {}", config_file.display()))?;
+        from_str(&contents)
+            .map_err(anyhow::Error::from)
             .context("Error deserializing config")
-        {
-            Ok(c) => Ok(c),
-            Err(e) => Err(anyhow!(e)),
-        }
     }
 
     /// Returns the configured serial port, prompting the user interactively if none is set.
@@ -205,11 +199,17 @@ impl Settings {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use config::{File, FileFormat};
+
+    fn parse(toml: &str) -> Result<Settings> {
+        from_str(toml)
+            .map_err(anyhow::Error::from)
+            .context("Error deserializing config")
+    }
 
     #[test]
     fn test_deserialize_settings_valid_toml() -> Result<()> {
-        let toml_content = r#"
+        let settings = parse(
+            r#"
             [postgres]
             user = "test_user"
             password = "test_password"
@@ -227,13 +227,8 @@ mod tests {
 
             [deployment]
             location = "Portland Gateway"
-        "#;
-
-        let config = Config::builder()
-            .add_source(File::from_str(toml_content, FileFormat::Toml))
-            .build()?; // Using `?` instead of `.expect()`
-
-        let settings: Settings = config.try_deserialize()?; // Using `?` here too
+        "#,
+        )?;
 
         // Assert Postgres configurations
         assert_eq!(settings.postgres.user, "test_user");
@@ -256,7 +251,8 @@ mod tests {
 
     #[test]
     fn test_deserialize_settings_missing_serial_port() -> Result<()> {
-        let toml_content = r#"
+        let settings = parse(
+            r#"
             [postgres]
             user = "test_user"
             password = "test_password"
@@ -274,46 +270,34 @@ mod tests {
 
             [deployment]
             location = "Remote Node"
-        "#;
+        "#,
+        )?;
 
-        let config = Config::builder()
-            .add_source(File::from_str(toml_content, FileFormat::Toml))
-            .build()?;
-
-        let settings: Settings = config.try_deserialize()?;
         assert!(settings.serial.port.is_empty());
-
         Ok(())
     }
 
     #[test]
-    fn test_deserialize_settings_missing_postgres_fails() -> Result<()> {
+    fn test_deserialize_settings_missing_postgres_fails() {
         // TOML is completely missing the [postgres] block
-        let toml_content = r#"
+        let result = parse(
+            r#"
             [serial]
             port = "/dev/ttyUSB0"
 
             [deployment]
             location = "Portland Gateway"
-        "#;
-
-        let config_res = Config::builder()
-            .add_source(File::from_str(toml_content, FileFormat::Toml))
-            .build()?;
-
-        // Attempting to deserialize should fail
-        let settings: Result<Settings, _> = config_res.try_deserialize();
-        assert!(
-            settings.is_err(),
-            "Should fail when missing postgres config"
+        "#,
         );
-        Ok(())
+
+        assert!(result.is_err(), "Should fail when missing postgres config");
     }
 
     #[test]
-    fn test_deserialize_settings_invalid_port_type_fails() -> Result<()> {
+    fn test_deserialize_settings_invalid_port_type_fails() {
         // TOML has a string where an integer port is expected
-        let toml_content = r#"
+        let result = parse(
+            r#"
             [postgres]
             user = "test_user"
             password = "test_password"
@@ -328,14 +312,9 @@ mod tests {
 
             [deployment]
             location = "Portland Gateway"
-        "#;
+        "#,
+        );
 
-        let config_res = Config::builder()
-            .add_source(File::from_str(toml_content, FileFormat::Toml))
-            .build()?;
-
-        let settings: Result<Settings, _> = config_res.try_deserialize();
-        assert!(settings.is_err(), "Should fail when port is not an integer");
-        Ok(())
+        assert!(result.is_err(), "Should fail when port is not an integer");
     }
 }
