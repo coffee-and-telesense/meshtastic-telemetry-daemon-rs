@@ -102,6 +102,7 @@ fn main() -> Result<(), Error> {
         if let Some(packet) = node.receive()
             && packet.get_spec_state() == embedded_nano_mesh::PacketState::Normal
         {
+            //TODO: send Packet types instead so we have access to the headers
             match tx
                 .send(packet.data)
                 .context("Failed to send packet data over channel")
