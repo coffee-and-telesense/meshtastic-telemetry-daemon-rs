@@ -18,12 +18,8 @@ chrono = { version = "0.4", default-features = false, features = ["now"] }
 # Handle config reading
 config = { version = "0.15", default-features = false, features = ["toml"] }
 # Logger
-tracing = { version = "0.1", features = ["log"] }
-tracing-subscriber = { version = "0.3", features = [
-  "chrono",
-  "env-filter",
-  "fmt",
-] }
+tracing = { version = "0.1" }
+tracing-subscriber = { version = "0.3", features = ["chrono", "fmt"] }
 tracing-journald = { version = "0.3", optional = true }
 # Config directory handling
 microxdg = { version = "0.2" }
@@ -55,8 +51,8 @@ trace = []
 mimalloc = ["dep:mimalloc"]
 
 # Specific shorthand targets
-alpine = ["debug"]
-beaglebone = ["debug", "mimalloc"]
+alpine = ["anyhow/std"]
+beaglebone = ["anyhow/std", "mimalloc"]
 
 [profile.dev]
 debug = true
