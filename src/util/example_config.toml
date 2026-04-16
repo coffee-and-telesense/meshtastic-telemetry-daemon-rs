@@ -17,6 +17,8 @@ min_connections = 1
 # user is prompted for the path out of a list of possible paths
 port = ""
 baud = 9600
+device_addr = 1
+listen_period = 150
 
 [deployment]
 # The name of this group of nodes

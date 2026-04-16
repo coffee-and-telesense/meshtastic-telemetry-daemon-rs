@@ -74,6 +74,10 @@ struct SerialConnection {
     port: String,
     /// Baud rate for the serial port
     baud: u32,
+    /// Device address connected to serial
+    device_addr: u8,
+    /// Listening period
+    listen_period: u32,
 }
 
 /// Struct representing configured deployment information, like location
@@ -181,13 +185,12 @@ impl Settings {
     pub(crate) fn setup_serial(&self) -> Result<(Node, LinuxIO)> {
         let serial =
             LinuxIO::new(serialport::new(self.get_serial_port()?, self.serial.baud).open_native()?);
-        //TODO: make device_address and listen_period
-        let device_addr = ExactAddressType::new(1).ok_or(anyhow!(
+        let device_addr = ExactAddressType::new(self.serial.device_addr).ok_or(anyhow!(
             "Failed to create ExactAddressType for Serial Mesh interface"
         ))?;
         let node = Node::new(NodeConfig {
             device_address: device_addr,
-            listen_period: 150u32,
+            listen_period: self.serial.listen_period,
         });
 
         Ok((node, serial))
@@ -219,6 +222,8 @@ mod tests {
             [serial]
             port = "/dev/ttyUSB0"
             baud = 9600
+            device_addr = 1
+            listen_period = 150
 
             [deployment]
             location = "Portland Gateway"
@@ -264,6 +269,8 @@ mod tests {
             [serial]
             port = ""
             baud = 9600
+            device_addr = 1
+            listen_period = 150
 
             [deployment]
             location = "Remote Node"
