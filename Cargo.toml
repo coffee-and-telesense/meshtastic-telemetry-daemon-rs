@@ -18,11 +18,8 @@ chrono = { version = "0.4", default-features = false, features = ["now"] }
 # Handle config reading
 toml-spanner = { version = "1.0.2", features = ["derive"] }
 # Logger
-tracing = { version = "0.1" }
-tracing-subscriber = { version = "0.3", default-features = false, features = [
-  "chrono",
-  "fmt",
-] }
+tracing = { version = "0.1", default-features = false, features = ["std"] }
+tracing-core = { version = "0.1" }
 tracing-journald = { version = "0.3", optional = true }
 # Config directory handling
 microxdg = { version = "0.2" }

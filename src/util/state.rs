@@ -2,7 +2,10 @@
 
 use crate::util::config::DEPLOYMENT_LOCATION;
 use anyhow::{Error, Result};
-use diesel::{PgConnection, RunQueryDsl, sql_types::Text};
+use diesel::{
+    PgConnection, QueryableByName, RunQueryDsl as _,
+    sql_types::{Integer, Text},
+};
 use std::{
     collections::{
         HashMap,
@@ -131,7 +134,7 @@ impl GatewayState {
                 if n.name == name {
                     return Err(Error::msg("Node already in state"));
                 }
-                n.name = name.to_owned();
+                name.clone_into(&mut n.name);
                 Ok(())
             }
         }
@@ -173,11 +176,11 @@ WHERE
 }
 
 /// Minimal projection of `nodeinfo` for state bootstrap
-#[derive(diesel::QueryableByName, Debug)]
+#[derive(QueryableByName, Debug)]
 struct NodeInfoRow {
-    #[diesel(sql_type = diesel::sql_types::Integer)]
+    #[diesel(sql_type = Integer)]
     node_id: i32,
-    #[diesel(sql_type = diesel::sql_types::Text)]
+    #[diesel(sql_type = Text)]
     longname: String,
 }
 
