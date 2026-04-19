@@ -1,69 +1,14 @@
 [build]
 #default-target = "mips-unknown-linux-musl"
 
-# AREDN on miktrotik hap ac lite target
+# AREDN on miktrotik hap ac lite
 [target.mips-unknown-linux-musl]
 build-std = ["std", "panic_abort"]
-image = "ghcr.io/cross-rs/mips-unknown-linux-musl:main"
+dockerfile = { file = "cross-builders/mips/Dockerfile" }
 
-#TODO: Test this build
-# ARM 64 bit linux
+# Raspberry Pi 4 (64-bit)
 [target.aarch64-unknown-linux-gnu]
-# pre-build = [
-#   "dpkg --add-architecture $CROSS_DEB_ARCH",
-#   "apt-get update && apt-get install --assume-yes libssl1.1:$CROSS_DEB_ARCH libssl-dev:$CROSS_DEB_ARCH",
-# ]
-
-#TODO: Test this build
-# ARMv7 32 Linux
-# Beaglebone Black
-[target.armv7-unknown-linux-gnueabihf]
-# build-std = ["std", "panic_abort"]
-# linker = ""
-# pre-build = [
-#   "dpkg --add-architecture $CROSS_DEB_ARCH",
-#   "apt-get update && apt-get install --assume-yes libssl3:$CROSS_DEB_ARCH libssl-dev:$CROSS_DEB_ARCH",
-# ]
-
-#TODO: Test this build
-# 32 bit Linux
-[target.i686-unknown-linux-gnu]
-# pre-build = [
-#   "dpkg --add-architecture $CROSS_DEB_ARCH",
-#   "apt-get update && apt-get install --assume-yes libssl1.1:$CROSS_DEB_ARCH libssl-dev:$CROSS_DEB_ARCH",
-# ]
-
-#TODO: Test this build
-# 64 bit Linux
-[target.x86_64-unknown-linux-gnu]
-# pre-build = [
-#   "dpkg --add-architecture $CROSS_DEB_ARCH",
-#   "apt-get update && apt-get install --assume-yes libssl1.1:$CROSS_DEB_ARCH libssl-dev:$CROSS_DEB_ARCH",
-# ]
-
-#TODO: Test this build
-# x86 64 bit alpine linux
-[target.x86_64-unknown-linux-musl]
-image.name = "alpine:latest"
-image.toolchain = ["x86_64-unknown-linux-musl"]
 pre-build = [
-  "apk upgrade --update-cache --available && apk add --no-cache gcc musl-dev openssl-dev openssl-libs-static postgresql15-dev && rm -rf /var/cache/apk/*",
-]
-
-#TODO: Test this build
-# aarch64, or ARM 64 bit alpine linux
-[target.aarch64-unknown-linux-musl]
-image.name = "alpine:latest"
-image.toolchain = ["aarch64-unknown-linux-musl"]
-pre-build = [
-  "apk upgrade --update-cache --available && apk add --no-cache gcc musl-dev openssl-dev openssl-libs-static postgresql15-dev && rm -rf /var/cache/apk/*",
-]
-
-#TODO: Test this build
-# armv6, or ARM 32 bit alpine linux (v6 or v7 agnostic)
-[target.arm-unknown-linux-muslabi]
-image.name = "alpine:latest"
-image.toolchain = ["arm-unknown-linux-muslabi"]
-pre-build = [
-  "apk upgrade --update-cache --available && apk add --no-cache gcc musl-dev openssl-dev openssl-libs-static postgresql15-dev && rm -rf /var/cache/apk/*",
+  "dpkg --add-architecture arm64",
+  "apt-get update && apt-get install --assume-yes libpq-dev:arm64 pkg-config",
 ]

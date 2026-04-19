@@ -1,20 +1,21 @@
-# Meshtastic Telemetry Daemon
+# Embedded Nano Mesh Telemetry Daemon
 
-Reads packets from a USB-connected Meshtastic node and writes telemetry to a
-PostgreSQL database. Designed for long-running unattended deployment.
+Reads packets from a USB-connected [embedded-nano-mesh](https://github.com/boondocklabs/embedded-nano-mesh)
+node and writes telemetry to a PostgreSQL database. Designed for long-running
+unattended deployment on AREDN mesh network nodes and companion devices.
 
 ## Requirements
 
-* Rust nightly toolchain, `rustup toolchain install nightly`
-* PostgreSQL instance
-* Meshtastic node connected via USB serial
+* Rust toolchain, `rustup toolchain install stable`
+* PostgreSQL instance and `libpq` (Install it from your package repo)
+* A node running `embedded-nano-mesh` firmware connected via USB serial
 
-Cross-compilation requires [cross](https://github.com/cross-rs/cross).
+Cross-compilation requires [cross](https://github.com/cross-rs/cross) and Docker.
 
 ## Configuration
 
 On first run the daemon creates an example config at
-`~/.config/meshtastic_telemetry/config.toml`.
+`$XDG_CONFIG_HOME/meshtastic_telemetry/config.toml`.
 
 Edit it in advance to ensure the daemon connects properly:
 
@@ -25,11 +26,14 @@ password = "postgres"
 port = 5431
 host = "localhost"
 dbname = "meshtastic"
-max_connections = 8 # also half of in-flight task capacity (max 32)
+max_connections = 8
 min_connections = 1
 
 [serial]
 port = "/dev/tty915" # leave blank to be prompted at startup
+baud = 9600
+device_addr = 1
+listen_period = 150
 
 [deployment]
 location = "my-site" # scopes db queries to specific locations/tests
@@ -40,41 +44,26 @@ settings.
 
 ## Features
 
-| Feature        | Description                                          |
+| Feature        | Description                                           |
 |----------------|-------------------------------------------------------|
-| `debug`        | Backtraces and per-node packet count logging         |
-| `native-tls`   | System TLS for Postgres connections                  |
-| `mimalloc`     | [mimalloc](https://github.com/microsoft/mimalloc) v3 global allocator                         |
-| `rustls`       | Pure-Rust TLS (no system OpenSSL required)           |
-| `journald`     | Write structured logs directly to the systemd journal|
-| `log_perf`     | Log tokio runtime metrics on every packet            |
-| `print-packets`| Pretty-print decoded packets as JSON to stdout       |
-| `trace`        | Verbose logging of all Meshtastic packet types       |
-| `tokio-console`| tokio-console async task inspector                   |
-| `alpine`       | Shorthand: `native-tls` + `debug`                   |
-| `beaglebone`   | Shorthand: `rustls` + `debug` + `mimalloc`           |
+| `debug`          | Backtraces and per-node packet count logging          |
+| `mimalloc`       | [mimalloc](https://github.com/microsoft/mimalloc) v3 global allocator                          |
+| `journald`       | Write structured logs directly to the systemd journal |
+| `trace`          | Verbose packet logging                                |
+| `alpine`         | Shorthand: `debug`                                      |
+| `beaglebone`     | Shorthand: `debug` + `mimalloc`                           |
 
 ## GitHub Releases
 
-A release binary is built for each version tag across four targets:
+A release binary is built for each version tag
 
-| Target                        | Target |
-|-------------------------------|--------------|
-| `x86_64-unknown-linux-musl`   | OpenWRT/AREDN devices    |
-| `aarch64-unknown-linux-musl`  | OpenWRT/AREDN devices     |
-| `armv7-unknown-linux-gnueabihf` | Beaglebone Black |
-| `aarch64-unknown-linux-gnu`   | Raspberry Pi4 |
+## Architecture
 
-These releases ship with the `systemd` service files to deploy 915MHz and 433MHz
-side by side, example configs, and an untested `install.sh` install script for
-Pis.
+Two-thread synchronous design, no async runtime required! Serial reader thread
+-> sync channel (`mpsc`) bounded at 32 -> DB writer threadpool (`r2d2` +
+`diesel`).
 
-In the future releases should probably be targeted for specific embedded devices
-with CPU specific targets in compilation.
-
-Also: builds no longer UPX compress binaries by default, so the OpenWRT/AREDN
-builds may be too large and require manual UPX compression before installation.
-Overall they've been deprecated in favor of using Pis attached to AREDN devices.
+Bounded `mpsc` provides backpressure. Clean shutdown on `SIGINT` and `SIGTERM`
 
 ## Documentation
 ```sh
