@@ -11,50 +11,42 @@ use embedded_nano_mesh::PacketDataBytes;
 use nano_mesh_telemetry::{MeasurementKind, TelemetryPacket};
 use std::sync::{Arc, mpsc::Receiver};
 
-#[derive(Queryable, Selectable, Debug)]
-#[diesel(table_name = nano_mesh_nodes)]
-pub struct NanoMeshNode {
-    pub node_id: i16,
-    pub name: Option<String>,
-    pub deployment_location: String,
-}
-
 #[derive(Insertable, Debug)]
 #[diesel(table_name = nano_mesh_nodes)]
-pub struct NewNanoMeshNode<'a> {
-    pub node_id: i16,
-    pub name: Option<&'a str>,
-    pub deployment_location: &'a str,
+struct NewNanoMeshNode<'a> {
+    node_id: i16,
+    name: Option<&'a str>,
+    deployment_location: &'a str,
 }
 
 #[derive(Insertable, Debug)]
 #[diesel(table_name = sensor_readings)]
-pub struct NewSensorReading<'a> {
-    pub node_id: i16,
-    pub epoch: i64,
-    pub sensor_id: i16,
-    pub kind: i16,
-    pub value: f32,
-    pub deployment_location: &'a str,
+struct NewSensorReading<'a> {
+    node_id: i16,
+    epoch: i64,
+    sensor_id: i16,
+    kind: i16,
+    value: f32,
+    deployment_location: &'a str,
 }
 
 #[derive(Insertable, Debug)]
 #[diesel(table_name = node_stats)]
-pub struct NewNodeStats<'a> {
-    pub node_id: i16,
-    pub epoch: i64,
-    pub reboot_count: i16,
-    pub tx_fail: i32,
-    pub rx_drop: i32,
-    pub rx_useful: i32,
-    pub rx_overlap: i32,
-    pub queue_full: i32,
-    pub rx_bad: i32,
-    pub num_online_nodes: i16,
-    pub num_total_nodes: i16,
-    pub channel_util: f32,
-    pub air_util_tx: f32,
-    pub deployment_location: &'a str,
+struct NewNodeStats<'a> {
+    node_id: i16,
+    epoch: i64,
+    reboot_count: i16,
+    tx_fail: i32,
+    rx_drop: i32,
+    rx_useful: i32,
+    rx_overlap: i32,
+    queue_full: i32,
+    rx_bad: i32,
+    num_online_nodes: i16,
+    num_total_nodes: i16,
+    channel_util: f32,
+    air_util_tx: f32,
+    deployment_location: &'a str,
 }
 
 /// Insert a `SensorPacket` into `sensor_readings`.
@@ -68,7 +60,7 @@ fn insert_sensor_packet(
     location: &str,
 ) {
     let node_id = i16::from(source_node_id);
-    let epoch = i64::from(packet.epoch);
+    let epoch = timestamp(packet.epoch).and_utc().timestamp();
     let sensor_id = i16::from(u8::from(packet.sensor_id));
     let count = usize::from(packet.count).min(nano_mesh_telemetry::MAX_MEASUREMENTS);
 
@@ -111,7 +103,7 @@ fn insert_node_stats(
 ) {
     let row = NewNodeStats {
         node_id: i16::from(source_node_id),
-        epoch: i64::from(packet.epoch),
+        epoch: timestamp(packet.epoch).and_utc().timestamp(),
         reboot_count: i16::from(packet.reboot_count),
         tx_fail: i32::from(packet.tx_fail),
         rx_drop: i32::from(packet.rx_drop),
