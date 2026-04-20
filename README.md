@@ -1,8 +1,12 @@
-# Embedded Nano Mesh Telemetry Daemon
+# Embedded Nano Mesh Telemetry Daemon (Formerly Meshtastic Telemetry Daemon)
 
 Reads packets from a USB-connected [embedded-nano-mesh](https://github.com/boondocklabs/embedded-nano-mesh)
 node and writes telemetry to a PostgreSQL database. Designed for long-running
 unattended deployment on AREDN mesh network nodes and companion devices.
+
+Versions before `v0.4.0` read data from Meshtastic networks over USB serial.
+Versions including and after `v0.4.0` read data from our custom Rust firmware
+based on `embedded-nano-mesh`.
 
 ## Requirements
 
