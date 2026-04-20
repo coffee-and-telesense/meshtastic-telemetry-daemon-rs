@@ -1,0 +1,10 @@
+DROP FUNCTION IF EXISTS bme280_pres_noise;
+DROP FUNCTION IF EXISTS bme280_pres_accuracy;
+DROP FUNCTION IF EXISTS scd30_co2_accuracy;
+DROP FUNCTION IF EXISTS bme688_temp_accuracy;
+DROP FUNCTION IF EXISTS bme280_temp_accuracy;
+DROP FUNCTION IF EXISTS scd30_temp_accuracy;
+DROP TABLE IF EXISTS sensor_info;
+DROP TABLE IF EXISTS node_stats;
+DROP TABLE IF EXISTS sensor_readings;
+DROP TABLE IF EXISTS nano_mesh_nodes;

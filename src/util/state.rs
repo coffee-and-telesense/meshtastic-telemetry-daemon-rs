@@ -1,10 +1,10 @@
 //! Local state of the daemon
 
-use crate::util::config::DEPLOYMENT_LOCATION;
-use anyhow::{Error, Result};
+use crate::util::config::{DEPLOYMENT_LOCATION, PgPool};
+use anyhow::{Context as _, Error, Result};
 use diesel::{
-    PgConnection, QueryableByName, RunQueryDsl as _,
-    sql_types::{Integer, Text},
+    QueryableByName, RunQueryDsl as _,
+    sql_types::{SmallInt, Text},
 };
 use std::{
     collections::{
@@ -14,7 +14,7 @@ use std::{
     fmt::{self, Display, Formatter},
     sync::{
         PoisonError, RwLock,
-        atomic::{AtomicBool, AtomicU32, AtomicUsize, Ordering::Relaxed},
+        atomic::{AtomicBool, AtomicU16, AtomicUsize, Ordering::Relaxed},
     },
 };
 
@@ -32,9 +32,9 @@ pub(crate) struct NodeMeta {
 #[derive(Debug)]
 pub(crate) struct GatewayState {
     /// Our hashmap of known nodes
-    nodes: RwLock<HashMap<u32, NodeMeta>>,
+    nodes: RwLock<HashMap<u16, NodeMeta>>,
     /// Connected node number
-    serial_node: AtomicU32,
+    serial_node: AtomicU16,
     /// Any packets received yet?
     any_recv: AtomicBool,
 }
@@ -44,7 +44,7 @@ impl Default for GatewayState {
     fn default() -> Self {
         GatewayState {
             nodes: RwLock::new(HashMap::new()),
-            serial_node: AtomicU32::new(0),
+            serial_node: AtomicU16::new(0),
             any_recv: AtomicBool::new(false),
         }
     }
@@ -87,7 +87,7 @@ impl GatewayState {
     }
 
     /// Increment the `rx_count` of a given node
-    pub(crate) fn increment_count(&self, node_id: u32) -> bool {
+    pub(crate) fn increment_count(&self, node_id: u16) -> bool {
         // Lock is only held for an atomic instruction, so it is short
         if let Some(n) = self
             .nodes
@@ -110,12 +110,12 @@ impl GatewayState {
 
     /// Sets the node number of the locally-connected serial device.
     #[inline]
-    pub(crate) fn set_serial_number(&self, num: u32) {
+    pub(crate) fn set_serial_number(&self, num: u16) {
         self.serial_node.store(num, Relaxed);
     }
 
     /// Insert a new node into the state
-    pub(crate) fn insert(&self, node_id: u32, name: &str) -> Result<()> {
+    pub(crate) fn insert(&self, node_id: u16, name: &str) -> Result<()> {
         match self
             .nodes
             .write()
@@ -141,32 +141,30 @@ impl GatewayState {
     }
 
     /// Get nodes from preexisting `PostgreSQL` table
-    pub(crate) fn load_from_db(&self, db: &mut PgConnection) -> Result<()> {
+    pub(crate) fn load_from_db(&self, db: &PgPool) -> Result<()> {
         let loc = DEPLOYMENT_LOCATION
             .get()
             .ok_or_else(|| Error::msg("DEPLOYMENT_LOCATION not initialized"))?;
+
+        let mut con = db.get().context("Unable to get a connection from pool")?;
 
         let rows = diesel::sql_query(
             "
 SELECT
     node_id,
-    longname,
-    shortname,
-    hwmodel
-FROM nodeinfo
+    name
+FROM nano_mesh_nodes
 WHERE
     deployment_location = $1
-    AND longname IS NOT NULL
-    AND shortname IS NOT NULL
-    AND hwmodel IS NOT NULL
-    ",
+    AND name IS NOT NULL
+            ",
         )
         .bind::<Text, _>(loc.as_str())
-        .load::<NodeInfoRow>(db)?;
+        .load::<NodeInfoRow>(&mut con)?;
 
         for row in rows {
             // Reconstruct a minimal User and insert into GatewayState
-            match self.insert(row.node_id as u32, &row.longname) {
+            match self.insert(row.node_id.cast_unsigned(), &row.name) {
                 Ok(()) => tracing::trace!("Added {} to GatewayState", row.node_id),
                 Err(e) => tracing::warn!(%e),
             }
@@ -175,13 +173,13 @@ WHERE
     }
 }
 
-/// Minimal projection of `nodeinfo` for state bootstrap
+/// Minimal projection of `nano_mesh_nodes` for state bootstrap
 #[derive(QueryableByName, Debug)]
 struct NodeInfoRow {
-    #[diesel(sql_type = Integer)]
-    node_id: i32,
+    #[diesel(sql_type = SmallInt)]
+    node_id: i16,
     #[diesel(sql_type = Text)]
-    longname: String,
+    name: String,
 }
 
 #[cfg(test)]
@@ -192,7 +190,7 @@ mod tests {
     #[test]
     fn increment_unknown_node_returns_false() {
         let state = GatewayState::new();
-        assert!(!state.increment_count(0xDEAD_BEEF));
+        assert!(!state.increment_count(0xDEAD));
     }
 
     #[test]

@@ -40,6 +40,8 @@ static GLOBAL: MiMalloc = MiMalloc;
 
 /// Handle data transfer objects
 pub(crate) mod dto;
+/// Database schema file
+pub(crate) mod schema;
 /// Utilities module
 pub(crate) mod util;
 
@@ -56,6 +58,9 @@ fn main() -> Result<(), Error> {
 
     // Set the logger
     set_logger()?;
+
+    // Output the version of the daemon to the logger
+    tracing::info!("Daemon version: {VERSION}");
 
     // Read settings
     let settings = Settings::new().context("Error initializing Settings")?;
@@ -76,11 +81,8 @@ fn main() -> Result<(), Error> {
         .set(settings.deployment.location)
         .map_err(|e| anyhow!("DEPLOYMENT_LOCATION initialized twice: {e}"))?;
 
-    // Output the version of the daemon to the logger
-    tracing::info!("Daemon version: {VERSION}");
-
     // Load the already filled in nodeinfo tables to the state
-    // state.load_from_db(&postgres_db)?;
+    state.load_from_db(&postgres_db)?;
 
     // Channel for sending packets to database handler from serial
     let (tx, rx) = mpsc::sync_channel::<PacketDataBytes>(CHANNEL_BOUND);
