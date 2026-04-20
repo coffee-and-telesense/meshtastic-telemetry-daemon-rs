@@ -1,5 +1,40 @@
 
 
+## [v0.3.7] - 2026-04-20
+### :sparkles: New Features
+- [`d4b38d3`](https://github.com/coffee-and-telesense/meshtastic-telemetry-daemon-rs/commit/d4b38d3b9c897c2ad1fb41b8b21d5bcddaba3ef9) - **state**: insert returns Result, deal with it throughout *(commit by [@gatlinnewhouse](https://github.com/gatlinnewhouse))*
+- [`a1b13de`](https://github.com/coffee-and-telesense/meshtastic-telemetry-daemon-rs/commit/a1b13de856894c5cb889570459e0d6bef4d5b0fb) - **cargo**: add more lints *(commit by [@gatlinnewhouse](https://github.com/gatlinnewhouse))*
+- [`c54decd`](https://github.com/coffee-and-telesense/meshtastic-telemetry-daemon-rs/commit/c54decd03665370c89eac108483c45708b4eaa2f) - **main**: graceful shutdown *(commit by [@gatlinnewhouse](https://github.com/gatlinnewhouse))*
+
+### :bug: Bug Fixes
+- [`654f2a1`](https://github.com/coffee-and-telesense/meshtastic-telemetry-daemon-rs/commit/654f2a1b8d612b66e7f3af0b0485b16d7e632517) - **timestamp**: remove panic documentation since it never panics *(commit by [@gatlinnewhouse](https://github.com/gatlinnewhouse))*
+- [`03df78b`](https://github.com/coffee-and-telesense/meshtastic-telemetry-daemon-rs/commit/03df78b5c9b3391509fe793c6568965af920441b) - **decode_telemetry**: Telemetry arg as ref instead by value *(commit by [@gatlinnewhouse](https://github.com/gatlinnewhouse))*
+- [`881aaee`](https://github.com/coffee-and-telesense/meshtastic-telemetry-daemon-rs/commit/881aaee41520d1c75d8fc7818650f44ce4d85f03) - **install**: only need sh not bash for install script *(commit by [@gatlinnewhouse](https://github.com/gatlinnewhouse))*
+- [`e8da189`](https://github.com/coffee-and-telesense/meshtastic-telemetry-daemon-rs/commit/e8da18946446490198377fa66ccdecb6ae038845) - **services**: use BindsTo to represent dependency better *(commit by [@gatlinnewhouse](https://github.com/gatlinnewhouse))*
+- [`bb372c2`](https://github.com/coffee-and-telesense/meshtastic-telemetry-daemon-rs/commit/bb372c295f6483f7e89e23c5de973e85ef863e0b) - **lints**: fix visibility lints *(commit by [@gatlinnewhouse](https://github.com/gatlinnewhouse))*
+- [`ebfd103`](https://github.com/coffee-and-telesense/meshtastic-telemetry-daemon-rs/commit/ebfd103bc7400bfe04dfbe368ae57f563866eba3) - **main**: remove `expect()` calls *(commit by [@gatlinnewhouse](https://github.com/gatlinnewhouse))*
+- [`4bbbde6`](https://github.com/coffee-and-telesense/meshtastic-telemetry-daemon-rs/commit/4bbbde6a43528ed79f3c68ffadc53a80a24fa1ca) - **expects**: remove `expect()` and `panic()` in favor of Result *(commit by [@gatlinnewhouse](https://github.com/gatlinnewhouse))*
+- [`d9b968a`](https://github.com/coffee-and-telesense/meshtastic-telemetry-daemon-rs/commit/d9b968acc24710dc1d48f69550cf870e8dcef3f6) - **use**: replace qualified path with use *(commit by [@gatlinnewhouse](https://github.com/gatlinnewhouse))*
+- [`f234b25`](https://github.com/coffee-and-telesense/meshtastic-telemetry-daemon-rs/commit/f234b253844904692e334811b28f34ae85b8e7be) - **lints**: add more lints, address them *(commit by [@gatlinnewhouse](https://github.com/gatlinnewhouse))*
+- [`c4cf817`](https://github.com/coffee-and-telesense/meshtastic-telemetry-daemon-rs/commit/c4cf8170efb4e6ce74f9411d7eb49b1259939888) - **packet_handler**: insert when user is none as well *(commit by [@gatlinnewhouse](https://github.com/gatlinnewhouse))*
+- [`7e2c1e4`](https://github.com/coffee-and-telesense/meshtastic-telemetry-daemon-rs/commit/7e2c1e4269e7cf17d5264333f98a3e56c719b3f5) - **misc**: fix expects in journald feature and some type paths *(commit by [@gatlinnewhouse](https://github.com/gatlinnewhouse))*
+- [`b190bbf`](https://github.com/coffee-and-telesense/meshtastic-telemetry-daemon-rs/commit/b190bbf4f99134c76bc2f312ad7bb765f24b5052) - **cow**: don't have a Cow man! *(commit by [@gatlinnewhouse](https://github.com/gatlinnewhouse))*
+- [`531a4f9`](https://github.com/coffee-and-telesense/meshtastic-telemetry-daemon-rs/commit/531a4f9ecc074230502c42d0a379857f44361811) - **main**: forbid unsafe code *(commit by [@gatlinnewhouse](https://github.com/gatlinnewhouse))*
+
+### :recycle: Refactors
+- [`03f8d5d`](https://github.com/coffee-and-telesense/meshtastic-telemetry-daemon-rs/commit/03f8d5da9dfdccd9257ba676e6933782e794819c) - **main**: move loading from db to state into state.rs *(commit by [@gatlinnewhouse](https://github.com/gatlinnewhouse))*
+
+### :wrench: Chores
+- [`4d63882`](https://github.com/coffee-and-telesense/meshtastic-telemetry-daemon-rs/commit/4d638820bc6d5286f6e1478d335c9b7b95120a22) - **devicemetrics**: add comment to timestamp(0) call *(commit by [@gatlinnewhouse](https://github.com/gatlinnewhouse))*
+- [`e13fadc`](https://github.com/coffee-and-telesense/meshtastic-telemetry-daemon-rs/commit/e13fadc9806f2de2a5996124b7bcd513fc4c3511) - **README**: update readme to better reflect state of codebase *(commit by [@gatlinnewhouse](https://github.com/gatlinnewhouse))*
+- [`fe5bccd`](https://github.com/coffee-and-telesense/meshtastic-telemetry-daemon-rs/commit/fe5bccdb20550bba73059a039451fe6e6da5b953) - **LICENSE**: add license to repo *(commit by [@gatlinnewhouse](https://github.com/gatlinnewhouse))*
+- [`afdcbb9`](https://github.com/coffee-and-telesense/meshtastic-telemetry-daemon-rs/commit/afdcbb9527b86e091521887803e707cf0079617b) - **config**: add unit tests *(commit by [@gatlinnewhouse](https://github.com/gatlinnewhouse))*
+- [`6dd95cf`](https://github.com/coffee-and-telesense/meshtastic-telemetry-daemon-rs/commit/6dd95cf722c6778ab6e7a744242ed88c309ff4ce) - **cargo**: add more clippy lints *(commit by [@gatlinnewhouse](https://github.com/gatlinnewhouse))*
+- [`32725f8`](https://github.com/coffee-and-telesense/meshtastic-telemetry-daemon-rs/commit/32725f8cadaa8457e85a3ac1568cfe675d969566) - **config**: add some tests *(commit by [@gatlinnewhouse](https://github.com/gatlinnewhouse))*
+- [`9048344`](https://github.com/coffee-and-telesense/meshtastic-telemetry-daemon-rs/commit/904834410de0dd2c293c3fa00a27168895f21f72) - **ownership**: experimenting with refs to state and more *(commit by [@gatlinnewhouse](https://github.com/gatlinnewhouse))*
+- [`a94b235`](https://github.com/coffee-and-telesense/meshtastic-telemetry-daemon-rs/commit/a94b235b3ba1c3823cb9c2b7bf10805ea3c35969) - **Cargo**: update version number for last Meshtastic release *(commit by [@gatlinnewhouse](https://github.com/gatlinnewhouse))*
+
+
 ## [v0.3.6] - 2026-03-04
 ### :bug: Bug Fixes
 - [`fd364b9`](https://github.com/coffee-and-telesense/meshtastic-telemetry-daemon-rs/commit/fd364b906903ff5943f608955930bc4a3852a376) - **logging**: debug feature should print info statements *(commit by [@gatlinnewhouse](https://github.com/gatlinnewhouse))*
@@ -389,3 +424,4 @@
 [v0.3.0]: https://github.com/coffee-and-telesense/meshtastic-telemetry-daemon-rs/compare/v0.2.2...v0.3.0
 [v0.3.5]: https://github.com/coffee-and-telesense/meshtastic-telemetry-daemon-rs/compare/v0.3.0...v0.3.5
 [v0.3.6]: https://github.com/coffee-and-telesense/meshtastic-telemetry-daemon-rs/compare/v0.3.5...v0.3.6
+[v0.3.7]: https://github.com/coffee-and-telesense/meshtastic-telemetry-daemon-rs/compare/v0.3.6...v0.3.7
