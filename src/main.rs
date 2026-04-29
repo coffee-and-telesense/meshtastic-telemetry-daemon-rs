@@ -17,7 +17,7 @@ use crate::{
     },
 };
 use anyhow::{Context as _, Error, Result, anyhow};
-use embedded_nano_mesh::PacketDataBytes;
+use embedded_nano_mesh::Packet;
 #[cfg(feature = "mimalloc")]
 use mimalloc::MiMalloc;
 use signal_hook::{
@@ -84,14 +84,17 @@ fn main() -> Result<(), Error> {
     // Load the already filled in nodeinfo tables to the state
     state.load_from_db(&postgres_db)?;
 
+    // Set the connected node's serial
+    state.set_serial_number(node.get_address());
+
     // Channel for sending packets to database handler from serial
-    let (tx, rx) = mpsc::sync_channel::<PacketDataBytes>(CHANNEL_BOUND);
+    let (tx, rx) = mpsc::sync_channel::<Packet>(CHANNEL_BOUND);
 
     // Database writer thread
     let db_state = Arc::clone(&state);
     let db_pool = postgres_db;
     let db_thread = thread::spawn(move || {
-        db_writer(rx, db_pool, db_state);
+        db_writer(rx, &db_pool, &db_state);
     });
 
     // Handle signals
@@ -106,8 +109,8 @@ fn main() -> Result<(), Error> {
         {
             //TODO: send Packet types instead so we have access to the headers
             match tx
-                .send(packet.data)
-                .context("Failed to send packet data over channel")
+                .send(packet)
+                .context("Failed to send packet over channel")
             {
                 Ok(()) => (),
                 Err(e) => tracing::error!(%e),

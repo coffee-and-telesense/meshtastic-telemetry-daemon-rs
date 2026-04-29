@@ -12,9 +12,10 @@ use std::{
         hash_map::Entry::{Occupied, Vacant},
     },
     fmt::{self, Display, Formatter},
+    num::NonZero,
     sync::{
         PoisonError, RwLock,
-        atomic::{AtomicBool, AtomicU16, AtomicUsize, Ordering::Relaxed},
+        atomic::{AtomicBool, AtomicU8, AtomicUsize, Ordering::Relaxed},
     },
 };
 
@@ -32,9 +33,9 @@ pub(crate) struct NodeMeta {
 #[derive(Debug)]
 pub(crate) struct GatewayState {
     /// Our hashmap of known nodes
-    nodes: RwLock<HashMap<u16, NodeMeta>>,
+    nodes: RwLock<HashMap<u8, NodeMeta>>,
     /// Connected node number
-    serial_node: AtomicU16,
+    serial_node: AtomicU8,
     /// Any packets received yet?
     any_recv: AtomicBool,
 }
@@ -44,7 +45,7 @@ impl Default for GatewayState {
     fn default() -> Self {
         GatewayState {
             nodes: RwLock::new(HashMap::new()),
-            serial_node: AtomicU16::new(0),
+            serial_node: AtomicU8::new(0),
             any_recv: AtomicBool::new(false),
         }
     }
@@ -87,7 +88,7 @@ impl GatewayState {
     }
 
     /// Increment the `rx_count` of a given node
-    pub(crate) fn increment_count(&self, node_id: u16) -> bool {
+    pub(crate) fn increment_count(&self, node_id: u8) -> bool {
         // Lock is only held for an atomic instruction, so it is short
         if let Some(n) = self
             .nodes
@@ -110,12 +111,12 @@ impl GatewayState {
 
     /// Sets the node number of the locally-connected serial device.
     #[inline]
-    pub(crate) fn set_serial_number(&self, num: u16) {
-        self.serial_node.store(num, Relaxed);
+    pub(crate) fn set_serial_number(&self, num: NonZero<u8>) {
+        self.serial_node.store(num.get(), Relaxed);
     }
 
     /// Insert a new node into the state
-    pub(crate) fn insert(&self, node_id: u16, name: &str) -> Result<()> {
+    pub(crate) fn insert(&self, node_id: u8, name: &str) -> Result<()> {
         match self
             .nodes
             .write()
@@ -164,7 +165,7 @@ WHERE
 
         for row in rows {
             // Reconstruct a minimal User and insert into GatewayState
-            match self.insert(row.node_id.cast_unsigned(), &row.name) {
+            match self.insert(u8::try_from(row.node_id.cast_unsigned())?, &row.name) {
                 Ok(()) => tracing::trace!("Added {} to GatewayState", row.node_id),
                 Err(e) => tracing::warn!(%e),
             }
@@ -190,7 +191,7 @@ mod tests {
     #[test]
     fn increment_unknown_node_returns_false() {
         let state = GatewayState::new();
-        assert!(!state.increment_count(0xDEAD));
+        assert!(!state.increment_count(0xDB));
     }
 
     #[test]
@@ -243,7 +244,7 @@ mod tests {
     #[test]
     fn serial_number_roundtrip() -> Result<()> {
         let state = GatewayState::new();
-        state.set_serial_number(42);
+        state.set_serial_number(NonZero::new(42u8).unwrap());
         // Verify via Display output containing "*serial"
         state.insert(42, "Serial")?;
         let display = format!("{state}");
@@ -254,7 +255,7 @@ mod tests {
     #[test]
     fn increment_does_not_set_flag_for_unknown_node() {
         let state = GatewayState::new();
-        state.increment_count(999); // unknown
+        state.increment_count(99); // unknown
         assert!(!state.any_recvd()); // should still be false
     }
 
@@ -265,7 +266,7 @@ mod tests {
         state.insert(2, "Node2")?;
 
         // Set Node 1 as the serial node, and simulate Node 2 receiving 5 packets
-        state.set_serial_number(1);
+        state.set_serial_number(NonZero::new(1).unwrap());
         for _ in 0..5 {
             state.increment_count(2);
         }

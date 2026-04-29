@@ -7,7 +7,7 @@ use crate::util::{
     timestamp,
 };
 use diesel::prelude::*;
-use embedded_nano_mesh::PacketDataBytes;
+use embedded_nano_mesh::Packet;
 use nano_mesh_telemetry::{MeasurementKind, TelemetryPacket};
 use std::sync::{Arc, mpsc::Receiver};
 
@@ -148,14 +148,14 @@ fn ensure_node(conn: &mut PgConnection, node_id: u8, location: &str) {
 }
 
 /// Receives packets from the serial thread and inserts them into `PostgreSQL`.
-pub(crate) fn db_writer(rx: Receiver<PacketDataBytes>, db_pool: PgPool, state: Arc<GatewayState>) {
+pub(crate) fn db_writer(rx: Receiver<Packet>, db_pool: &PgPool, state: &Arc<GatewayState>) {
     let location = DEPLOYMENT_LOCATION.get().map_or("unknown", String::as_str);
 
     //TODO: source_node_id should come from packet header, not packet data
     // embedded-nano-mesh PacketDataBytes does not carry the sender address
     // This will need the full Packet type to be sent over the channel
     for packet in rx {
-        let Some(telemetry) = TelemetryPacket::from_packet_data(&packet) else {
+        let Some(telemetry) = TelemetryPacket::from_packet_data(&packet.data) else {
             tracing::warn!("Failed to deserialize packet — skipping");
             continue;
         };
@@ -167,16 +167,24 @@ pub(crate) fn db_writer(rx: Receiver<PacketDataBytes>, db_pool: PgPool, state: A
 
         match telemetry {
             TelemetryPacket::Sensor(sensor_packet) => {
-                let source_node_id: u8 = 0;
-                ensure_node(&mut conn, source_node_id, location);
-                insert_sensor_packet(&mut conn, source_node_id, &sensor_packet, location);
-                state.increment_count(u16::from(source_node_id));
+                ensure_node(&mut conn, packet.source_device_identifier, location);
+                insert_sensor_packet(
+                    &mut conn,
+                    packet.source_device_identifier,
+                    &sensor_packet,
+                    location,
+                );
+                state.increment_count(packet.source_device_identifier);
             }
             TelemetryPacket::NodeStats(node_stats_packet) => {
-                let source_node_id: u8 = 0;
-                ensure_node(&mut conn, source_node_id, location);
-                insert_node_stats(&mut conn, source_node_id, &node_stats_packet, location);
-                state.increment_count(u16::from(source_node_id));
+                ensure_node(&mut conn, packet.source_device_identifier, location);
+                insert_node_stats(
+                    &mut conn,
+                    packet.source_device_identifier,
+                    &node_stats_packet,
+                    location,
+                );
+                state.increment_count(packet.source_device_identifier);
             }
         }
 

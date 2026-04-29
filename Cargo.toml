@@ -28,7 +28,7 @@ diesel = { version = "2.3", features = ["chrono", "postgres", "r2d2"] }
 # Alternative memory allocator
 mimalloc = { version = "0.1", features = ["v3"], optional = true }
 # Mesh packets
-embedded-nano-mesh = { version = "2.1" }
+embedded-nano-mesh = { path = "../embedded-nano-mesh" }
 embedded-nano-mesh-linux-io = { version = "0.1" }
 # Telemetry library
 nano-mesh-telemetry = { git = "https://github.com/coffee-and-telesense/nano-mesh-telemetry" }
