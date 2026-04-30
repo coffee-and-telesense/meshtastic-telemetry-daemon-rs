@@ -111,8 +111,8 @@ impl GatewayState {
 
     /// Sets the node number of the locally-connected serial device.
     #[inline]
-    pub(crate) fn set_serial_number(&self, num: NonZero<u8>) {
-        self.serial_node.store(num.get(), Relaxed);
+    pub(crate) fn set_serial_number(&self, num: u8) {
+        self.serial_node.store(num, Relaxed);
     }
 
     /// Insert a new node into the state
@@ -244,7 +244,7 @@ mod tests {
     #[test]
     fn serial_number_roundtrip() -> Result<()> {
         let state = GatewayState::new();
-        state.set_serial_number(NonZero::new(42u8).unwrap());
+        state.set_serial_number(42u8);
         // Verify via Display output containing "*serial"
         state.insert(42, "Serial")?;
         let display = format!("{state}");
@@ -266,7 +266,7 @@ mod tests {
         state.insert(2, "Node2")?;
 
         // Set Node 1 as the serial node, and simulate Node 2 receiving 5 packets
-        state.set_serial_number(NonZero::new(1).unwrap());
+        state.set_serial_number(1);
         for _ in 0..5 {
             state.increment_count(2);
         }

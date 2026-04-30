@@ -14,6 +14,7 @@ use microxdg::XdgApp;
 use std::{
     fs,
     io::{BufRead as _, stdin},
+    num::NonZero,
     sync::OnceLock,
 };
 use toml_spanner::{Toml, from_str};
@@ -193,6 +194,12 @@ impl Settings {
     /// Sets up a Postgres connection
     pub(crate) fn setup_postgres(&self) -> Result<PgPool> {
         self.postgres.setup()
+    }
+
+    /// Return the serially connected node number
+    #[inline]
+    pub(crate) const fn get_serial_number(&self) -> u8 {
+        self.serial.device_addr
     }
 }
 

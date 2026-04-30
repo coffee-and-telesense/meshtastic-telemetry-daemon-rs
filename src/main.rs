@@ -76,6 +76,9 @@ fn main() -> Result<(), Error> {
         .setup_postgres()
         .context("Failed to connect to postgresql database")?;
 
+    // Set the connected node's serial
+    state.set_serial_number(settings.get_serial_number());
+
     // Set the global deployment location string
     DEPLOYMENT_LOCATION
         .set(settings.deployment.location)
@@ -83,9 +86,6 @@ fn main() -> Result<(), Error> {
 
     // Load the already filled in nodeinfo tables to the state
     state.load_from_db(&postgres_db)?;
-
-    // Set the connected node's serial
-    state.set_serial_number(node.get_address());
 
     // Channel for sending packets to database handler from serial
     let (tx, rx) = mpsc::sync_channel::<Packet>(CHANNEL_BOUND);
