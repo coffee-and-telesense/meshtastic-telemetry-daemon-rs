@@ -14,7 +14,6 @@ use microxdg::XdgApp;
 use std::{
     fs,
     io::{BufRead as _, stdin},
-    num::NonZero,
     sync::OnceLock,
 };
 use toml_spanner::{Toml, from_str};

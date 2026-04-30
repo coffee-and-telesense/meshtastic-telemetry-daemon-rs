@@ -12,7 +12,6 @@ use std::{
         hash_map::Entry::{Occupied, Vacant},
     },
     fmt::{self, Display, Formatter},
-    num::NonZero,
     sync::{
         PoisonError, RwLock,
         atomic::{AtomicBool, AtomicU8, AtomicUsize, Ordering::Relaxed},
